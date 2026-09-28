@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Prototipe chatbot SAPA UPI untuk akses informasi akademik berbasis sumber informasi contoh."
+    />
+    <title>SAPA UPI | Prototipe Chatbot Akademik</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="SAPA UPI, kembali ke bagian awal">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span>
+          <strong>SAPA <em>UPI</em></strong>
+          <small>Smart Academic &amp; Public Assistant</small>
+        </span>
+      </a>
+      <div class="header-meta">
+        <span class="scope-pill">Bisnis Digital</span>
+        <span class="prototype-pill"><i></i> Prototipe aktif</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span>AI Prototype</span> Strategi Bisnis</p>
+          <h1 id="hero-title">Informasi akademik,<br /><mark>satu percakapan.</mark></h1>
+          <p class="hero-description">
+            Tanyakan kebutuhan akademik dengan bahasa sehari-hari. SAPA UPI
+            mencocokkan pertanyaan dengan knowledge base contoh dan menunjukkan
+            sumber informasi yang mendukung jawabannya.
+          </p>
+        </div>
+
+        <div class="value-strip" aria-label="Komponen solusi SAPA UPI">
+          <article>
+            <span>01</span>
+            <div><strong>Knowledge Base</strong><small>Informasi terstruktur</small></div>
+          </article>
+          <article>
+            <span>02</span>
+            <div><strong>Smart Search</strong><small>Pencarian kontekstual</small></div>
+          </article>
+          <article>
+            <span>03</span>
+            <div><strong>AI Assistant</strong><small>Akses percakapan</small></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Prototipe percakapan SAPA UPI">
+        <aside class="control-panel">
+          <div class="panel-heading">
+            <p class="section-kicker">Jelajahi informasi</p>
+            <h2>Pilih kategori</h2>
+            <p>Gunakan kategori atau coba salah satu pertanyaan contoh.</p>
+          </div>
+
+          <div id="category-list" class="category-list" aria-label="Kategori akademik">
+            <button type="button" data-category="Semua" class="active">Semua</button>
+            <button type="button" data-category="Jadwal">Jadwal</button>
+            <button type="button" data-category="Administrasi">Administrasi</button>
+            <button type="button" data-category="Perkuliahan">Perkuliahan</button>
+            <button type="button" data-category="Tugas Akhir">Tugas Akhir</button>
+            <button type="button" data-category="Sidang">Sidang</button>
+            <button type="button" data-category="Kelulusan">Kelulusan</button>
+          </div>
+
+          <div class="question-block">
+            <div class="question-block-title">
+              <h3>Pertanyaan contoh</h3>
+              <span id="question-count">0 topik</span>
+            </div>
+            <div id="sample-questions" class="sample-questions"></div>
+          </div>
+
+          <div class="prototype-note">
+            <span aria-hidden="true">◎</span>
+            <div>
+              <strong>Prototipe simulasi AI</strong>
+              <p>
+                Pencarian berjalan pada data contoh di browser. Belum terhubung
+                dengan RAG, LLM, atau sistem resmi UPI.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="chat-shell" aria-labelledby="chat-title">
+          <header class="chat-header">
+            <div class="assistant-identity">
+              <span class="assistant-avatar" aria-hidden="true">✦</span>
+              <div>
+                <h2 id="chat-title">SAPA UPI Assistant</h2>
+                <p><span></span> Siap membantu mencari informasi contoh</p>
+              </div>
+            </div>
+            <button id="reset-chat" class="reset-button" type="button">
+              Mulai ulang
+            </button>
+          </header>
+
+          <div id="chat-log" class="chat-log" aria-live="polite" aria-relevant="additions">
+            <article class="message bot-message welcome-message">
+              <div class="message-avatar" aria-hidden="true">✦</div>
+              <div class="message-content">
+                <span class="message-label">SAPA UPI</span>
+                <p>
+                  Halo! Tanyakan informasi tentang jadwal, administrasi,
+                  perkuliahan, tugas akhir, sidang, atau kelulusan.
+                </p>
+                <p class="message-hint">
+                  Coba: “Apa saja persyaratan pendaftaran sidang?”
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <form id="chat-form" class="chat-form">
+            <label class="sr-only" for="chat-input">Tulis pertanyaan akademik</label>
+            <div class="input-wrap">
+              <span aria-hidden="true">⌕</span>
+              <textarea
+                id="chat-input"
+                rows="1"
+                maxlength="240"
+                placeholder="Tulis pertanyaan akademikmu..."
+                autocomplete="off"
+              ></textarea>
+              <button type="submit" aria-label="Kirim pertanyaan">
+                <span>Kirim</span><b aria-hidden="true">↗</b>
+              </button>
+            </div>
+            <p class="form-caption">
+              Tekan Enter untuk mengirim. Jawaban pada prototipe ini menggunakan data demonstrasi.
+            </p>
+          </form>
+        </section>
+      </section>
+
+      <section class="disclaimer" aria-label="Batasan prototipe">
+        <strong>Perlu diperhatikan</strong>
+        <p>
+          SAPA UPI pada halaman ini adalah prototipe akademik. Informasi, tautan,
+          dan metadata bersifat contoh. Keputusan dan transaksi akademik tetap
+          mengikuti sumber informasi serta unit UPI yang berwenang.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <span>SAPA UPI Prototype · Kelompok 4</span>
+      <span>Program Studi Bisnis Digital · 2026</span>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
