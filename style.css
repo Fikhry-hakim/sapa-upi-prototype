@@ -434,50 +434,64 @@ main {
 
 .category-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin: 24px 0 30px;
 }
 
 .category-list button {
-  min-height: 72px;
-  padding: 10px 7px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 7px 10px 7px 7px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 8px;
   color: var(--navy-800);
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid var(--neutral-300);
-  border-radius: 14px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(215, 38, 46, 0.1);
+  border-radius: 999px;
+  box-shadow: 0 7px 18px rgba(14, 39, 73, 0.07);
   cursor: pointer;
   transition: 160ms ease;
 }
 
-.category-list button b {
-  width: 29px;
-  height: 29px;
-  display: grid;
-  place-items: center;
-  color: var(--red-600);
+.quick-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 8px;
   background: var(--red-100);
-  border-radius: 9px;
-  font-size: 0.9rem;
+  border-radius: 50%;
+  fill: none;
+  stroke: var(--red-600);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.category-list button:hover b,
-.category-list button.active b {
-  color: var(--white);
-  background: rgba(255, 255, 255, 0.16);
+.category-list button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.73rem;
+  font-weight: 750;
 }
 
 .category-list button:hover,
 .category-list button.active {
-  color: var(--white);
-  background: var(--navy-800);
-  border-color: var(--navy-800);
-  transform: translateY(-1px);
+  color: var(--navy-950);
+  background: var(--white);
+  border-color: rgba(215, 38, 46, 0.42);
+  box-shadow: 0 9px 22px rgba(215, 38, 46, 0.12);
+  transform: translateY(-2px);
+}
+
+.category-list button.active .quick-icon {
+  background: var(--red-600);
+  stroke: var(--white);
 }
 
 .question-block-title {

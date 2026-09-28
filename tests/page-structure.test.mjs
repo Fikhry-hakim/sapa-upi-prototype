@@ -58,3 +58,14 @@ test("chatbot messages consistently use the SAPA mascot avatar", () => {
   assert.match(html, /message-avatar[^>]*>\s*<img[^>]+mascot-sapa\.png/);
   assert.match(app, /message-avatar[^`]*mascot-sapa\.png/);
 });
+
+test("quick access exposes consistent accessible SVG icons", () => {
+  const start = html.indexOf('id="category-list"');
+  const end = html.indexOf('class="question-block"', start);
+  const quickAccess = html.slice(start, end);
+
+  assert.equal((quickAccess.match(/class="quick-icon"/g) ?? []).length, 7);
+  assert.equal((quickAccess.match(/<svg\b/g) ?? []).length, 7);
+  assert.equal((quickAccess.match(/aria-hidden="true"/g) ?? []).length, 7);
+  assert.doesNotMatch(quickAccess, /[⌂▤▦◆✎★▧]/);
+});
