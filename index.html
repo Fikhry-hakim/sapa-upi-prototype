@@ -13,10 +13,14 @@
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="SAPA UPI, kembali ke bagian awal">
-        <span class="brand-mark" aria-hidden="true">✦</span>
+        <img
+          class="mascot-sapa brand-mascot"
+          src="./assets/mascot-sapa.png"
+          alt="Maskot SAPA mengenakan toga wisuda"
+        />
         <span>
-          <strong>SAPA <em>UPI</em></strong>
-          <small>Smart Academic &amp; Public Assistant</small>
+          <strong>SAPA</strong>
+          <small>Sahabat Akses &amp; Panduan Akademik</small>
         </span>
       </a>
       <div class="header-meta">
@@ -29,26 +33,30 @@
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
           <p class="eyebrow"><span>AI Prototype</span> Strategi Bisnis</p>
-          <h1 id="hero-title">Informasi akademik,<br /><mark>satu percakapan.</mark></h1>
+          <h1 id="hero-title">Informasi kampus<br /><mark>dalam satu percakapan.</mark></h1>
           <p class="hero-description">
             Tanyakan kebutuhan akademik dengan bahasa sehari-hari. SAPA UPI
             mencocokkan pertanyaan dengan knowledge base contoh dan menunjukkan
             sumber informasi yang mendukung jawabannya.
           </p>
+          <div class="benefit-list" aria-label="Manfaat SAPA UPI">
+            <span><b>⚡</b><strong>Lebih mudah</strong> tanpa mencari di banyak website</span>
+            <span><b>◷</b><strong>Lebih cepat</strong> memperoleh jawaban awal</span>
+            <span><b>●</b><strong>Lebih terpusat</strong> dalam satu percakapan</span>
+          </div>
         </div>
 
-        <div class="value-strip" aria-label="Komponen solusi SAPA UPI">
-          <article>
-            <span>01</span>
-            <div><strong>Knowledge Base</strong><small>Informasi terstruktur</small></div>
+        <div class="mascot-stage" aria-label="Maskot SAPA dan komponen solusi">
+          <div class="mascot-glow" aria-hidden="true"></div>
+          <img class="hero-mascot" src="./assets/mascot-sapa.png" alt="" />
+          <article class="floating-card card-knowledge">
+            <span>01</span><div><strong>Knowledge Base</strong><small>Informasi terstruktur</small></div>
           </article>
-          <article>
-            <span>02</span>
-            <div><strong>Smart Search</strong><small>Pencarian kontekstual</small></div>
+          <article class="floating-card card-search">
+            <span>02</span><div><strong>Smart Search</strong><small>Pencarian kontekstual</small></div>
           </article>
-          <article>
-            <span>03</span>
-            <div><strong>AI Assistant</strong><small>Akses percakapan</small></div>
+          <article class="floating-card card-assistant">
+            <span>03</span><div><strong>AI Assistant</strong><small>Akses percakapan</small></div>
           </article>
         </div>
       </section>
@@ -57,23 +65,23 @@
         <aside class="control-panel">
           <div class="panel-heading">
             <p class="section-kicker">Jelajahi informasi</p>
-            <h2>Pilih kategori</h2>
-            <p>Gunakan kategori atau coba salah satu pertanyaan contoh.</p>
+            <h2>Akses Cepat</h2>
+            <p>Pilih kebutuhan akademik yang paling sering diakses.</p>
           </div>
 
           <div id="category-list" class="category-list" aria-label="Kategori akademik">
-            <button type="button" data-category="Semua" class="active">Semua</button>
-            <button type="button" data-category="Jadwal">Jadwal</button>
-            <button type="button" data-category="Administrasi">Administrasi</button>
-            <button type="button" data-category="Perkuliahan">Perkuliahan</button>
-            <button type="button" data-category="Tugas Akhir">Tugas Akhir</button>
-            <button type="button" data-category="Sidang">Sidang</button>
-            <button type="button" data-category="Kelulusan">Kelulusan</button>
+            <button type="button" data-category="Semua" class="active"><b>⌂</b>Semua</button>
+            <button type="button" data-category="Perkuliahan"><b>▤</b>KRS</button>
+            <button type="button" data-category="Jadwal"><b>▦</b>Jadwal</button>
+            <button type="button" data-category="Sidang"><b>◆</b>Sidang</button>
+            <button type="button" data-category="Tugas Akhir"><b>✎</b>Tugas Akhir</button>
+            <button type="button" data-category="Kelulusan"><b>★</b>Kelulusan</button>
+            <button type="button" data-category="Administrasi"><b>▧</b>Administrasi</button>
           </div>
 
           <div class="question-block">
             <div class="question-block-title">
-              <h3>Pertanyaan contoh</h3>
+              <h3>Topik Populer</h3>
               <span id="question-count">0 topik</span>
             </div>
             <div id="sample-questions" class="sample-questions"></div>
@@ -94,9 +102,9 @@
         <section class="chat-shell" aria-labelledby="chat-title">
           <header class="chat-header">
             <div class="assistant-identity">
-              <span class="assistant-avatar" aria-hidden="true">✦</span>
+              <span class="assistant-avatar"><img src="./assets/mascot-sapa.png" alt="" /></span>
               <div>
-                <h2 id="chat-title">SAPA UPI Assistant</h2>
+                <h2 id="chat-title">SAPA Assistant</h2>
                 <p><span></span> Siap membantu mencari informasi contoh</p>
               </div>
             </div>
@@ -107,7 +115,9 @@
 
           <div id="chat-log" class="chat-log" aria-live="polite" aria-relevant="additions">
             <article class="message bot-message welcome-message">
-              <div class="message-avatar" aria-hidden="true">✦</div>
+              <div class="message-avatar" aria-hidden="true">
+                <img src="./assets/mascot-sapa.png" alt="" />
+              </div>
               <div class="message-content">
                 <span class="message-label">SAPA UPI</span>
                 <p>
@@ -141,6 +151,57 @@
             </p>
           </form>
         </section>
+
+        <aside class="support-panel" aria-label="Referensi dan bantuan SAPA">
+          <section class="support-card reference-card">
+            <div class="support-heading">
+              <span aria-hidden="true">▤</span>
+              <div>
+                <h2>Sumber Referensi</h2>
+                <p>Jawaban dilengkapi sumber informasi dari knowledge base contoh.</p>
+              </div>
+            </div>
+            <div class="document-preview">
+              <b>PDF</b>
+              <div>
+                <strong>Contoh Pedoman Akademik</strong>
+                <small>Data demonstrasi · diperbarui 12 September 2026</small>
+              </div>
+            </div>
+            <a href="#chat-title">Lihat pada jawaban <span>↗</span></a>
+          </section>
+
+          <section class="support-card follow-up-card">
+            <div class="support-heading">
+              <span aria-hidden="true">•••</span>
+              <div>
+                <h2>Pertanyaan Lanjutan</h2>
+                <p>Lanjutkan percakapan dengan pertanyaan terkait.</p>
+              </div>
+            </div>
+            <ul>
+              <li>Bagaimana alur sidang?<span>›</span></li>
+              <li>Dokumen apa yang diperlukan?<span>›</span></li>
+              <li>Berapa lama prosesnya?<span>›</span></li>
+              <li>Siapa yang harus saya hubungi?<span>›</span></li>
+            </ul>
+          </section>
+
+          <section class="support-card admin-card">
+            <div class="support-heading">
+              <span aria-hidden="true">☏</span>
+              <div>
+                <h2>Butuh Bantuan? Hubungi Admin</h2>
+                <p>Jika informasi belum sesuai, lanjutkan kepada pihak berwenang.</p>
+              </div>
+            </div>
+            <ul>
+              <li>Tenaga Administrasi<span>›</span></li>
+              <li>Program Studi<span>›</span></li>
+              <li>Dosen atau Pihak Berwenang<span>›</span></li>
+            </ul>
+          </section>
+        </aside>
       </section>
 
       <section class="disclaimer" aria-label="Batasan prototipe">

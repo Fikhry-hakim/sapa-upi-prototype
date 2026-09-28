@@ -3,7 +3,9 @@ import { createChatResponse } from "./lib/chat-engine.js";
 
 const welcomeMarkup = `
   <article class="message bot-message welcome-message">
-    <div class="message-avatar" aria-hidden="true">✦</div>
+    <div class="message-avatar" aria-hidden="true">
+      <img src="./assets/mascot-sapa.png" alt="" />
+    </div>
     <div class="message-content">
       <span class="message-label">SAPA UPI</span>
       <p>Halo! Tanyakan informasi tentang jadwal, administrasi, perkuliahan, tugas akhir, sidang, atau kelulusan.</p>
@@ -52,8 +54,12 @@ export function appendUserMessage(text) {
 
 function createBotMessage() {
   const article = createElement("article", "message bot-message");
-  const avatar = createElement("div", "message-avatar", "✦");
+  const avatar = createElement("div", "message-avatar");
   avatar.setAttribute("aria-hidden", "true");
+  const mascot = createElement("img");
+  mascot.src = "./assets/mascot-sapa.png";
+  mascot.alt = "";
+  avatar.append(mascot);
   const content = createElement("div", "message-content");
   content.append(createElement("span", "message-label", "SAPA UPI"));
   article.append(avatar, content);
@@ -63,8 +69,12 @@ function createBotMessage() {
 function showTyping() {
   const article = createElement("article", "message bot-message typing-message");
   article.dataset.typing = "true";
-  const avatar = createElement("div", "message-avatar", "✦");
+  const avatar = createElement("div", "message-avatar");
   avatar.setAttribute("aria-hidden", "true");
+  const mascot = createElement("img");
+  mascot.src = "./assets/mascot-sapa.png";
+  mascot.alt = "";
+  avatar.append(mascot);
   const content = createElement("div", "message-content");
   content.setAttribute("aria-label", "SAPA UPI sedang mencari informasi");
   content.append(createElement("i"), createElement("i"), createElement("i"));

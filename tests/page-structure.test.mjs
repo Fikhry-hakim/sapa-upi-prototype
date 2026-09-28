@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
+const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
 test("page exposes every required interactive control", () => {
   for (const id of [
@@ -26,4 +28,33 @@ test("page has one primary heading and an accessible chat form", () => {
 test("page clearly identifies the prototype and loads the module app", () => {
   assert.match(html, /prototipe simulasi ai/i);
   assert.match(html, /<script[^>]+type=["']module["'][^>]+src=["']\.\/app\.js["']/i);
+});
+
+test("page applies the SAPA mascot GSM and Canva feature structure", () => {
+  const requiredMarkers = [
+    "mascot-sapa",
+    "Sahabat Akses &amp; Panduan Akademik",
+    "Akses Cepat",
+    "Topik Populer",
+    "Sumber Referensi",
+    "Pertanyaan Lanjutan",
+    "Butuh Bantuan? Hubungi Admin",
+  ];
+
+  for (const marker of requiredMarkers) {
+    assert.ok(html.includes(marker), `missing required marker: ${marker}`);
+  }
+});
+
+test("mascot image has useful alternative text and is never used as a background", () => {
+  assert.match(
+    html,
+    /<img[^>]+class="[^"]*mascot-sapa[^"]*"[^>]+alt="Maskot SAPA mengenakan toga wisuda"/,
+  );
+  assert.doesNotMatch(css, /background(?:-image)?:[^;]*mascot-sapa/);
+});
+
+test("chatbot messages consistently use the SAPA mascot avatar", () => {
+  assert.match(html, /message-avatar[^>]*>\s*<img[^>]+mascot-sapa\.png/);
+  assert.match(app, /message-avatar[^`]*mascot-sapa\.png/);
 });

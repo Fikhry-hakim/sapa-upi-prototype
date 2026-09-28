@@ -32,6 +32,12 @@ Alur demonstrasi terdiri atas tiga komponen:
 2. **Smart Search** menormalisasi kalimat, mengenali beberapa variasi istilah, dan memberi skor kecocokan untuk memilih jawaban atau menawarkan klarifikasi.
 3. **AI Assistant** menyediakan antarmuka percakapan, menampilkan hasil pencarian, sumber informasi contoh, dan arahan ketika jawaban belum ditemukan.
 
+## Identitas visual
+
+Antarmuka mengikuti *Graphic Standard Manual* SAPA pada materi Canva. Maskot menggunakan karakter robot bertoga, palet merah `#D7262E`, putih `#FFFFFF`, hitam `#111111`, abu-abu muda `#E9E9E9`, dan emas `#D9A441`. Maskot ditampilkan utuh tanpa rotasi, perubahan warna, atau distorsi. Struktur halaman juga mengadaptasi contoh Canva melalui bagian Akses Cepat, Topik Populer, Sumber Referensi, Pertanyaan Lanjutan, dan Bantuan Admin.
+
+Aset maskot tersimpan pada `assets/mascot-sapa.png` dan dibuat berdasarkan halaman GSM yang diberikan sebagai referensi.
+
 Pencarian pada versi ini masih berupa simulasi deterministik yang berjalan sepenuhnya di browser. Sistem belum memakai model bahasa atau RAG yang sebenarnya. Pada pengembangan lanjutan, RAG dapat mengambil potongan dokumen resmi yang relevan dan model bahasa dapat menyusun jawaban natural dengan tetap menyertakan sumber. Integrasi tersebut baru layak dilakukan setelah sumber data, hak akses, pembaruan dokumen, evaluasi jawaban, dan biaya operasional disepakati.
 
 ## Skenario demonstrasi
