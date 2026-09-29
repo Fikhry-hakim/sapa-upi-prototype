@@ -11,9 +11,10 @@ test("page exposes every required interactive control", () => {
     "chat-form",
     "chat-input",
     "chat-log",
-    "category-list",
-    "sample-questions",
+    "sidebar",
     "reset-chat",
+    "quick-cards",
+    "deep-search-toggle",
   ]) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
@@ -30,20 +31,45 @@ test("page clearly identifies the prototype and loads the module app", () => {
   assert.match(html, /<script[^>]+type=["']module["'][^>]+src=["']\.\/app\.js["']/i);
 });
 
-test("page applies the SAPA mascot GSM and Canva feature structure", () => {
+test("sidebar matches the SAPA UPI design shell", () => {
   const requiredMarkers = [
     "mascot-sapa",
-    "Sahabat Akses &amp; Panduan Akademik",
-    "Akses Cepat",
-    "Topik Populer",
-    "Sumber Referensi",
-    "Pertanyaan Lanjutan",
-    "Butuh Bantuan? Hubungi Admin",
+    "Akses Akademik",
+    "Chat Baru",
+    "Cari percakapan...",
+    "Kalender Aktif",
+    "Semester Ganjil 2026",
   ];
 
   for (const marker of requiredMarkers) {
     assert.ok(html.includes(marker), `missing required marker: ${marker}`);
   }
+
+  for (const item of ["Explore", "Library", "Files", "History"]) {
+    assert.match(html, new RegExp(`data-nav="[a-z]+"[\\s\\S]{0,400}<span>${item}</span>`));
+  }
+});
+
+test("sidebar and chat surface use the light design theme", () => {
+  const sidebarRule = css.match(/\n\.sidebar\s*\{([^}]*)\}/)?.[1] ?? "";
+
+  assert.match(sidebarRule, /background:\s*var\(--surface\)/);
+  assert.match(css, /--surface:\s*#ffffff/i);
+});
+
+test("landing view greets the student and offers the composer", () => {
+  assert.match(html, /Halo, Rizky Pratama/);
+  assert.match(html, /Ada yang bisa saya bantu hari ini\?/);
+  assert.match(html, /placeholder="Ketik pertanyaan akademik Anda\.\.\."/);
+  assert.match(html, /Pencarian Mendalam/);
+  assert.match(html, /Pertanyaan tersimpan/);
+  assert.match(html, /Lampirkan file/);
+});
+
+test("chat main starts in the landing view and toggles via JS", () => {
+  assert.match(html, /id=["']chat-main["'][^>]*data-view=["']landing["']/);
+  assert.match(app, /function setView\(/);
+  assert.match(app, /elements\.chatMain\.dataset\.view = view/);
 });
 
 test("mascot image has useful alternative text and is never used as a background", () => {
@@ -55,17 +81,31 @@ test("mascot image has useful alternative text and is never used as a background
 });
 
 test("chatbot messages consistently use the SAPA mascot avatar", () => {
-  assert.match(html, /message-avatar[^>]*>\s*<img[^>]+mascot-sapa\.png/);
   assert.match(app, /message-avatar[^`]*mascot-sapa\.png/);
 });
 
-test("quick access exposes consistent accessible SVG icons", () => {
-  const start = html.indexOf('id="category-list"');
-  const end = html.indexOf('class="question-block"', start);
-  const quickAccess = html.slice(start, end);
+test("quick action cards mirror the four design tiles with SVG icons", () => {
+  const labels = app.match(/label:\s*"([^"]+)"/g) ?? [];
 
-  assert.equal((quickAccess.match(/class="quick-icon"/g) ?? []).length, 7);
-  assert.equal((quickAccess.match(/<svg\b/g) ?? []).length, 7);
-  assert.equal((quickAccess.match(/aria-hidden="true"/g) ?? []).length, 7);
-  assert.doesNotMatch(quickAccess, /[⌂▤▦◆✎★▧]/);
+  assert.deepEqual(labels, [
+    'label: "Jadwal Kuliah"',
+    'label: "KRS Online"',
+    'label: "Sidang & Skripsi"',
+    'label: "Administrasi"',
+  ]);
+  assert.equal((app.match(/icon:\s*'[^']*'/g) ?? []).length, 4);
+  assert.doesNotMatch(app, /[⌂▤▦◆✎★▧]/);
+});
+
+test("answers render as a card with red bullet points and source attribution", () => {
+  assert.match(app, /answer-points/);
+  assert.match(app, /Source: \$\{entry\.sourceTitle\}/);
+  assert.match(css, /\.answer-points li::before[\s\S]*?background:\s*var\(--red-600\)/);
+});
+
+test("sidebar navigation exposes an off-canvas toggle for small screens", () => {
+  for (const id of ["sidebar-open", "sidebar-close", "sidebar-backdrop"]) {
+    assert.match(html, new RegExp(`id=["']${id}["']`));
+  }
+  assert.match(css, /\.sidebar\.is-open/);
 });

@@ -15,6 +15,12 @@ test("known question returns a sourced answer response", () => {
   assert.equal(response.message, response.entry.answer);
   assert.equal(response.verificationLabel, "Berdasarkan sumber informasi contoh");
   assert.equal(response.confidenceLabel, "Kecocokan tinggi");
+  assert.deepEqual(response.followUpQuestions, [
+    "Bagaimana alur pengajuannya?",
+    "Dokumen apa yang diperlukan?",
+    "Berapa lama prosesnya?",
+    "Siapa yang harus saya hubungi?",
+  ]);
   for (const field of [
     "sourceTitle",
     "sourceOwner",

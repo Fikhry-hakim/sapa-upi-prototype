@@ -17,6 +17,7 @@ const requiredFields = [
   "category",
   "title",
   "questions",
+  "followUps",
   "keywords",
   "answer",
   "sourceTitle",
