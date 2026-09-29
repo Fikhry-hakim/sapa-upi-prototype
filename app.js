@@ -80,6 +80,7 @@ const elements =
         popoverProfile: el("popover-profile"),
         popoverNotification: el("popover-notification"),
         viewHome: el("view-home"),
+        homeScroll: el("home-scroll"),
         chatLog: el("chat-log"),
         quickCards: el("quick-cards"),
         chatForm: el("chat-form"),
@@ -250,6 +251,7 @@ function renderQuickCards() {
 function enterChatState() {
   if (chatStarted) return;
   chatStarted = true;
+  elements.homeScroll.hidden = true;
   elements.chatLog.hidden = false;
   elements.chatFormBottom.hidden = false;
 }
@@ -441,7 +443,9 @@ function resetConversation() {
   clearTimeout(responseTimer);
   elements.chatLog.replaceChildren();
   chatStarted = false;
+  elements.homeScroll.hidden = false;
   elements.chatLog.hidden = true;
+  elements.chatFormBottom.hidden = true;
   elements.chatInput.value = "";
   elements.chatInputBottom.value = "";
   switchNav("chat");
@@ -664,7 +668,7 @@ function renderAdministrasiModal() {
   const options = SD.administrasiOptions
     .map(
       (o) => `<div class="option-card ${o.active ? "is-active" : ""}" data-option="${o.id}">
-        <div class="option-card-title">${o.active ? CHECK_ICON : ""}${o.title}</div>
+        <div class="option-card-title"><span class="option-check">${CHECK_ICON}</span>${o.title}</div>
         <p>${o.description}</p>
         <div class="option-card-foot">${o.footer}${o.meta ? ` &bull; ${o.meta}` : ""}</div>
       </div>`,
