@@ -86,6 +86,7 @@ const elements =
         chatForm: el("chat-form"),
         chatInput: el("chat-input"),
         deepSearchToggle: el("deep-search-toggle"),
+        deepSearchToggleBottom: el("deep-search-toggle-bottom"),
         chatFormBottom: el("chat-form-bottom"),
         chatInputBottom: el("chat-input-bottom"),
         modalSearch: el("modal-search"),
@@ -1029,10 +1030,13 @@ function initialize() {
     });
   }
 
-  elements.deepSearchToggle.addEventListener("click", () => {
-    const pressed = elements.deepSearchToggle.getAttribute("aria-pressed") === "true";
-    elements.deepSearchToggle.setAttribute("aria-pressed", String(!pressed));
-  });
+  const deepSearchToggles = [elements.deepSearchToggle, elements.deepSearchToggleBottom];
+  for (const toggle of deepSearchToggles) {
+    toggle.addEventListener("click", () => {
+      const pressed = toggle.getAttribute("aria-pressed") === "true";
+      for (const t of deepSearchToggles) t.setAttribute("aria-pressed", String(!pressed));
+    });
+  }
 
   elements.sidebarNav.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-nav]");
