@@ -142,13 +142,22 @@ export const knowledgeBase = [
       "Siapa yang harus saya hubungi?",
     ],
     keywords: ["sidang", "daftar sidang", "persyaratan sidang", "berkas", "ujian tugas akhir"],
-    lead: "Berikut syarat utama yang perlu dipenuhi untuk mengikuti sidang:",
+    lead: "Berdasarkan Buku Pedoman Akademik UPI Bab VIII (Pasal 24), berikut rincian syarat pendaftaran sidang yang disinkronkan dengan status kelayakan SIAKAD Anda:",
     points: [
       "Telah memenuhi persyaratan akademik yang ditentukan.",
       "Menyelesaikan administrasi pendaftaran sidang.",
       "Memenuhi dokumen yang diperlukan.",
       "Mendapatkan persetujuan dari pihak terkait.",
     ],
+    table: {
+      title: "Tabel Evaluasi Persyaratan Administrasi Sidang",
+      columns: ["PERSYARATAN AKADEMIK", "BATAS MINIMUM / FORMAT", "STATUS BERKAS ANDA (SIAKAD)"],
+      rows: [
+        ["SKS Lulus Kumulatif", "Minimal 138 SKS (IPK ≥ 2.50)", "Terpenuhi (140 SKS, IPK 3.68)"],
+        ["Sertifikat TOEFL/EPT", "Skor Minimal 450 (Balai Bahasa UPI)", "Terpenuhi (Skor: 485)"],
+        ["Uji Bebas Plagiarisme (Turnitin)", "Maksimal Similarity 20%", "Terverifikasi (14%)"],
+      ],
+    },
     closing: "Jika kamu mau, saya juga bisa bantu jelaskan alur pendaftaran sidang.",
     answer:
       "Mahasiswa menyiapkan berkas yang tercantum pada daftar persyaratan, memastikan persetujuan pembimbing, dan mendaftar pada periode yang ditetapkan. Kelengkapan akhir perlu diperiksa oleh pengelola tugas akhir.",
