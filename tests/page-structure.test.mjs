@@ -6,19 +6,13 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-test("page exposes the auth, splash, and app shell screens", () => {
-  for (const id of [
-    "screen-login",
-    "screen-error",
-    "screen-splash",
-    "app-shell",
-    "login-form",
-    "login-id",
-    "login-password",
-    "error-retry-button",
-  ]) {
-    assert.match(html, new RegExp(`id=["']${id}["']`));
+test("app shell is the entry point, with no login gate in front of it", () => {
+  assert.match(html, /id=["']app-shell["'](?![^>]*\bhidden\b)/);
+
+  for (const removed of ["screen-login", "screen-error", "screen-splash", "login-form", "error-retry-button"]) {
+    assert.doesNotMatch(html, new RegExp(`id=["']${removed}["']`), `${removed} should be gone`);
   }
+  assert.doesNotMatch(app, /showScreen|handleLoginSubmit|runSplashSequence/);
 });
 
 test("page exposes every required chat control", () => {
@@ -33,8 +27,8 @@ test("page exposes the four module modals and search overlay", () => {
   }
 });
 
-test("each top-level screen (SSO login, hub) carries exactly one h1, and the chat form is accessible", () => {
-  assert.equal((html.match(/<h1\b/gi) ?? []).length, 2);
+test("the hub carries exactly one h1, and the chat form is accessible", () => {
+  assert.equal((html.match(/<h1\b/gi) ?? []).length, 1);
   assert.match(html, /<label[^>]+for=["']chat-input["']/i);
   assert.match(html, /id=["']chat-log["'][^>]+aria-live=["']polite["']/i);
 });
@@ -43,8 +37,8 @@ test("page loads the module app", () => {
   assert.match(html, /<script[^>]+type=["']module["'][^>]+src=["']\.\/app\.js["']/i);
 });
 
-test("login screen carries the SAPA UPI SSO brand identity", () => {
-  for (const marker of ["Single Sign-On UPI", "SAPA AI", "mascot-sapa", "LOGIN SSO"]) {
+test("hub carries the SAPA UPI brand identity", () => {
+  for (const marker of ["SAPA UPI", "AI ACADEMIC HUB", "mascot-sapa", "Kalender Aktif"]) {
     assert.ok(html.includes(marker), `missing required marker: ${marker}`);
   }
 });

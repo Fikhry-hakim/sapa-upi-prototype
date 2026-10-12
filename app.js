@@ -56,18 +56,6 @@ const elements =
   typeof document === "undefined"
     ? {}
     : {
-        loginForm: el("login-form"),
-        loginId: el("login-id"),
-        loginPassword: el("login-password"),
-        loginError: el("login-error"),
-        togglePassword: el("toggle-password"),
-        loginReset: el("login-reset"),
-        errorRetry: el("error-retry-button"),
-        screenLogin: el("screen-login"),
-        screenError: el("screen-error"),
-        screenSplash: el("screen-splash"),
-        splashSteps: el("splash-steps"),
-        appShell: el("app-shell"),
         sidebar: el("sidebar"),
         sidebarOpen: el("sidebar-open"),
         sidebarClose: el("sidebar-close"),
@@ -123,64 +111,6 @@ function scrollChat() {
   requestAnimationFrame(() => {
     elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
   });
-}
-
-/* ============================================================
-   AUTH FLOW: Login -> Error -> Splash -> App
-============================================================ */
-
-function showScreen(name) {
-  elements.screenLogin.hidden = name !== "login";
-  elements.screenError.hidden = name !== "error";
-  elements.screenSplash.hidden = name !== "splash";
-  elements.appShell.hidden = name !== "app";
-}
-
-function handleLoginSubmit(event) {
-  event.preventDefault();
-  const id = elements.loginId.value.trim();
-  const password = elements.loginPassword.value.trim();
-
-  if (!id || !password) {
-    elements.loginError.hidden = false;
-    return;
-  }
-
-  elements.loginError.hidden = true;
-  showScreen("error");
-}
-
-function handleErrorRetry() {
-  showScreen("splash");
-  runSplashSequence();
-}
-
-function runSplashSequence() {
-  const items = [...elements.splashSteps.querySelectorAll("li")];
-  items.forEach((item) => item.classList.remove("is-active", "is-done"));
-
-  let index = 0;
-  const advance = () => {
-    if (index > 0) items[index - 1]?.classList.add("is-done");
-    if (index >= items.length) {
-      window.setTimeout(() => showScreen("app"), 500);
-      return;
-    }
-    items[index].classList.add("is-active");
-    index += 1;
-    window.setTimeout(advance, 750);
-  };
-  advance();
-}
-
-function togglePasswordVisibility() {
-  const isPassword = elements.loginPassword.type === "password";
-  elements.loginPassword.type = isPassword ? "text" : "password";
-}
-
-function resetLoginForm() {
-  elements.loginForm.reset();
-  elements.loginError.hidden = true;
 }
 
 /* ============================================================
@@ -739,10 +669,8 @@ function toggleProfilePopover() {
       <button type="button"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg>Log Keamanan SSO</button>
       <button type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>Bantuan &amp; Panduan Sistem</button>
     </div>
-    <div class="profile-pop-foot"><button type="button" class="button-ghost" id="logout-button"><svg viewBox="0 0 24 24"><path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="M10 8.5 13.5 12 10 15.5M13.5 12H4"/></svg>Keluar dari SSO UPI</button></div>
   `;
   elements.popoverProfile.hidden = false;
-  elements.popoverProfile.querySelector("#logout-button").addEventListener("click", handleLogout);
 }
 
 function toggleNotificationPopover() {
@@ -767,18 +695,6 @@ function toggleNotificationPopover() {
     </div>
   `;
   elements.popoverNotification.hidden = false;
-}
-
-function handleLogout() {
-  closeAllOverlays();
-  resetConversation();
-  viewCache.clear();
-  elements.viewExplore.replaceChildren();
-  elements.viewLibrary.replaceChildren();
-  elements.viewFiles.replaceChildren();
-  elements.viewHistory.replaceChildren();
-  resetLoginForm();
-  showScreen("login");
 }
 
 /* ============================================================
@@ -998,12 +914,6 @@ function resizeTextarea(textarea) {
 
 function initialize() {
   renderQuickCards();
-  showScreen("login");
-
-  elements.loginForm.addEventListener("submit", handleLoginSubmit);
-  elements.togglePassword.addEventListener("click", togglePasswordVisibility);
-  elements.loginReset.addEventListener("click", resetLoginForm);
-  elements.errorRetry.addEventListener("click", handleErrorRetry);
 
   elements.chatForm.addEventListener("submit", (event) => {
     event.preventDefault();
