@@ -47,22 +47,6 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4Z" /></svg>
               <span>Chat Workspace</span>
             </button>
-            <button type="button" data-nav="explore">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m14.5 9.5-1.6 4.6-4.6 1.6 1.6-4.6 4.6-1.6Z" /></svg>
-              <span>Explore</span>
-            </button>
-            <button type="button" data-nav="library">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h8.5A1.5 1.5 0 0 1 17 5v16l-5-3-5 3V5A1.5 1.5 0 0 1 7 3.5Z" /></svg>
-              <span>Library</span>
-            </button>
-            <button type="button" data-nav="files">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /></svg>
-              <span>Files</span>
-            </button>
-            <button type="button" data-nav="history">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
-              <span>History</span>
-            </button>
           </nav>
         </div>
 
@@ -89,9 +73,6 @@
 
           <div class="topbar-actions">
             <button class="text-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1 1" /><path d="M14.5 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1-1" /></svg>Bagikan</button>
-            <button class="icon-button" type="button" id="notification-trigger" aria-label="Notifikasi">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>
-            </button>
             <button class="icon-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18.5" cy="12" r="1.4" /></svg></button>
             <button class="icon-button avatar-button" type="button" id="topbar-avatar" aria-label="Profil"><span>RP</span></button>
           </div>
@@ -148,18 +129,6 @@
           <div id="chat-log" class="chat-log" aria-live="polite" aria-relevant="additions" hidden></div>
         </div>
 
-        <!-- ===================== VIEW: EXPLORE ===================== -->
-        <div class="view" id="view-explore" hidden></div>
-
-        <!-- ===================== VIEW: LIBRARY ===================== -->
-        <div class="view" id="view-library" hidden></div>
-
-        <!-- ===================== VIEW: FILES ===================== -->
-        <div class="view" id="view-files" hidden></div>
-
-        <!-- ===================== VIEW: HISTORY ===================== -->
-        <div class="view" id="view-history" hidden></div>
-
         <!-- Chat composer bar shown only in chat scroll state -->
         <form id="chat-form-bottom" class="composer composer-bottom" hidden>
           <div class="input-wrap">
@@ -185,77 +154,8 @@
       </main>
     </div>
 
-    <!-- ===================== MODALS / OVERLAYS ===================== -->
-
-    <div class="modal-overlay" id="modal-search" hidden>
-      <div class="search-panel">
-        <div class="search-input-row">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" /></svg>
-          <input id="global-search-input" type="text" placeholder="Tanyakan informasi KRS, Jadwal, atau Pedoman Akademik..." />
-          <span class="kbd-hint">ESC</span>
-          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-        </div>
-        <div class="search-tabs">
-          <button class="active" type="button">Semua Kategori</button>
-          <button type="button">Pedoman Rektor</button>
-          <button type="button">SIAKAD &amp; KRS</button>
-          <button type="button">Keuangan UKT</button>
-          <button type="button">MBKM</button>
-          <span class="search-tabs-hint">Ctrl + K Aktif</span>
-        </div>
-
-        <div class="search-body">
-          <div class="search-col">
-            <p class="search-col-title">🔥 PENCARIAN TREN KAMPUS <span>Update 10m lalu</span></p>
-            <ol class="trend-list">
-              <li><span class="trend-num">01</span><span>Tenggat Waktu Pembayaran UKT Semester Genap</span><span class="pill pill-muted">Finansial/Ot-Keu</span></li>
-              <li><span class="trend-num">02</span><span>Alur Pengajuan Sidang Skripsi Gelombang II</span><span class="pill pill-muted">Akademik</span></li>
-              <li><span class="trend-num">03</span><span>Batas Pengisian Revisi KRS 24 SKS</span><span class="pill pill-muted">SIAKAD</span></li>
-              <li><span class="trend-num">04</span><span>Syarat Nilai Konversi MBKM Magang Bersertifikat</span><span class="pill pill-muted">MBKM</span></li>
-            </ol>
-
-            <p class="search-col-title">🕐 RIWAYAT PENCARIAN ANDA (RIZKY PRATAMA) <a href="#">Hapus Riwayat</a></p>
-            <ul class="history-list">
-              <li><span>Prosedur Cuti Akademik mahasiswa semester 4</span><small>2 jam lalu</small></li>
-              <li><span>Jadwal Ujian Tengah Semester FPMIPA Gedung JICA</span><small>Kemarin</small></li>
-              <li><span>Format Lembar Pengesahan Skripsi Standar UPI 2024</span><small>3 hari lalu</small></li>
-            </ul>
-          </div>
-
-          <div class="search-col search-col-side">
-            <p class="search-col-title">REKOMENDASI DOKUMEN TERKAIT</p>
-            <p class="search-col-desc">Tautan langsung ke sumber otoritatif resmi UPI yang terindeks langsung dalam database SAPA RAG.</p>
-            <div class="doc-mini-card">
-              <strong>Buku Pedoman Akademik UPI 2024 - Bab V Evaluasi Studi.pdf</strong>
-              <small>Hal. 42-58 &bull; Di-Akademik UPI &bull; <span class="pill pill-muted">Terindeks Penuh</span></small>
-              <div class="doc-mini-foot"><span>2.4 MB PDF</span><a href="#">Buka Dokumen ↗</a></div>
-            </div>
-            <div class="doc-mini-card">
-              <strong>SK Rektor No. 1042/UN40/HK/2024 tentang Konversi Mata Kuliah</strong>
-              <small>Hukum &amp; Tata Kelola &bull; Berlaku s.d 2026 &bull; <span class="pill pill-muted">Surat Keputusan</span></small>
-              <div class="doc-mini-foot"><a href="#">Buka Dokumen ↗</a></div>
-            </div>
-            <div class="ask-ai-card">
-              <strong>Tanya Asisten AI Langsung</strong>
-              <small>Ketik pertanyaan lengkap dan tekan Enter</small>
-              <button type="button" id="search-ask-button" class="button-primary button-small">Tanya</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="search-foot">
-          <span>↑↓ navigasi</span><span>⏎ pilih hasil</span><span>esc tutup</span><span class="grow"></span><span>&bull; SAPA Knowledge Graph v2.4</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-jadwal" hidden></div>
-    <div class="modal-overlay" id="modal-krs" hidden></div>
-    <div class="modal-overlay" id="modal-sidang" hidden></div>
-    <div class="modal-overlay" id="modal-administrasi" hidden></div>
 
     <div class="popover" id="popover-profile" hidden></div>
-    <div class="popover popover-notif" id="popover-notification" hidden></div>
 
     <script type="module" src="./app.js"></script>
   </body>
