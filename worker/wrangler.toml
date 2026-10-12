@@ -1,0 +1,14 @@
+name = "sapa-upi-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Model bisa diganti tanpa ubah kode. Lihat https://ai.google.dev/gemini-api/docs/models
+# gemini-3.5-flash-lite = paling hemat kuota, gemini-3.8-flash = jawaban lebih bagus.
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+# Origin yang boleh memanggil API ini (dipisah koma).
+ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
+
+# GEMINI_API_KEY TIDAK ditulis di sini — simpan sebagai secret:
+#   npx wrangler secret put GEMINI_API_KEY

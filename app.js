@@ -1,6 +1,7 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { createChatResponse } from "./lib/chat-engine.js";
 import { student } from "./data/student-data.js";
+import { API_URL } from "./config.js";
 
 const SPARKLE_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6Z"/></svg>';
@@ -75,7 +76,7 @@ const elements =
         chatInputBottom: el("chat-input-bottom"),
       };
 
-let responseTimer = null;
+let latestRequestId = 0;
 let chatStarted = false;
 
 function createElement(tag, className, html) {
@@ -193,11 +194,16 @@ function removeProcessing() {
 }
 
 function renderAnswerBody(response, body) {
-  body.innerHTML = `<div class="bot-label-row"><strong>SAPA AI Academic Hub</strong><span class="pill pill-soft">${CHECK_ICON}Jawaban Resmi Terverifikasi AI RAG UPI</span></div>`;
+  const badge = response.generated
+    ? `<span class="pill pill-soft">${CHECK_ICON}Dijawab AI &bull; dirujuk ke Pedoman</span>`
+    : `<span class="pill pill-muted">Mode offline &bull; pencocokan kata kunci</span>`;
+  body.innerHTML = `<div class="bot-label-row"><strong>SAPA AI Academic Hub</strong>${badge}</div>`;
 
   const card = createElement("div", "answer-card");
   const entry = response.entry;
-  card.innerHTML = `<p>${entry?.lead ?? response.message}</p>`;
+  const prose = response.generated ? response.message : entry?.lead ?? response.message;
+  card.innerHTML = `<p></p>`;
+  card.querySelector("p").textContent = prose;
 
   if (entry?.table) {
     const wrap = createElement("div", "answer-table-wrap");
@@ -225,7 +231,9 @@ function renderAnswerBody(response, body) {
     card.append(wrap);
   }
 
-  if (entry?.closing) card.insertAdjacentHTML("beforeend", `<p>${entry.closing}</p>`);
+  if (!response.generated && entry?.closing) {
+    card.insertAdjacentHTML("beforeend", `<p>${entry.closing}</p>`);
+  }
   body.append(card);
 
   if (entry) renderSourceRow(entry, body);
@@ -312,26 +320,59 @@ function appendBotResponse(response) {
   scrollChat();
 }
 
-function submitQuestion(rawQuestion) {
+/** Ask the Worker, which grounds Gemini on the knowledge base. */
+async function askBackend(question) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+
+  const data = await response.json();
+  return {
+    type: "answer",
+    generated: true,
+    message: data.answer,
+    entry: data.entry,
+    followUpQuestions: data.followUps ?? [],
+  };
+}
+
+async function submitQuestion(rawQuestion) {
   const question = String(rawQuestion ?? "").trim();
   if (!question) return;
 
+  const requestId = ++latestRequestId;
   enterChatState();
-  clearTimeout(responseTimer);
   removeProcessing();
   appendUserMessage(question);
   elements.chatInput.value = "";
   elements.chatInputBottom.value = "";
   showProcessing();
 
-  responseTimer = window.setTimeout(() => {
-    removeProcessing();
-    appendBotResponse(createChatResponse(question, knowledgeBase));
-  }, 900);
+  let response;
+  if (API_URL) {
+    try {
+      response = await askBackend(question);
+    } catch (error) {
+      // Quota habis, Worker mati, atau offline — jatuh ke mesin lokal.
+      console.warn("Backend tidak tersedia, pakai pencocokan lokal:", error);
+    }
+  }
+  if (!response) {
+    response = createChatResponse(question, knowledgeBase);
+  }
+
+  // A newer question was asked while this one was in flight.
+  if (requestId !== latestRequestId) return;
+
+  removeProcessing();
+  appendBotResponse(response);
 }
 
 function resetConversation() {
-  clearTimeout(responseTimer);
+  latestRequestId += 1; // drop any in-flight answer
   elements.chatLog.replaceChildren();
   chatStarted = false;
   elements.homeScroll.hidden = false;
