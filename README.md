@@ -70,7 +70,7 @@ Diatur di `worker/wrangler.toml`:
 
 | Variabel | Fungsi |
 | --- | --- |
-| `GEMINI_MODEL` | Model yang dipakai. Default `gemini-3.5-flash-lite` (hemat kuota). Ganti ke `gemini-3.8-flash` kalau mau jawaban lebih bagus. |
+| `GEMINI_MODEL` | Model yang dipakai. Default `gemini-3.5-flash-lite`. `gemini-3.8-flash` sempat dicoba dan ditolak dengan *"project has exceeded a quota"* pada akun free tier ini, jadi jangan diganti tanpa menaikkan tier dulu. |
 | `ALLOWED_ORIGINS` | Daftar origin yang boleh memanggil API, dipisah koma. Wajib diisi origin GitHub Pages kamu. |
 | `GEMINI_API_KEY` | **Secret**, bukan var. Diisi lewat `wrangler secret put`. |
 
@@ -136,6 +136,7 @@ Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/
 - Endpoint Worker belum dibatasi rate limit. Untuk demo publik yang ramai, aktifkan *Rate limiting rules* di dashboard Cloudflare.
 - **Kuota Gemini free tier: 15 permintaan per menit.** Lewat dari itu, Worker membalas 502 dan aplikasi jatuh ke mode offline. Untuk demo di kelas berisi puluhan mahasiswa yang bertanya bersamaan, ini batas yang akan kena duluan — bukan biaya, bukan kecepatan.
 - Worker tidak punya lokasi keluar yang tetap, sehingga sebagian permintaan ditolak Gemini dengan *"User location is not supported"*. Permintaan seperti itu dicoba ulang otomatis; yang tetap gagal jatuh ke mode offline.
+- Model gratis kadang membalas *"currently experiencing high load"* atau menggantung sampai lebih dari satu menit. Batas waktu menahan ini di 24 detik pada Worker dan 15 detik pada browser, lalu jawaban diambil dari pencocokan lokal. Artinya saat Google sedang padat, demo tetap menjawab tetapi dalam mode offline.
 
 ## Struktur proyek
 
