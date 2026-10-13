@@ -56,8 +56,8 @@ test("hub carries the SAPA UPI brand identity", () => {
   }
 });
 
-test("hub greets the student and offers four quick-access question shortcuts", () => {
-  assert.match(html, /Halo, <span class="accent">Rizky Pratama/);
+test("hub welcomes anyone and offers four quick-access question shortcuts", () => {
+  assert.match(html, /Selamat datang di <span class="accent">SAPA UPI/);
   assert.match(app, /QUICK_CARDS/);
   for (const title of ["Jadwal Kuliah", "Perkuliahan & KRS", "Sidang & Skripsi", "Administrasi"]) {
     assert.ok(app.includes(title), `missing quick card: ${title}`);
@@ -100,4 +100,15 @@ test("sidang answer renders as a data table with pass/fail status", () => {
   assert.match(app, /status-ok/);
   const kb = app; // table markup lives in app.js render logic
   assert.match(kb, /entry\.table/);
+});
+
+test("the hub is anonymous: no fabricated signed-in student anywhere", () => {
+  // The prototype has no login, so it must not imply a signed-in identity.
+  for (const leak of ["Rizky Pratama", "2304068", "NIM:", "profile-trigger", "topbar-avatar", "popover-profile"]) {
+    assert.ok(!html.includes(leak), `page still implies a signed-in user: ${leak}`);
+    assert.ok(!app.includes(leak), `app.js still implies a signed-in user: ${leak}`);
+  }
+
+  assert.ok(!app.includes("student-data"), "student-data.js was removed; nothing should import it");
+  assert.match(html, /Mode anonim/);
 });

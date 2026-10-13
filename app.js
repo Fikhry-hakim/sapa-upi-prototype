@@ -1,6 +1,5 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { createChatResponse } from "./lib/chat-engine.js";
-import { student } from "./data/student-data.js";
 import { API_URL } from "./config.js";
 
 const SPARKLE_ICON =
@@ -62,9 +61,6 @@ const elements =
         sidebarClose: el("sidebar-close"),
         sidebarBackdrop: el("sidebar-backdrop"),
         resetChat: el("reset-chat"),
-        profileTrigger: el("profile-trigger"),
-        topbarAvatar: el("topbar-avatar"),
-        popoverProfile: el("popover-profile"),
         homeScroll: el("home-scroll"),
         chatLog: el("chat-log"),
         quickCards: el("quick-cards"),
@@ -388,29 +384,6 @@ function resetConversation() {
    PROFILE POPOVER
 ============================================================ */
 
-function toggleProfilePopover() {
-  const willOpen = elements.popoverProfile.hidden;
-  elements.popoverProfile.hidden = true;
-  if (!willOpen) return;
-
-  elements.popoverProfile.innerHTML = `
-    <div class="profile-pop-head">
-      <span class="profile-avatar">RP</span>
-      <div><strong>${student.name} <span class="pill pill-muted">Sem. 8</span></strong><small>NIM ${student.nim}</small><small>${student.program} &bull; ${student.faculty}</small></div>
-    </div>
-    <div class="profile-pop-stats">
-      <div><span>IPK KUMULATIF</span><strong>${student.gpa} / 4.00</strong><small style="color:var(--ink-400)">${student.gpaPredicate}</small></div>
-      <div><span>BEBAN SKS</span><strong>${student.sksCompleted} / ${student.sksTotal} SKS</strong></div>
-    </div>
-    <div class="profile-pop-list">
-      <button type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c1.4-3.4 4-5 7-5s5.6 1.6 7 5"/></svg>Profil &amp; Pengaturan Akun</button>
-      <button type="button"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v4h4"/></svg>SIAKAD &amp; SPOT Sync <span class="pill pill-muted" style="margin-left:auto">Terhubung</span></button>
-      <button type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>Bantuan &amp; Panduan Sistem</button>
-    </div>
-  `;
-  elements.popoverProfile.hidden = false;
-}
-
 /* ============================================================
    INIT
 ============================================================ */
@@ -458,29 +431,8 @@ function initialize() {
   elements.sidebarBackdrop.addEventListener("click", closeSidebar);
   elements.resetChat.addEventListener("click", resetConversation);
 
-  for (const trigger of [elements.profileTrigger, elements.topbarAvatar]) {
-    trigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleProfilePopover();
-    });
-  }
-
-  document.addEventListener("click", (event) => {
-    if (
-      !elements.popoverProfile.hidden &&
-      !elements.popoverProfile.contains(event.target) &&
-      !elements.profileTrigger.contains(event.target) &&
-      !elements.topbarAvatar.contains(event.target)
-    ) {
-      elements.popoverProfile.hidden = true;
-    }
-  });
-
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeSidebar();
-      elements.popoverProfile.hidden = true;
-    }
+    if (event.key === "Escape") closeSidebar();
   });
 }
 
