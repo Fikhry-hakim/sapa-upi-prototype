@@ -10,6 +10,7 @@ import {
   askGemini,
   isRetryable,
   MAX_ATTEMPTS,
+  TOTAL_BUDGET_MS,
 } from "../worker/src/gemini.js";
 
 const sidang = knowledgeBase.find((entry) => entry.id === "sidang-pendaftaran");
@@ -182,4 +183,62 @@ test("a quota error is surfaced immediately rather than spending more of it", as
     /Gemini 429/,
   );
   assert.equal(attempts, 1);
+});
+
+test("retrying stops once the time budget is spent, rather than stalling the answer", async () => {
+  // A throttled model answered in 101s once, long enough that the question
+  // looked like it had hung. Retries must never add up to that again.
+  let attempts = 0;
+  let clock = 0;
+  const slowAndBlocked = async () => {
+    attempts += 1;
+    clock += TOTAL_BUDGET_MS; // one attempt eats the whole budget
+    return {
+      ok: false,
+      status: 400,
+      text: async () => '{"error":{"message":"User location is not supported for the API use."}}',
+    };
+  };
+
+  await assert.rejects(
+    () =>
+      askGemini({
+        question: "x",
+        entries: [],
+        apiKey: "k",
+        model: "m",
+        fetchImpl: slowAndBlocked,
+        sleep: noSleep,
+        now: () => clock,
+      }),
+    /location is not supported/,
+  );
+  assert.equal(attempts, 1, "no second attempt once the budget is gone");
+});
+
+test("an attempt that times out is retried rather than failing the question", async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    if (attempts === 1) throw new Error("The operation was aborted due to timeout");
+    return {
+      ok: true,
+      json: async () => ({
+        steps: [{ type: "model_output", content: [{ type: "text", text: "Jawaban." }] }],
+      }),
+    };
+  };
+
+  const answer = await askGemini({
+    question: "x",
+    entries: [],
+    apiKey: "k",
+    model: "m",
+    fetchImpl,
+    sleep: noSleep,
+    now: () => 0,
+  });
+
+  assert.equal(answer, "Jawaban.");
+  assert.equal(attempts, 2);
 });

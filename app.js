@@ -317,11 +317,19 @@ function appendBotResponse(response) {
 }
 
 /** Ask the Worker, which grounds Gemini on the knowledge base. */
+/**
+ * How long to wait for a grounded answer before answering locally instead.
+ * A slow or throttled model must not leave the question hanging: the offline
+ * matcher has an answer ready, and says so in its badge.
+ */
+const BACKEND_TIMEOUT_MS = 15_000;
+
 async function askBackend(question) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ question }),
+    signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
 

@@ -50,6 +50,12 @@ export function extractText(payload) {
 export const MAX_ATTEMPTS = 3;
 export const RETRY_DELAY_MS = 250;
 
+/** Cap on one call to Gemini. A throttled model can otherwise stall for minutes. */
+export const ATTEMPT_TIMEOUT_MS = 9_000;
+
+/** Cap on all attempts together, so retrying never costs more than answering. */
+export const TOTAL_BUDGET_MS = 24_000;
+
 /**
  * Whether another attempt could plausibly succeed.
  *
@@ -71,22 +77,36 @@ export async function askGemini({
   model,
   fetchImpl = fetch,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  now = Date.now,
 }) {
+  const startedAt = now();
+  const body = JSON.stringify({
+    model,
+    system_instruction: SYSTEM_INSTRUCTION,
+    input: buildInput(question, entries),
+  });
+
   let lastError;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-    const response = await fetchImpl(GEMINI_URL, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": apiKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        system_instruction: SYSTEM_INSTRUCTION,
-        input: buildInput(question, entries),
-      }),
-    });
+    let response;
+    try {
+      response = await fetchImpl(GEMINI_URL, {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": apiKey,
+          "content-type": "application/json",
+        },
+        body,
+        signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
+      });
+    } catch (error) {
+      // A timed-out or aborted attempt is worth another go, within the budget.
+      lastError = new Error(`Gemini request failed: ${error.message}`);
+      if (attempt === MAX_ATTEMPTS || now() - startedAt >= TOTAL_BUDGET_MS) throw lastError;
+      await sleep(RETRY_DELAY_MS * attempt);
+      continue;
+    }
 
     if (response.ok) {
       const payload = await response.json();
@@ -98,7 +118,13 @@ export async function askGemini({
     const detail = await response.text().catch(() => "");
     lastError = new Error(`Gemini ${response.status}: ${detail.slice(0, 300)}`);
 
-    if (attempt === MAX_ATTEMPTS || !isRetryable(response.status, detail)) throw lastError;
+    if (
+      attempt === MAX_ATTEMPTS ||
+      !isRetryable(response.status, detail) ||
+      now() - startedAt >= TOTAL_BUDGET_MS
+    ) {
+      throw lastError;
+    }
     await sleep(RETRY_DELAY_MS * attempt);
   }
 
