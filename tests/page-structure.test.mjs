@@ -120,3 +120,47 @@ test("an offline answer renders the guidance points, not just lead and closing",
   assert.match(app, /answer-points/);
   assert.match(css, /\.answer-points\s*\{/);
 });
+
+test("every button either does something or says why it cannot", () => {
+  // The complaint this guards against: controls that look live and do nothing.
+  // A button must be submit, be handled by id in app.js, or declare itself
+  // unavailable so clicking it explains instead of failing silently.
+  const buttons = [...html.matchAll(/<button\b([^>]*)>/g)].map((m) => m[1]);
+  assert.ok(buttons.length > 10, "expected the page to have buttons to check");
+
+  const unhandled = [];
+  for (const attrs of buttons) {
+    const id = (attrs.match(/id="([^"]+)"/) ?? [])[1];
+    const isSubmit = /type="submit"/.test(attrs);
+    const declaresUnavailable = /data-unavailable=/.test(attrs);
+    const handledById = id && app.includes(`el("${id}")`);
+
+    if (!isSubmit && !declaresUnavailable && !handledById) {
+      unhandled.push(id ?? attrs.trim().slice(0, 60));
+    }
+  }
+
+  assert.deepEqual(unhandled, [], `buttons with no behaviour: ${unhandled.join(", ")}`);
+});
+
+test("the saved-question count is read from storage, not written into the page", () => {
+  // It used to read "Pertanyaan tersimpan (4)" with nothing saved.
+  assert.ok(!/Pertanyaan tersimpan \(\d/.test(html), "count must not be hardcoded");
+  assert.match(html, /data-saved-count/);
+  assert.match(app, /refreshSavedCount/);
+});
+
+test("the processing card does not claim checks the prototype never performs", () => {
+  // It previously reported "Dit-Akademik & SIAKAD terverifikasi" and a model
+  // called UPI-LLM-RAG-v4, neither of which exists.
+  for (const invention of ["SIAKAD terverifikasi", "UPI-LLM-RAG", "Matriks Jawaban"]) {
+    assert.ok(!app.includes(invention), `processing card still claims: ${invention}`);
+  }
+});
+
+test("sidebar search ranks with the same scorer that answers the question", () => {
+  // A sidebar that disagreed with the answer about which topic a question
+  // belongs to would be worse than no sidebar search at all.
+  assert.match(app, /import \{ searchKnowledgeBase \} from "\.\/lib\/search\.js"/);
+  assert.match(app, /renderSearchResults/);
+});

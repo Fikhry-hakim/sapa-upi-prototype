@@ -1,5 +1,6 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { createChatResponse } from "./lib/chat-engine.js";
+import { searchKnowledgeBase } from "./lib/search.js";
 import { API_URL } from "./config.js";
 
 const SPARKLE_ICON =
@@ -70,10 +71,29 @@ const elements =
         deepSearchToggleBottom: el("deep-search-toggle-bottom"),
         chatFormBottom: el("chat-form-bottom"),
         chatInputBottom: el("chat-input-bottom"),
+        sidebarSearch: el("sidebar-search"),
+        searchResults: el("search-results"),
+        navChat: el("nav-chat"),
+        modelChip: el("model-chip"),
+        shareButton: el("share-button"),
+        overflowButton: el("overflow-button"),
+        voiceButton: el("voice-button"),
+        savedButton: el("saved-button"),
+        savedButtonBottom: el("saved-button-bottom"),
+        popoverModel: el("popover-model"),
+        popoverOverflow: el("popover-overflow"),
+        popoverSaved: el("popover-saved"),
+        toast: el("toast"),
       };
 
 let latestRequestId = 0;
 let chatStarted = false;
+
+/** Whether the last answer came from the model; null before the first question. */
+let lastAnswerWasGenerated = null;
+
+/** The question the last answer belongs to, so it can be saved from the answer. */
+let lastQuestion = "";
 
 function createElement(tag, className, html) {
   const node = document.createElement(tag);
@@ -171,14 +191,14 @@ function showProcessing() {
   body.innerHTML = `
     <div class="bot-label-row"><strong>SAPA AI Academic Hub</strong><span class="pill pill-soft">RETRIEVAL AUGMENTED GENERATION</span></div>
     <div class="processing-card">
-      <p class="processing-title">SAPA sedang mengekstrak &amp; memvalidasi Pedoman Akademik UPI...</p>
+      <p class="processing-title">Mencari rujukan yang sesuai di pedoman contoh...</p>
       <div class="processing-steps">
-        <span class="step-done">${CHECK_ICON}Dit-Akademik &amp; SIAKAD terverifikasi</span>
-        <span class="step-done">${CHECK_ICON}Merinci Pedoman Terkait</span>
-        <span>${CLOCK_ICON}Menyusun Matriks Jawaban</span>
+        <span class="step-done">${CHECK_ICON}Mencocokkan pertanyaan</span>
+        <span class="step-done">${CHECK_ICON}Memilih rujukan pedoman</span>
+        <span>${CLOCK_ICON}Menyusun jawaban</span>
       </div>
       <div class="skeleton-lines"><span style="width:100%"></span><span style="width:88%"></span><span style="width:64%"></span></div>
-      <div class="processing-footer"><i class="dot dot-live"></i><span>SAPA sedang memformulasikan jawaban akademik...</span><span class="grow"></span><span>Model: UPI-LLM-RAG-v4</span></div>
+      <div class="processing-footer"><i class="dot dot-live"></i><span>Menyusun jawaban dari rujukan yang ditemukan...</span><span class="grow"></span><span>Gemini via Worker</span></div>
     </div>
   `;
   elements.chatLog.append(article);
@@ -318,12 +338,22 @@ function renderFallbackBody(response, body) {
   body.append(card);
 }
 
+/** Lets the reader keep the question that produced this answer. */
+function renderSaveQuestion(question, body) {
+  const button = createElement("button", "save-question");
+  button.type = "button";
+  button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 3.8Z"/></svg><span>Simpan pertanyaan</span>`;
+  button.addEventListener("click", () => saveQuestion(question));
+  body.append(button);
+}
+
 function appendBotResponse(response) {
   const { article, body } = createBotArticle();
   if (response.type === "answer") renderAnswerBody(response, body);
   else if (response.type === "suggestions") renderSuggestionsBody(response, body);
   else if (response.type === "fallback") renderFallbackBody(response, body);
   else body.innerHTML = `<div class="answer-card"><p>${response.message}</p></div>`;
+  if (lastQuestion) renderSaveQuestion(lastQuestion, body);
   elements.chatLog.append(article);
   scrollChat();
 }
@@ -384,6 +414,8 @@ async function submitQuestion(rawQuestion) {
   if (requestId !== latestRequestId) return;
 
   removeProcessing();
+  lastAnswerWasGenerated = Boolean(response.generated);
+  lastQuestion = question;
   appendBotResponse(response);
 }
 
@@ -396,13 +428,377 @@ function resetConversation() {
   elements.chatFormBottom.hidden = true;
   elements.chatInput.value = "";
   elements.chatInputBottom.value = "";
-  elements.popoverProfile.hidden = true;
+  closeAllPopovers();
   closeSidebar();
 }
 
 /* ============================================================
    PROFILE POPOVER
 ============================================================ */
+
+/* ============================================================
+   TOAST
+============================================================ */
+
+let toastTimer;
+
+/** Brief, non-blocking feedback. Nothing important lives only here. */
+function showToast(message) {
+  clearTimeout(toastTimer);
+  elements.toast.textContent = message;
+  elements.toast.hidden = false;
+  // restart the entrance animation even if a toast is already showing
+  elements.toast.classList.remove("is-visible");
+  void elements.toast.offsetWidth;
+  elements.toast.classList.add("is-visible");
+  toastTimer = setTimeout(() => {
+    elements.toast.classList.remove("is-visible");
+    toastTimer = setTimeout(() => (elements.toast.hidden = true), 200);
+  }, 2600);
+}
+
+/* ============================================================
+   POPOVERS
+============================================================ */
+
+const popovers = () => [
+  [elements.popoverModel, elements.modelChip],
+  [elements.popoverOverflow, elements.overflowButton],
+  [elements.popoverSaved, elements.savedButton, elements.savedButtonBottom],
+];
+
+function closeAllPopovers() {
+  for (const [popover, ...triggers] of popovers()) {
+    popover.hidden = true;
+    for (const trigger of triggers) trigger?.setAttribute("aria-expanded", "false");
+  }
+}
+
+/** Opens one popover and closes the rest, or closes it if it was already open. */
+function togglePopover(popover, trigger, render) {
+  const wasOpen = !popover.hidden;
+  closeAllPopovers();
+  if (wasOpen) return;
+
+  render();
+  popover.hidden = false;
+  trigger.setAttribute("aria-expanded", "true");
+
+  // Anchor under the trigger on the trigger's own side, kept on screen.
+  const rect = trigger.getBoundingClientRect();
+  const width = popover.offsetWidth || 300;
+  const margin = 12;
+
+  popover.style.right = "auto";
+  const left = Math.min(
+    Math.max(margin, rect.left),
+    Math.max(margin, window.innerWidth - width - margin),
+  );
+  popover.style.left = `${left}px`;
+
+  const below = rect.bottom + 8;
+  const maxTop = window.innerHeight - popover.offsetHeight - margin;
+  popover.style.top = `${Math.max(margin, Math.min(below, maxTop))}px`;
+}
+
+/* ============================================================
+   SAVED QUESTIONS
+============================================================ */
+
+const SAVED_KEY = "sapa-upi:saved-questions";
+const MAX_SAVED = 20;
+
+/** Stored per browser. Reading can throw in private mode, so never assume it works. */
+function readSaved() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((q) => typeof q === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSaved(questions) {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(questions.slice(0, MAX_SAVED)));
+  } catch {
+    showToast("Browser menolak menyimpan. Coba matikan mode penyamaran.");
+  }
+  refreshSavedCount();
+}
+
+function refreshSavedCount() {
+  const count = readSaved().length;
+  for (const span of document.querySelectorAll("[data-saved-count]")) {
+    span.textContent = String(count);
+  }
+}
+
+function saveQuestion(question) {
+  const saved = readSaved();
+  if (saved.includes(question)) {
+    showToast("Pertanyaan ini sudah tersimpan.");
+    return;
+  }
+  writeSaved([question, ...saved]);
+  showToast("Pertanyaan disimpan.");
+}
+
+function renderSavedPopover() {
+  const saved = readSaved();
+  elements.popoverSaved.replaceChildren();
+
+  const head = createElement("div", "popover-head");
+  head.textContent = saved.length ? "Pertanyaan tersimpan" : "Belum ada pertanyaan tersimpan";
+  elements.popoverSaved.append(head);
+
+  if (!saved.length) {
+    const hint = createElement("p", "popover-empty");
+    hint.textContent = "Simpan pertanyaan lewat tombol di bawah setiap jawaban.";
+    elements.popoverSaved.append(hint);
+    return;
+  }
+
+  const list = createElement("div", "popover-list");
+  for (const question of saved) {
+    const row = createElement("div", "popover-row");
+
+    const ask = createElement("button", "popover-row-main");
+    ask.type = "button";
+    ask.textContent = question;
+    ask.addEventListener("click", () => {
+      closeAllPopovers();
+      submitQuestion(question);
+    });
+
+    const remove = createElement("button", "popover-row-remove");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Hapus "${question}"`);
+    remove.textContent = "\u00d7";
+    remove.addEventListener("click", () => {
+      writeSaved(readSaved().filter((q) => q !== question));
+      renderSavedPopover();
+    });
+
+    row.append(ask, remove);
+    list.append(row);
+  }
+  elements.popoverSaved.append(list);
+}
+
+/* ============================================================
+   SIDEBAR SEARCH
+============================================================ */
+
+function renderSearchResults(query) {
+  const results = elements.searchResults;
+  results.replaceChildren();
+
+  const trimmed = query.trim();
+  if (trimmed.length < 2) {
+    results.hidden = true;
+    elements.sidebarSearch.setAttribute("aria-expanded", "false");
+    return;
+  }
+
+  // Ranked by the same scorer the assistant answers with, so the sidebar and
+  // the answer never disagree about which topic a question belongs to.
+  const found = searchKnowledgeBase(trimmed, knowledgeBase);
+  const entries = [found.best, ...found.alternatives]
+    .filter(Boolean)
+    .map(({ entry }) => entry)
+    .filter((entry, index, all) => all.findIndex((e) => e.id === entry.id) === index)
+    .slice(0, 5);
+
+  if (!entries.length) {
+    const empty = createElement("li", "search-empty");
+    empty.textContent = "Tidak ada panduan yang cocok.";
+    results.append(empty);
+  }
+
+  for (const entry of entries) {
+    const item = createElement("li");
+    const button = createElement("button", "search-result");
+    button.type = "button";
+    button.setAttribute("role", "option");
+    button.innerHTML = `<strong></strong><small></small>`;
+    button.querySelector("strong").textContent = entry.title;
+    button.querySelector("small").textContent = entry.category;
+    button.addEventListener("click", () => {
+      elements.sidebarSearch.value = "";
+      renderSearchResults("");
+      closeSidebar();
+      submitQuestion(entry.questions[0]);
+    });
+    item.append(button);
+    results.append(item);
+  }
+
+  results.hidden = false;
+  elements.sidebarSearch.setAttribute("aria-expanded", "true");
+}
+
+/* ============================================================
+   VOICE INPUT
+============================================================ */
+
+const SpeechRecognition =
+  typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+let recognition = null;
+
+function stopVoice() {
+  recognition?.stop();
+  recognition = null;
+  elements.voiceButton.setAttribute("aria-pressed", "false");
+}
+
+function toggleVoice() {
+  if (recognition) {
+    stopVoice();
+    return;
+  }
+  if (!SpeechRecognition) {
+    showToast("Browser ini tidak mendukung input suara. Coba Chrome.");
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "id-ID";
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.addEventListener("result", (event) => {
+    const transcript = [...event.results].map((r) => r[0].transcript).join("");
+    elements.chatInput.value = transcript;
+    resizeTextarea(elements.chatInput);
+  });
+  recognition.addEventListener("error", (event) => {
+    showToast(
+      event.error === "not-allowed"
+        ? "Akses mikrofon ditolak."
+        : "Input suara gagal. Coba lagi.",
+    );
+    stopVoice();
+  });
+  recognition.addEventListener("end", stopVoice);
+
+  recognition.start();
+  elements.voiceButton.setAttribute("aria-pressed", "true");
+  showToast("Mendengarkan... bicara sekarang.");
+}
+
+/* ============================================================
+   TOPBAR ACTIONS
+============================================================ */
+
+/**
+ * The clipboard API is refused without a trusted gesture, in insecure contexts
+ * and under some permission settings, so fall back to the old selection trick
+ * and, failing that, hand the text over for the reader to copy by hand.
+ */
+async function copyText(text, successMessage) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMessage);
+    return;
+  } catch {
+    // fall through
+  }
+
+  const scratch = document.createElement("textarea");
+  scratch.value = text;
+  scratch.setAttribute("readonly", "");
+  scratch.style.position = "fixed";
+  scratch.style.opacity = "0";
+  document.body.append(scratch);
+  scratch.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  scratch.remove();
+
+  if (copied) showToast(successMessage);
+  else window.prompt("Salin manual dengan Cmd/Ctrl+C:", text);
+}
+
+function conversationTranscript() {
+  const lines = [];
+  for (const message of elements.chatLog.querySelectorAll(".message")) {
+    const who = message.classList.contains("bot-message") ? "SAPA UPI" : "Mahasiswa";
+    const text = message.innerText.replace(/\s*\n\s*/g, "\n").trim();
+    if (text) lines.push(`${who}:\n${text}`);
+  }
+  return lines.join("\n\n");
+}
+
+function renderModelPopover() {
+  const mode = lastAnswerWasGenerated
+    ? "Jawaban terakhir disusun model, dibatasi rujukan pedoman."
+    : lastAnswerWasGenerated === false
+      ? "Jawaban terakhir dari pencocokan kata kunci lokal (mode offline)."
+      : "Belum ada pertanyaan pada sesi ini.";
+
+  elements.popoverModel.replaceChildren();
+  const head = createElement("div", "popover-head");
+  head.textContent = "Dari mana jawabannya";
+  const body = createElement("div", "popover-body");
+  body.innerHTML = `
+    <p></p>
+    <dl class="popover-facts">
+      <dt>Model</dt><dd>Gemini (gemini-3.5-flash-lite)</dd>
+      <dt>Rujukan</dt><dd>Knowledge base contoh, bukan dokumen resmi UPI</dd>
+      <dt>Cadangan</dt><dd>Pencocokan kata kunci di browser bila model tak terjangkau</dd>
+    </dl>
+  `;
+  body.querySelector("p").textContent = mode;
+  elements.popoverModel.append(head, body);
+}
+
+function renderOverflowPopover() {
+  elements.popoverOverflow.replaceChildren();
+  const list = createElement("div", "popover-list");
+
+  const actions = [
+    [
+      "Salin transkrip percakapan",
+      () => {
+        const transcript = conversationTranscript();
+        if (!transcript) {
+          showToast("Belum ada percakapan untuk disalin.");
+          return;
+        }
+        copyText(transcript, "Transkrip disalin.");
+      },
+    ],
+    [
+      "Mulai percakapan baru",
+      () => {
+        if (!chatStarted) {
+          showToast("Percakapan sudah kosong.");
+          return;
+        }
+        resetConversation();
+      },
+    ],
+  ];
+
+  for (const [label, action] of actions) {
+    const button = createElement("button", "popover-row-main");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      closeAllPopovers();
+      action();
+    });
+    list.append(button);
+  }
+  elements.popoverOverflow.append(list);
+}
 
 /* ============================================================
    INIT
@@ -451,9 +847,63 @@ function initialize() {
   elements.sidebarBackdrop.addEventListener("click", closeSidebar);
   elements.resetChat.addEventListener("click", resetConversation);
 
-  window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeSidebar();
+  // Chat Workspace is the only destination, so it just returns you to it.
+  elements.navChat.addEventListener("click", closeSidebar);
+
+  elements.sidebarSearch.addEventListener("input", (event) =>
+    renderSearchResults(event.target.value),
+  );
+  elements.sidebarSearch.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      elements.sidebarSearch.value = "";
+      renderSearchResults("");
+    }
   });
+
+  elements.shareButton.addEventListener("click", () =>
+    copyText(window.location.href, "Tautan disalin."),
+  );
+
+  elements.voiceButton.addEventListener("click", toggleVoice);
+
+  elements.modelChip.addEventListener("click", (event) => {
+    event.stopPropagation();
+    togglePopover(elements.popoverModel, elements.modelChip, renderModelPopover);
+  });
+  elements.overflowButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    togglePopover(elements.popoverOverflow, elements.overflowButton, renderOverflowPopover);
+  });
+  for (const trigger of [elements.savedButton, elements.savedButtonBottom]) {
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      togglePopover(elements.popoverSaved, trigger, renderSavedPopover);
+    });
+  }
+
+  // Controls the prototype cannot honestly provide say so instead of doing nothing.
+  for (const button of document.querySelectorAll('[data-unavailable="lampiran"]')) {
+    button.addEventListener("click", () =>
+      showToast("Unggah berkas belum tersedia — butuh integrasi SIAKAD."),
+    );
+  }
+
+  document.addEventListener("click", (event) => {
+    const insidePopover = event.target.closest(".popover");
+    if (!insidePopover) closeAllPopovers();
+    if (!event.target.closest(".sidebar-search") && !event.target.closest(".search-results")) {
+      elements.searchResults.hidden = true;
+    }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeSidebar();
+    closeAllPopovers();
+    stopVoice();
+  });
+
+  refreshSavedCount();
 }
 
 if (typeof document !== "undefined") initialize();
