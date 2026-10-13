@@ -10,7 +10,8 @@ Prototipe asisten informasi akademik untuk Program Studi Bisnis Digital. Mahasis
 Browser (GitHub Pages)
    │  POST { question }
    ▼
-Cloudflare Worker  ──► retrieval dari knowledge-base.js (pencocokan kata kunci)
+Cloudflare Worker  ──► knowledge base dari D1 (sapa-upi-kb)
+   │                └─► retrieval: IDF + stemming + cakupan pertanyaan
    │                └─► Gemini menyusun jawaban, dibatasi konteks hasil retrieval
    ▼
 { answer, entry, followUps }
@@ -85,7 +86,45 @@ Tiga lapis pengaman supaya model tidak mengarang:
 
 ## Menambah topik
 
-Tambahkan entri baru di `data/knowledge-base.js`. Setiap entri butuh `questions`, `keywords`, `answer`, metadata sumber, dan `followUps`. Retrieval dan LLM langsung memakainya tanpa perubahan kode lain.
+Knowledge base tinggal di **D1** (`sapa-upi-kb`), bukan di dalam kode, jadi menambah topik **tidak perlu deploy**:
+
+```bash
+cd worker
+npx wrangler d1 execute sapa-upi-kb --remote --command "
+  INSERT INTO entries (id, category, title, answer, lead, closing,
+    source_title, source_owner, valid_period, updated_at, source_url, escalation)
+  VALUES ('id-topik', 'Kategori', 'Judul', 'Jawaban ringkas.', 'Pembuka:', 'Penutup.',
+    'Nama Dokumen', 'Pemilik Dokumen', 'Semester Ganjil 2026/2027', '13 Oktober 2026',
+    'https://...', 'Hubungi ... jika ...');
+"
+```
+
+Lalu isi daftar `questions`, `keywords`, `points`, dan `follow_up` di tabel `entry_lists`. Perubahan terbaca dalam waktu paling lama satu menit (lihat `CACHE_TTL_MS`).
+
+Topik lama tidak perlu dihapus saat pedoman berganti — set `active = 0` supaya berhenti dipakai menjawab tetapi riwayatnya tetap ada.
+
+`data/knowledge-base.js` tetap ada sebagai dua hal: **benih** awal isi D1, dan **cadangan offline** yang dipakai browser kalau Worker tidak terjangkau. Isinya tidak ikut berubah saat kamu menambah topik di D1, jadi jawaban mode offline bisa tertinggal dari yang terbaru.
+
+### Menyiapkan ulang basis data
+
+```bash
+cd worker
+npx wrangler d1 execute sapa-upi-kb --remote --file=schema.sql
+node seed.mjs > seed.sql
+npx wrangler d1 execute sapa-upi-kb --remote --file=seed.sql
+```
+
+`seed.sql` dihasilkan dari `data/knowledge-base.js`, jadi jangan dijalankan kalau di D1 sudah ada topik yang ditambahkan manual — perintah itu menimpa setiap entri yang namanya sama.
+
+## Cara retrieval memilih entri
+
+Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/search.js` untuk menghindarinya:
+
+- **IDF** — kata yang muncul di banyak entri (`tugas`, `akhir`) berbobot lebih kecil daripada kata yang membedakan (`sidang`, `yudisium`).
+- **Satu hitungan per field** — entri tidak bisa naik peringkat hanya karena mengulang satu kata di beberapa contoh pertanyaan.
+- **Istilah majemuk** — "tugas akhir" dihitung satu konsep, bukan dua kata, supaya tidak mengalahkan kata lain hanya karena lebih panjang.
+- **Stemming imbuhan** — "persyaratan pendaftaran" di dokumen bertemu "syarat daftar" yang diketik mahasiswa.
+- **Cakupan pertanyaan** — entri yang menjawab seluruh pertanyaan menang atas entri yang hanya cocok di satu kata.
 
 ## Batasan prototipe
 
@@ -105,15 +144,18 @@ Tambahkan entri baru di `data/knowledge-base.js`. Setiap entri butuh `questions`
 ├── app.js
 ├── config.js              # alamat Worker
 ├── data/
-│   ├── knowledge-base.js  # sumber jawaban
+│   ├── knowledge-base.js  # benih D1 + cadangan offline
 │   └── student-data.js    # profil mahasiswa (contoh)
 ├── lib/
 │   ├── chat-engine.js     # fallback offline
 │   └── search.js          # skoring retrieval
 ├── worker/
 │   ├── wrangler.toml
+│   ├── schema.sql         # skema D1
+│   ├── seed.mjs           # knowledge-base.js -> SQL
 │   └── src/
 │       ├── index.js       # HTTP, CORS, validasi
+│       ├── knowledge-store.js  # baca knowledge base dari D1
 │       └── gemini.js      # prompt & parsing respons
 └── tests/
 ```

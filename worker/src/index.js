@@ -1,6 +1,7 @@
-import { knowledgeBase } from "../../data/knowledge-base.js";
+import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base.js";
 import { searchKnowledgeBase } from "../../lib/search.js";
 import { askGemini } from "./gemini.js";
+import { loadKnowledgeBase } from "./knowledge-store.js";
 
 const MAX_QUESTION_LENGTH = 300;
 const MAX_CONTEXT_ENTRIES = 3;
@@ -24,7 +25,7 @@ function json(body, { status = 200, headers = {} } = {}) {
 }
 
 /** Top entries the question actually relates to, used as grounding context. */
-function retrieve(question) {
+function retrieve(question, knowledgeBase) {
   const result = searchKnowledgeBase(question, knowledgeBase);
   if (result.status === "empty" || result.status === "none") return [];
   const ranked = [result.best, ...result.alternatives].filter(Boolean);
@@ -60,7 +61,8 @@ export default {
       return json({ error: "GEMINI_API_KEY belum diset" }, { status: 503, headers: cors });
     }
 
-    const entries = retrieve(question);
+    const knowledgeBase = await loadKnowledgeBase(env.sapa_upi_kb, bundledKnowledgeBase);
+    const entries = retrieve(question, knowledgeBase);
 
     try {
       const answer = await askGemini({

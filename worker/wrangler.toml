@@ -12,3 +12,10 @@ ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
 
 # GEMINI_API_KEY TIDAK ditulis di sini — simpan sebagai secret:
 #   npx wrangler secret put GEMINI_API_KEY
+
+# Knowledge base. The Worker falls back to the copy bundled at deploy time if
+# this is unreachable or empty, so a database outage does not silence answers.
+[[d1_databases]]
+binding = "sapa_upi_kb"
+database_name = "sapa-upi-kb"
+database_id = "18387e08-06a8-4015-9c3c-9b1c54baaf8c"
