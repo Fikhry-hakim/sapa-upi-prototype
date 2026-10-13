@@ -8,6 +8,8 @@ import {
   buildInput,
   extractText,
   askGemini,
+  isRetryable,
+  MAX_ATTEMPTS,
 } from "../worker/src/gemini.js";
 
 const sidang = knowledgeBase.find((entry) => entry.id === "sidang-pendaftaran");
@@ -109,4 +111,75 @@ test("askGemini rejects when the model returns no usable text", async () => {
     () => askGemini({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl: empty }),
     /no text/,
   );
+});
+
+const noSleep = async () => {};
+
+test("a region Gemini does not serve is retried, a bad request is not", () => {
+  // Workers have no fixed egress, so this 400 is luck of the draw, not a bug
+  // in the request — unlike a malformed body or an exhausted quota.
+  assert.ok(isRetryable(400, '{"error":{"message":"User location is not supported for the API use."}}'));
+  assert.ok(isRetryable(503, "upstream unavailable"));
+  assert.ok(!isRetryable(400, '{"error":{"message":"Invalid JSON payload"}}'));
+  assert.ok(!isRetryable(429, "quota habis"));
+});
+
+test("askGemini retries past an unsupported-location response and answers", async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    if (attempts === 1) {
+      return {
+        ok: false,
+        status: 400,
+        text: async () => '{"error":{"message":"User location is not supported for the API use."}}',
+      };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        steps: [{ type: "model_output", content: [{ type: "text", text: "Jawaban." }] }],
+      }),
+    };
+  };
+
+  const answer = await askGemini({
+    question: "x",
+    entries: [],
+    apiKey: "k",
+    model: "m",
+    fetchImpl,
+    sleep: noSleep,
+  });
+
+  assert.equal(answer, "Jawaban.");
+  assert.equal(attempts, 2);
+});
+
+test("askGemini gives up after a bounded number of attempts", async () => {
+  let attempts = 0;
+  const alwaysBlocked = async () => {
+    attempts += 1;
+    return { ok: false, status: 503, text: async () => "upstream unavailable" };
+  };
+
+  await assert.rejects(
+    () => askGemini({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl: alwaysBlocked, sleep: noSleep }),
+    /Gemini 503/,
+  );
+  assert.equal(attempts, MAX_ATTEMPTS, "must not retry forever");
+});
+
+test("a quota error is surfaced immediately rather than spending more of it", async () => {
+  let attempts = 0;
+  const overQuota = async () => {
+    attempts += 1;
+    return { ok: false, status: 429, text: async () => "quota habis" };
+  };
+
+  await assert.rejects(
+    () => askGemini({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl: overQuota, sleep: noSleep }),
+    /Gemini 429/,
+  );
+  assert.equal(attempts, 1);
 });

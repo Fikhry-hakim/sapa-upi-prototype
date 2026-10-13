@@ -47,27 +47,60 @@ export function extractText(payload) {
     .trim();
 }
 
-export async function askGemini({ question, entries, apiKey, model, fetchImpl = fetch }) {
-  const response = await fetchImpl(GEMINI_URL, {
-    method: "POST",
-    headers: {
-      "x-goog-api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      system_instruction: SYSTEM_INSTRUCTION,
-      input: buildInput(question, entries),
-    }),
-  });
+export const MAX_ATTEMPTS = 3;
+export const RETRY_DELAY_MS = 250;
 
-  if (!response.ok) {
+/**
+ * Whether another attempt could plausibly succeed.
+ *
+ * A Worker has no fixed egress location, so some requests leave from a region
+ * Gemini does not serve and come back 400 "User location is not supported"
+ * while the next one succeeds. That is worth retrying; a bad request or an
+ * exhausted quota is not, and retrying those would only burn quota.
+ */
+export function isRetryable(status, detail = "") {
+  if (status >= 500) return true;
+  if (status === 400 && /location is not supported/i.test(detail)) return true;
+  return false;
+}
+
+export async function askGemini({
+  question,
+  entries,
+  apiKey,
+  model,
+  fetchImpl = fetch,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+}) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetchImpl(GEMINI_URL, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        system_instruction: SYSTEM_INSTRUCTION,
+        input: buildInput(question, entries),
+      }),
+    });
+
+    if (response.ok) {
+      const payload = await response.json();
+      const text = extractText(payload);
+      if (!text) throw new Error("Gemini returned no text");
+      return text;
+    }
+
     const detail = await response.text().catch(() => "");
-    throw new Error(`Gemini ${response.status}: ${detail.slice(0, 300)}`);
+    lastError = new Error(`Gemini ${response.status}: ${detail.slice(0, 300)}`);
+
+    if (attempt === MAX_ATTEMPTS || !isRetryable(response.status, detail)) throw lastError;
+    await sleep(RETRY_DELAY_MS * attempt);
   }
 
-  const payload = await response.json();
-  const text = extractText(payload);
-  if (!text) throw new Error("Gemini returned no text");
-  return text;
+  throw lastError;
 }

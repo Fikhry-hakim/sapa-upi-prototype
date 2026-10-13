@@ -134,6 +134,8 @@ Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/
 - Retrieval memakai pencocokan kata kunci, belum pencarian semantik (*embedding*).
 - Jawaban belum melalui evaluasi tenaga akademik dan tidak dapat dijadikan keputusan resmi.
 - Endpoint Worker belum dibatasi rate limit. Untuk demo publik yang ramai, aktifkan *Rate limiting rules* di dashboard Cloudflare.
+- **Kuota Gemini free tier: 15 permintaan per menit.** Lewat dari itu, Worker membalas 502 dan aplikasi jatuh ke mode offline. Untuk demo di kelas berisi puluhan mahasiswa yang bertanya bersamaan, ini batas yang akan kena duluan — bukan biaya, bukan kecepatan.
+- Worker tidak punya lokasi keluar yang tetap, sehingga sebagian permintaan ditolak Gemini dengan *"User location is not supported"*. Permintaan seperti itu dicoba ulang otomatis; yang tetap gagal jatuh ke mode offline.
 
 ## Struktur proyek
 
