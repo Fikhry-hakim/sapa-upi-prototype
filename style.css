@@ -931,6 +931,16 @@ h1, h2, h3 {
   margin-top: 10px;
 }
 
+.answer-points {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-900);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 
 
 .answer-table-wrap {

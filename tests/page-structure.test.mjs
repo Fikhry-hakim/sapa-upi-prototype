@@ -112,3 +112,11 @@ test("the hub is anonymous: no fabricated signed-in student anywhere", () => {
   assert.ok(!app.includes("student-data"), "student-data.js was removed; nothing should import it");
   assert.match(html, /Mode anonim/);
 });
+
+test("an offline answer renders the guidance points, not just lead and closing", () => {
+  // Offline, entry.lead only introduces the answer; dropping entry.points left
+  // the card saying "Berikut ketentuan utama..." and nothing else.
+  assert.match(app, /!response\.generated && entry\?\.points/);
+  assert.match(app, /answer-points/);
+  assert.match(css, /\.answer-points\s*\{/);
+});

@@ -201,6 +201,18 @@ function renderAnswerBody(response, body) {
   card.innerHTML = `<p></p>`;
   card.querySelector("p").textContent = prose;
 
+  // Offline, the lead is only an introduction — the points carry the actual
+  // guidance. A generated answer already states them in its own prose.
+  if (!response.generated && entry?.points?.length) {
+    const list = createElement("ul", "answer-points");
+    for (const point of entry.points) {
+      const item = document.createElement("li");
+      item.textContent = point;
+      list.append(item);
+    }
+    card.append(list);
+  }
+
   if (entry?.table) {
     const wrap = createElement("div", "answer-table-wrap");
     const rowsHtml = entry.table.rows
