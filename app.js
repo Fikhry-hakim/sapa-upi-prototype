@@ -433,8 +433,10 @@ async function submitQuestion(rawQuestion) {
       console.warn("Backend tidak tersedia, pakai pencocokan lokal:", error);
     }
   }
+  let answeredLocally = false;
   if (!response) {
     response = createChatResponse(question, knowledgeBase);
+    answeredLocally = true;
   }
 
   // A newer question was asked while this one was in flight.
@@ -445,7 +447,49 @@ async function submitQuestion(rawQuestion) {
   lastQuestion = question;
   appendBotResponse(response);
 
+  // The server records what it answers itself. An answer produced here never
+  // reached it, so without this the history loses every exchange that happened
+  // while the model was unreachable.
+  if (answeredLocally) await recordLocalAnswer(question, response);
+
   if (account) refreshHistory();
+}
+
+/** Text of a locally produced answer, as the reader saw it. */
+function answerText(response) {
+  if (response.type === "answer") {
+    const parts = [response.entry?.lead ?? response.message];
+    for (const point of response.entry?.points ?? []) parts.push(`- ${point}`);
+    if (response.entry?.closing) parts.push(response.entry.closing);
+    return parts.filter(Boolean).join("\n");
+  }
+  return response.message ?? "";
+}
+
+async function recordLocalAnswer(question, response) {
+  if (!account || !API_URL) return;
+  const answer = answerText(response);
+  if (!answer) return;
+
+  try {
+    const result = await fetch(`${API_URL}/conversations/record`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...authHeaders() },
+      body: JSON.stringify({
+        conversationId,
+        question,
+        answer,
+        entryId: response.entry?.id ?? null,
+      }),
+      signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+    });
+    if (!result.ok) throw new Error(`record ${result.status}`);
+    const data = await result.json();
+    if (data.conversationId) conversationId = data.conversationId;
+  } catch (error) {
+    // Losing the history entry must not disturb the answer already on screen.
+    console.warn("Tidak bisa menyimpan percakapan offline:", error);
+  }
 }
 
 function resetConversation() {

@@ -12,6 +12,7 @@ import {
 } from "./history.js";
 
 const MAX_QUESTION_LENGTH = 300;
+const MAX_ANSWER_LENGTH = 4000;
 const MAX_CONTEXT_ENTRIES = 3;
 
 function corsHeaders(request, env) {
@@ -179,6 +180,38 @@ async function handleConversations(request, env, cors, path) {
   const db = env.sapa_upi_kb;
   const user = await authenticate(db, request);
   if (!user) return json({ error: "Perlu masuk" }, { status: 401, headers: cors });
+
+  // An answer the browser produced locally, because the model was unreachable.
+  // Without this the history would quietly lose every exchange that happened
+  // while Gemini was down. The reader is recording what they were shown, into
+  // their own history and nobody else's; answer_source marks it as offline so
+  // it is never mistaken for something the model wrote.
+  if (path === "/conversations/record" && request.method === "POST") {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
+    }
+
+    const question = String(body.question ?? "").trim();
+    const answer = String(body.answer ?? "").trim();
+    if (!question || !answer) {
+      return json({ error: "Pertanyaan dan jawaban wajib diisi" }, { status: 400, headers: cors });
+    }
+    if (question.length > MAX_QUESTION_LENGTH || answer.length > MAX_ANSWER_LENGTH) {
+      return json({ error: "Isi terlalu panjang" }, { status: 413, headers: cors });
+    }
+
+    const conversationId = await recordExchange(db, user, {
+      conversationId: body.conversationId ?? null,
+      question,
+      answer,
+      entryId: body.entryId ?? null,
+      source: "offline",
+    });
+    return json({ conversationId }, { headers: cors });
+  }
 
   const id = path.slice("/conversations/".length);
 

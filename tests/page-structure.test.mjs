@@ -207,3 +207,11 @@ test("startup wiring lives in initialize, not in whatever function matched a pat
   const writeSaved = app.slice(app.indexOf("function writeSaved("), app.indexOf("function refreshSavedCount("));
   assert.ok(!writeSaved.includes("addEventListener"), "writeSaved must not register listeners");
 });
+
+test("a locally answered question still reaches the history", () => {
+  // The browser must send what it answered itself, or the record has holes
+  // exactly when the model is flaky.
+  assert.match(app, /recordLocalAnswer/);
+  assert.match(app, /conversations\/record/);
+  assert.match(app, /answeredLocally/);
+});

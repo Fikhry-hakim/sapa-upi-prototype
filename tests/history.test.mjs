@@ -121,3 +121,21 @@ test("a new conversation stores both turns and what grounded the answer", async 
   assert.ok(assistant.bindings.includes("sidang-syarat-skripsi"));
   assert.ok(assistant.bindings.includes("llm"));
 });
+
+test("an offline answer is recorded as offline, not as something the model wrote", async () => {
+  // Gemini being unreachable used to mean the exchange was simply lost: the
+  // Worker answered 502 and recorded nothing, while the reader still got an
+  // answer from local matching.
+  const db = fakeDb({ first: null });
+
+  await recordExchange(db, user, {
+    question: "Apa syarat mengambil skripsi?",
+    answer: "Minimal 110 SKS dengan IPK 2,50.",
+    entryId: "skripsi-syarat-mengambil",
+    source: "offline",
+  });
+
+  const assistant = db.calls.find((call) => call.sql.includes("'assistant'"));
+  assert.ok(assistant.bindings.includes("offline"), "the source must say where it came from");
+  assert.ok(assistant.bindings.includes("skripsi-syarat-mengambil"));
+});
