@@ -84,6 +84,14 @@ const elements =
         popoverOverflow: el("popover-overflow"),
         popoverSaved: el("popover-saved"),
         toast: el("toast"),
+        sidebarHistory: el("sidebar-history"),
+        historyList: el("history-list"),
+        accountNote: el("account-note"),
+        loginButton: el("login-button"),
+        accountSignedIn: el("account-signed-in"),
+        accountName: el("account-name"),
+        accountEmail: el("account-email"),
+        logoutButton: el("logout-button"),
       };
 
 let latestRequestId = 0;
@@ -94,6 +102,12 @@ let lastAnswerWasGenerated = null;
 
 /** The question the last answer belongs to, so it can be saved from the answer. */
 let lastQuestion = "";
+
+/** Signed-in reader, or null. Only used to store and show their own history. */
+let account = null;
+
+/** The conversation this session is appending to, assigned by the server. */
+let conversationId = null;
 
 function createElement(tag, className, html) {
   const node = document.createElement(tag);
@@ -234,28 +248,37 @@ function renderAnswerBody(response, body) {
   }
 
   if (entry?.table) {
+    // Rendered from the knowledge base exactly as written, with as many columns
+    // as the table actually has. Nothing here reflects the reader's own record:
+    // there is no SIAKAD integration, so no cell may claim to know their status.
     const wrap = createElement("div", "answer-table-wrap");
-    const rowsHtml = entry.table.rows
-      .map((row) => {
-        const [name, standard, status] = row;
-        const isDone = /terpenuhi|terverifikasi/i.test(status);
-        return `<tr><td>${name}</td><td>${standard}</td><td>${
-          isDone
-            ? `<span class="status-ok">${CHECK_ICON}${status}</span>`
-            : `<span class="status-pending">${CLOCK_ICON}${status}</span>`
-        }</td></tr>`;
-      })
-      .join("");
-    wrap.innerHTML = `
-      <div class="answer-table-head">
-        <strong><span class="num">1</span>${entry.table.title}</strong>
-        <small>Auto-checked: ${formatTime()} WIB</small>
-      </div>
-      <table class="data-table">
-        <thead><tr>${entry.table.columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    `;
+    const head = createElement("div", "answer-table-head");
+    head.innerHTML = `<strong><span class="num">1</span></strong>`;
+    head.querySelector("strong").append(entry.table.title);
+
+    const table = createElement("table", "data-table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    for (const column of entry.table.columns) {
+      const th = document.createElement("th");
+      th.textContent = column;
+      headRow.append(th);
+    }
+    thead.append(headRow);
+
+    const tbody = document.createElement("tbody");
+    for (const row of entry.table.rows) {
+      const tr = document.createElement("tr");
+      for (const cell of row) {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.append(td);
+      }
+      tbody.append(tr);
+    }
+
+    table.append(thead, tbody);
+    wrap.append(head, table);
     card.append(wrap);
   }
 
@@ -370,13 +393,16 @@ const BACKEND_TIMEOUT_MS = 15_000;
 async function askBackend(question) {
   const response = await fetch(API_URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question }),
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ question, conversationId }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
 
   const data = await response.json();
+  // The server decides which conversation this belongs to; it is the only
+  // thing about the reader that comes back, and it never changes the answer.
+  if (data.conversationId) conversationId = data.conversationId;
   return {
     type: "answer",
     generated: true,
@@ -418,6 +444,8 @@ async function submitQuestion(rawQuestion) {
   lastAnswerWasGenerated = Boolean(response.generated);
   lastQuestion = question;
   appendBotResponse(response);
+
+  if (account) refreshHistory();
 }
 
 function resetConversation() {
@@ -429,6 +457,7 @@ function resetConversation() {
   elements.chatFormBottom.hidden = true;
   elements.chatInput.value = "";
   elements.chatInputBottom.value = "";
+  conversationId = null;
   closeAllPopovers();
   closeSidebar();
 }
@@ -525,7 +554,15 @@ function writeSaved(questions) {
   } catch {
     showToast("Browser menolak menyimpan. Coba matikan mode penyamaran.");
   }
+  elements.loginButton.addEventListener("click", startLogin);
+  elements.logoutButton.addEventListener("click", logout);
+
   refreshSavedCount();
+
+  captureTokenFromUrl();
+  sessionToken = sessionToken ?? readStoredToken();
+  renderAccount();
+  loadAccount();
 }
 
 function refreshSavedCount() {
@@ -799,6 +836,194 @@ function renderOverflowPopover() {
     list.append(button);
   }
   elements.popoverOverflow.append(list);
+}
+
+/* ============================================================
+   AKUN & RIWAYAT
+============================================================ */
+
+const TOKEN_KEY = "sapa-upi:session";
+
+function readStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* penyimpanan ditolak; sesi hanya bertahan selama halaman terbuka */
+  }
+}
+
+let sessionToken = null;
+
+function authHeaders() {
+  return sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {};
+}
+
+/** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
+function captureTokenFromUrl() {
+  if (!window.location.hash.startsWith("#token=")) return;
+  const token = decodeURIComponent(window.location.hash.slice("#token=".length));
+  if (token) {
+    sessionToken = token;
+    storeToken(token);
+  }
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
+function renderAccount() {
+  const signedIn = Boolean(account);
+
+  elements.loginButton.hidden = signedIn || !loginEnabled;
+  elements.accountSignedIn.hidden = !signedIn;
+  elements.sidebarHistory.hidden = !signedIn;
+
+  elements.accountNote.textContent = signedIn
+    ? "Riwayat percakapan hanya terlihat oleh kamu."
+    : loginEnabled
+      ? "Masuk untuk menyimpan riwayat percakapan. Jawaban sama saja tanpa masuk."
+      : "Jawaban dirujuk ke pedoman prodi dan UPI; keputusan resmi tetap pada program studi.";
+
+  if (signedIn) {
+    elements.accountName.textContent = account.name || account.email;
+    elements.accountEmail.textContent = account.role
+      ? `${account.email} \u00b7 ${account.role}`
+      : account.email;
+  }
+}
+
+let loginEnabled = false;
+
+async function loadAccount() {
+  if (!API_URL) return;
+  try {
+    const response = await fetch(`${API_URL}/auth/me`, { headers: authHeaders() });
+    if (!response.ok) throw new Error(`auth/me ${response.status}`);
+    const data = await response.json();
+    loginEnabled = Boolean(data.loginEnabled);
+    account = data.user ?? null;
+    if (!account) {
+      sessionToken = null;
+      storeToken(null);
+    }
+  } catch (error) {
+    console.warn("Tidak bisa memeriksa sesi:", error);
+    account = null;
+  }
+  renderAccount();
+  if (account) refreshHistory();
+}
+
+async function refreshHistory() {
+  if (!account) return;
+  try {
+    const response = await fetch(`${API_URL}/conversations`, { headers: authHeaders() });
+    if (!response.ok) return;
+    const { conversations = [] } = await response.json();
+    renderHistory(conversations);
+  } catch (error) {
+    console.warn("Tidak bisa memuat riwayat:", error);
+  }
+}
+
+function renderHistory(conversations) {
+  elements.historyList.replaceChildren();
+
+  if (!conversations.length) {
+    const empty = createElement("li", "history-empty");
+    empty.textContent = "Belum ada percakapan tersimpan.";
+    elements.historyList.append(empty);
+    return;
+  }
+
+  for (const conversation of conversations) {
+    const item = createElement("li", "history-item");
+
+    const open = createElement("button", "history-open");
+    open.type = "button";
+    open.textContent = conversation.title;
+    open.addEventListener("click", () => openConversation(conversation.id));
+
+    const remove = createElement("button", "history-remove");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Hapus "${conversation.title}"`);
+    remove.textContent = "\u00d7";
+    remove.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await fetch(`${API_URL}/conversations/${conversation.id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (conversationId === conversation.id) conversationId = null;
+      showToast("Percakapan dihapus.");
+      refreshHistory();
+    });
+
+    item.append(open, remove);
+    elements.historyList.append(item);
+  }
+}
+
+async function openConversation(id) {
+  try {
+    const response = await fetch(`${API_URL}/conversations/${id}`, { headers: authHeaders() });
+    if (!response.ok) {
+      showToast("Percakapan tidak ditemukan.");
+      return;
+    }
+    const { conversation } = await response.json();
+
+    latestRequestId += 1; // batalkan jawaban yang masih dalam perjalanan
+    elements.chatLog.replaceChildren();
+    enterChatState();
+    conversationId = conversation.id;
+
+    for (const message of conversation.messages) {
+      if (message.role === "user") {
+        appendUserMessage(message.content);
+      } else {
+        lastQuestion = "";
+        appendBotResponse({
+          type: "answer",
+          generated: message.answer_source === "llm",
+          message: message.content,
+          entry: knowledgeBase.find((entry) => entry.id === message.entry_id) ?? null,
+          followUpQuestions: [],
+        });
+      }
+    }
+    closeSidebar();
+  } catch (error) {
+    console.warn("Tidak bisa membuka percakapan:", error);
+    showToast("Gagal membuka percakapan.");
+  }
+}
+
+function startLogin() {
+  const back = encodeURIComponent(window.location.href.split("#")[0]);
+  window.location.href = `${API_URL}/auth/start?redirect_to=${back}`;
+}
+
+async function logout() {
+  try {
+    await fetch(`${API_URL}/auth/logout`, { method: "POST", headers: authHeaders() });
+  } catch {
+    /* sesi tetap dibuang dari sisi browser */
+  }
+  sessionToken = null;
+  storeToken(null);
+  account = null;
+  conversationId = null;
+  elements.historyList.replaceChildren();
+  renderAccount();
+  showToast("Kamu sudah keluar.");
 }
 
 /* ============================================================

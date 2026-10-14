@@ -95,22 +95,42 @@ test("sidebar navigation exposes an off-canvas toggle for small screens", () => 
   assert.match(css, /\.sidebar\.is-open/);
 });
 
-test("sidang answer renders as a data table with pass/fail status", () => {
+test("a knowledge-base table renders as data, with its own columns", () => {
+  // It used to render a pass/fail column reporting the reader's own SIAKAD
+  // status. Nothing knows that, so the table is now just the pedoman's own.
   assert.match(app, /data-table/);
-  assert.match(app, /status-ok/);
-  const kb = app; // table markup lives in app.js render logic
-  assert.match(kb, /entry\.table/);
+  assert.match(app, /entry\.table/);
+  assert.match(app, /entry\.table\.columns/);
+  assert.ok(!app.includes("status-ok"), "no cell may report a per-student status");
 });
 
-test("the hub is anonymous: no fabricated signed-in student anywhere", () => {
-  // The prototype has no login, so it must not imply a signed-in identity.
+test("identity comes from signing in, never from fabricated data", () => {
+  // There is a login now, but the page must still never invent a student.
   for (const leak of ["Rizky Pratama", "2304068", "NIM:", "profile-trigger", "topbar-avatar", "popover-profile"]) {
     assert.ok(!html.includes(leak), `page still implies a signed-in user: ${leak}`);
     assert.ok(!app.includes(leak), `app.js still implies a signed-in user: ${leak}`);
   }
 
   assert.ok(!app.includes("student-data"), "student-data.js was removed; nothing should import it");
-  assert.match(html, /Mode anonim/);
+
+  // The name and email shown are filled in from /auth/me, not written into the page.
+  assert.match(html, /id="account-name"><\/strong>/);
+  assert.match(html, /id="account-email"><\/small>/);
+  assert.match(app, /auth\/me/);
+});
+
+test("no answer claims to know the reader's own academic record", () => {
+  // There is no SIAKAD integration, so nothing may report "your" SKS, GPA or
+  // document status. A table that did would be the most convincing lie here.
+  assert.ok(!kb.includes("STATUS BERKAS ANDA"), "knowledge base claims a per-student status");
+  assert.ok(!kb.includes("SIAKAD)"), "knowledge base implies a SIAKAD lookup");
+  assert.ok(!app.includes("Auto-checked"), "the table header implied a live check that never runs");
+
+  // Table cells are rendered as written, with as many columns as the data has.
+  assert.ok(
+    !app.includes("const [name, standard, status] = row"),
+    "the renderer must not assume a status column",
+  );
 });
 
 test("an offline answer renders the guidance points, not just lead and closing", () => {

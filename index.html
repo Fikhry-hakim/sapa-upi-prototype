@@ -51,8 +51,23 @@
           </nav>
         </div>
 
+        <div class="sidebar-history" id="sidebar-history" hidden>
+          <p class="sidebar-history-head">Riwayat percakapan</p>
+          <ul class="history-list" id="history-list"></ul>
+        </div>
+
         <div class="sidebar-bottom">
-          <p class="sidebar-note">Mode anonim &mdash; tanpa login. Jawaban dirujuk ke pedoman prodi dan UPI; keputusan resmi tetap pada program studi.</p>
+          <div class="account-box" id="account-box">
+            <p class="sidebar-note" id="account-note">Jawaban dirujuk ke pedoman prodi dan UPI; keputusan resmi tetap pada program studi.</p>
+            <button type="button" class="account-button" id="login-button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.4-3.4 4-5 7-5s5.6 1.6 7 5"/></svg>
+              <span>Masuk dengan akun UPI</span>
+            </button>
+            <div class="account-signed-in" id="account-signed-in" hidden>
+              <span class="account-identity"><strong id="account-name"></strong><small id="account-email"></small></span>
+              <button type="button" class="account-logout" id="logout-button">Keluar</button>
+            </div>
+          </div>
         </div>
       </aside>
 

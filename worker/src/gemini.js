@@ -49,6 +49,9 @@ export function extractText(payload) {
     .trim();
 }
 
+/** Fixed so the same question decodes the same way for every reader. */
+export const ANSWER_SEED = 20261014;
+
 export const MAX_ATTEMPTS = 3;
 export const RETRY_DELAY_MS = 250;
 
@@ -86,6 +89,11 @@ export async function askGemini({
     model,
     system_instruction: SYSTEM_INSTRUCTION,
     input: buildInput(question, entries),
+    // The same question must not get a differently worded answer depending on
+    // who asked it. Nothing about the reader reaches the prompt, and a fixed
+    // seed keeps the decoding reproducible too. The provider does not promise
+    // this across model updates, so treat it as stability, not a guarantee.
+    generation_config: { seed: ANSWER_SEED },
   });
 
   let lastError;

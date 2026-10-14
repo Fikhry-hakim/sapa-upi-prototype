@@ -10,8 +10,19 @@ GEMINI_MODEL = "gemini-3.5-flash-lite"
 # Origin yang boleh memanggil API ini (dipisah koma).
 ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
 
-# GEMINI_API_KEY TIDAK ditulis di sini — simpan sebagai secret:
+# Masuk dengan akun Google. Client ID bukan rahasia; client secret adalah.
+# Kosongkan GOOGLE_CLIENT_ID untuk mematikan login sepenuhnya.
+GOOGLE_CLIENT_ID = ""
+OAUTH_REDIRECT_URI = "https://sapa-upi-api.sapa-upi.workers.dev/auth/callback"
+APP_URL = "https://fikhry-hakim.github.io/sapa-upi-prototype/"
+
+# Domain email yang boleh masuk, dipisah koma. Subdomain ikut diizinkan,
+# jadi "upi.edu" mencakup "student.upi.edu". Kosong berarti tanpa pembatasan.
+ALLOWED_EMAIL_DOMAINS = "upi.edu"
+
+# TIDAK ditulis di sini — simpan sebagai secret:
 #   npx wrangler secret put GEMINI_API_KEY
+#   npx wrangler secret put GOOGLE_CLIENT_SECRET
 
 # Knowledge base. The Worker falls back to the copy bundled at deploy time if
 # this is unreachable or empty, so a database outage does not silence answers.
