@@ -12,7 +12,7 @@ ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
 
 # Masuk dengan akun Google. Client ID bukan rahasia; client secret adalah.
 # Kosongkan GOOGLE_CLIENT_ID untuk mematikan login sepenuhnya.
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "812633226531-ho0jtb76imslpmtv6s92je3qb0ab1fkt.apps.googleusercontent.com"
 OAUTH_REDIRECT_URI = "https://sapa-upi-api.sapa-upi.workers.dev/auth/callback"
 APP_URL = "https://fikhry-hakim.github.io/sapa-upi-prototype/"
 
