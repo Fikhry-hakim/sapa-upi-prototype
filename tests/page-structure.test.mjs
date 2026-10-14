@@ -215,3 +215,16 @@ test("a locally answered question still reaches the history", () => {
   assert.match(app, /conversations\/record/);
   assert.match(app, /answeredLocally/);
 });
+
+test("the shell fills the viewport so the panes scroll, not the page", () => {
+  // Every level used min-height, so each grew to fit its content and the whole
+  // document scrolled — carrying the sidebar off the top with it.
+  assert.match(css, /\.app-shell\s*\{[^}]*height:\s*100vh/s);
+  assert.match(css, /body\s*\{[^}]*overflow:\s*hidden/s);
+  assert.ok(!/\.app-shell\s*\{[^}]*min-height:\s*100vh/s.test(css), "the shell must not grow past the viewport");
+  assert.ok(!/\.chat-main\s*\{[^}]*min-height:\s*100vh/s.test(css), "the chat column must not grow past the viewport");
+
+  // and the panes that hold content are the ones that scroll
+  assert.match(css, /\.chat-log\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(css, /\.sidebar\s*\{[^}]*overflow-y:\s*auto/s);
+});
