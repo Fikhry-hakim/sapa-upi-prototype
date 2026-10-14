@@ -899,7 +899,7 @@ function renderAccount() {
   }
 }
 
-let loginEnabled = false;
+let loginEnabled = Boolean(API_URL);
 
 async function loadAccount() {
   if (!API_URL) return;
@@ -914,6 +914,8 @@ async function loadAccount() {
       storeToken(null);
     }
   } catch (error) {
+    // A failed check must not hide the way in. The button stays, and the
+    // attempt to sign in will surface the real error rather than silence.
     console.warn("Tidak bisa memeriksa sesi:", error);
     account = null;
   }
