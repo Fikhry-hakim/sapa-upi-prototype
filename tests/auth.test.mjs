@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 import { bearerToken, can, hashToken, createToken } from "../worker/src/auth.js";
@@ -75,4 +76,18 @@ test("a conversation is titled from the question, trimmed but not mangled", () =
   const long = titleFrom("x".repeat(200));
   assert.ok(long.length <= 80);
   assert.ok(long.endsWith("…"));
+});
+
+test("CORS admits the session header and the methods the history needs", async () => {
+  // Login completed server-side while the browser could never read the session:
+  // the preflight allowed only content-type, so Authorization was refused, and
+  // only POST, so reading or deleting a conversation was refused too.
+  const source = await readFile(new URL("../worker/src/index.js", import.meta.url), "utf8");
+  const headers = source.match(/"Access-Control-Allow-Headers":\s*"([^"]+)"/)[1];
+  const methods = source.match(/"Access-Control-Allow-Methods":\s*"([^"]+)"/)[1];
+
+  assert.match(headers, /authorization/i, "the bearer token must survive the preflight");
+  for (const method of ["GET", "POST", "DELETE"]) {
+    assert.ok(methods.includes(method), `history needs ${method}`);
+  }
 });

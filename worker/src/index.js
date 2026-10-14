@@ -19,8 +19,10 @@ function corsHeaders(request, env) {
   const origin = request.headers.get("Origin") ?? "";
   return {
     "Access-Control-Allow-Origin": allowed.includes(origin) ? origin : allowed[0] ?? "",
-    "Access-Control-Allow-Headers": "content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    // The session travels in Authorization, so the preflight must allow it or
+    // the browser blocks every signed-in request before it is sent.
+    "Access-Control-Allow-Headers": "content-type, authorization",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     Vary: "Origin",
   };
 }
