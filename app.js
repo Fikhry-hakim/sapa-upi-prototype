@@ -312,6 +312,22 @@ function renderSourceRow(entry, body) {
     <dl class="source-meta">${fields.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
     <p class="escalation-text">Jika masih perlu dipastikan: ${entry.escalation}</p>
   `;
+
+  // Anyone can read the document the answer came from, signed in or not.
+  const openDoc = createElement("p", "source-open");
+  if (entry.sourceUrl) {
+    const link = document.createElement("a");
+    link.href = entry.sourceUrl;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>`;
+    link.append("Buka dokumen sumber");
+    openDoc.append(link);
+  } else {
+    openDoc.classList.add("source-open-missing");
+    openDoc.textContent = "Dokumen sumber belum dipublikasikan di sini.";
+  }
+  detail.append(openDoc);
   const pill = row.querySelector(".source-pill");
   pill.addEventListener("click", () => {
     detail.hidden = !detail.hidden;

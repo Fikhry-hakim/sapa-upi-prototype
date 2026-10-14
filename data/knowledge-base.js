@@ -17,6 +17,11 @@
  *
  * File ini berperan ganda: benih untuk D1 (lihat worker/seed.mjs) dan salinan
  * cadangan yang dipakai browser saat Worker tidak terjangkau.
+ *
+ * sourceUrl menunjuk ke berkas di folder dokumen/ supaya siapa pun bisa membaca
+ * sendiri dasar jawabannya. Dokumen S4 belum dipublikasikan karena berkas
+ * aslinya satu bundel dengan Perjanjian Kinerja Direktur dan Rektor, lengkap
+ * dengan tanda tangan dan NIP — itu bukan dokumen yang ditujukan ke mahasiswa.
  */
 
 const PEDOMAN_TA = {
@@ -25,6 +30,7 @@ const PEDOMAN_TA = {
   validPeriod: "Berlaku sejak April 2023",
   updatedAt: "April 2023",
   sourceRef: "Buku Panduan Penyelesaian Tugas Akhir, Prodi Bisnis Digital",
+  sourceUrl: "./dokumen/buku-panduan-tugas-akhir-bisnis-digital.pdf",
 };
 
 const PEDOMAN_KTI = {
@@ -33,6 +39,7 @@ const PEDOMAN_KTI = {
   validPeriod: "Edisi 2024",
   updatedAt: "2024",
   sourceRef: "Pedoman Penulisan Karya Ilmiah UPI Menuju WCU, Edisi 2024",
+  sourceUrl: "./dokumen/pedoman-penulisan-karya-ilmiah-upi-2024.pdf",
 };
 
 const PENGUMUMAN_SEMHAS = {
@@ -41,6 +48,7 @@ const PENGUMUMAN_SEMHAS = {
   validPeriod: "Pendaftaran 5–23 Oktober 2026",
   updatedAt: "5 Oktober 2026",
   sourceRef: "Nomor T-207/UN40.C3.4.4/PK.03.03/2026",
+  sourceUrl: "./dokumen/T-207-pengumuman-seminar-hasil-artikel.pdf",
 };
 
 const SURAT_KEWIRAUSAHAAN = {
@@ -49,6 +57,9 @@ const SURAT_KEWIRAUSAHAAN = {
   validPeriod: "Berlaku sejak 10 September 2025",
   updatedAt: "10 September 2025",
   sourceRef: "Nomor B-5577/UN40.C3.1/TA.07.02/2025, merujuk Edaran Direktur Nomor 5572 Tahun 2025",
+  // Belum dipublikasikan: berkas sumbernya satu bundel dengan Perjanjian
+  // Kinerja Direktur dan Rektor beserta tanda tangan dan NIP mereka.
+  sourceUrl: null,
 };
 
 export const knowledgeBase = [

@@ -62,3 +62,30 @@ test("knowledge base terminology does not use kanal", () => {
 
   assert.doesNotMatch(serialized, /kanal/i);
 });
+
+test("an entry either links its source document or is silent about it", async () => {
+  // Readers must be able to check the pedoman themselves, so every entry that
+  // cites a published document links to the file served with the site.
+  const { readFile } = await import("node:fs/promises");
+
+  for (const entry of knowledgeBase) {
+    if (entry.sourceUrl === null || entry.sourceUrl === undefined) continue;
+
+    assert.match(entry.sourceUrl, /^\.\/dokumen\/[\w.-]+\.pdf$/, `odd document path on ${entry.id}`);
+
+    const file = new URL(`../${entry.sourceUrl.slice(2)}`, import.meta.url);
+    await assert.doesNotReject(
+      () => readFile(file),
+      `${entry.id} points at a document that is not published: ${entry.sourceUrl}`,
+    );
+  }
+});
+
+test("documents are linked, never invented", () => {
+  // sourceUrl used to hold example.com links that went nowhere.
+  for (const entry of knowledgeBase) {
+    if (!entry.sourceUrl) continue;
+    assert.ok(!entry.sourceUrl.includes("example.com"), `${entry.id} links to a placeholder`);
+    assert.ok(!entry.sourceUrl.startsWith("http"), `${entry.id} should link the published copy`);
+  }
+});

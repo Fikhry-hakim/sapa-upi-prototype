@@ -29,7 +29,7 @@ for (const entry of knowledgeBase) {
     "",
     `DELETE FROM entry_lists WHERE entry_id = ${quote(entry.id)};`,
     `DELETE FROM entries WHERE id = ${quote(entry.id)};`,
-    "INSERT INTO entries (id, category, title, answer, lead, closing, source_title, source_owner, valid_period, updated_at, source_ref, escalation, table_json) VALUES (",
+    "INSERT INTO entries (id, category, title, answer, lead, closing, source_title, source_owner, valid_period, updated_at, source_ref, source_url, escalation, table_json) VALUES (",
     "  " +
       [
         entry.id,
@@ -43,6 +43,7 @@ for (const entry of knowledgeBase) {
         entry.validPeriod,
         entry.updatedAt,
         entry.sourceRef,
+        entry.sourceUrl,
         entry.escalation,
       ]
         .map(quote)

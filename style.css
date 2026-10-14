@@ -1816,3 +1816,31 @@ table.data-table tr:last-child td {
   color: var(--red-700);
   border-color: var(--red-500);
 }
+
+.source-open {
+  margin: 10px 0 0;
+}
+
+.source-open a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red-700);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.source-open a:hover {
+  text-decoration: underline;
+}
+
+.source-open svg {
+  width: 13px;
+  height: 13px;
+}
+
+.source-open-missing {
+  color: var(--ink-400);
+  font-size: 0.72rem;
+}

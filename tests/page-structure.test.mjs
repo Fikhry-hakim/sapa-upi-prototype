@@ -228,3 +228,11 @@ test("the shell fills the viewport so the panes scroll, not the page", () => {
   assert.match(css, /\.chat-log\s*\{[^}]*overflow-y:\s*auto/s);
   assert.match(css, /\.sidebar\s*\{[^}]*overflow-y:\s*auto/s);
 });
+
+test("the source panel opens the document, for anyone", () => {
+  // Reading the pedoman behind an answer must not require signing in.
+  assert.match(app, /Buka dokumen sumber/);
+  assert.match(app, /entry\.sourceUrl/);
+  assert.match(app, /Dokumen sumber belum dipublikasikan/);
+  assert.ok(!app.includes("account && entry.sourceUrl"), "the link must not depend on an account");
+});

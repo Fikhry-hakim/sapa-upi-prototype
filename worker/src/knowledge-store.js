@@ -54,6 +54,7 @@ export function assembleEntries(entryRows, listRows) {
       validPeriod: row.valid_period,
       updatedAt: row.updated_at,
       sourceRef: row.source_ref,
+      sourceUrl: row.source_url ?? null,
       escalation: row.escalation,
     };
 

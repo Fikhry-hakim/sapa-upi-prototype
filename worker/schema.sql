@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS entries (
   valid_period  TEXT NOT NULL,
   updated_at    TEXT NOT NULL,
   source_ref    TEXT NOT NULL,
+  -- tautan ke berkas yang dipublikasikan, boleh kosong kalau belum dipublikasikan
+  source_url    TEXT,
   escalation    TEXT NOT NULL,
 
   -- optional rendered table (e.g. sidang requirements), as JSON
