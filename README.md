@@ -76,6 +76,21 @@ Diatur di `worker/wrangler.toml`:
 
 Daftar model terbaru: https://ai.google.dev/gemini-api/docs/models — model lama seperti `gemini-2.0-flash` sudah dimatikan, jadi cek berkala kalau Worker tiba-tiba balas error.
 
+## Sumber jawaban
+
+Isi knowledge base diambil dari empat dokumen resmi:
+
+| Dokumen | Pemilik | Tanggal |
+| --- | --- | --- |
+| Buku Panduan Penyelesaian Tugas Akhir Mahasiswa | Tim Prodi Bisnis Digital, UPI Kampus Daerah Tasikmalaya | April 2023 |
+| Pedoman Penulisan Karya Ilmiah UPI Menuju WCU | Universitas Pendidikan Indonesia | Edisi 2024 |
+| Pengumuman Nomor T-207/UN40.C3.4.4/PK.03.03/2026 tentang Semhas Jalur Artikel | Ketua Prodi Bisnis Digital | 5 Oktober 2026 |
+| Surat Nomor B-5577/UN40.C3.1/TA.07.02/2025 tentang Imbauan Pelatihan Kewirausahaan | Wakil Direktur Bidang Pendidikan, Kampus UPI Tasikmalaya | 10 September 2025 |
+
+Angka, tanggal, dan nomor dokumen disalin dari sumbernya. Kalau sebuah ketentuan tidak tertulis di keempat dokumen itu, ia tidak ada di knowledge base — dan asisten akan menolak menjawabnya, bukan menebak.
+
+Dua dokumen di atas menyebut batas uji similaritas yang berbeda: Pedoman UPI 2024 menetapkan di bawah 25%, sementara Buku Panduan Prodi menyebut maksimal 35%. Asisten menyampaikan keduanya beserta dokumen asalnya, bukan memilih salah satu.
+
 ## Cara menjaga jawaban tetap berdasar
 
 Tiga lapis pengaman supaya model tidak mengarang:
@@ -128,11 +143,10 @@ Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/
 
 ## Batasan prototipe
 
-- Seluruh isi, tautan, dan metadata merupakan **data demonstrasi**, bukan dokumen resmi UPI.
-- Data mahasiswa (nama, NIM, IPK, SKS) adalah contoh yang di-hardcode.
+- Knowledge base memuat **kutipan dari empat dokumen resmi**, tetapi belum mencakup seluruh isi dokumen tersebut. Topik yang tidak ada di dalamnya akan ditolak, bukan dijawab.
 - Belum ada autentikasi, penyimpanan riwayat, maupun integrasi SIAKAD.
 - Retrieval memakai pencocokan kata kunci, belum pencarian semantik (*embedding*).
-- Jawaban belum melalui evaluasi tenaga akademik dan tidak dapat dijadikan keputusan resmi.
+- Jawaban belum melalui evaluasi tenaga akademik dan tidak dapat dijadikan keputusan resmi. Keputusan resmi tetap pada program studi.
 - Endpoint Worker belum dibatasi rate limit. Untuk demo publik yang ramai, aktifkan *Rate limiting rules* di dashboard Cloudflare.
 - **Kuota Gemini free tier: 15 permintaan per menit.** Lewat dari itu, Worker membalas 502 dan aplikasi jatuh ke mode offline. Untuk demo di kelas berisi puluhan mahasiswa yang bertanya bersamaan, ini batas yang akan kena duluan — bukan biaya, bukan kecepatan.
 - Worker tidak punya lokasi keluar yang tetap, sehingga sebagian permintaan ditolak Gemini dengan *"User location is not supported"*. Permintaan seperti itu dicoba ulang otomatis; yang tetap gagal jatuh ke mode offline.

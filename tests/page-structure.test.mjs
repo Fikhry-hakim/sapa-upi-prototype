@@ -59,7 +59,7 @@ test("hub carries the SAPA UPI brand identity", () => {
 test("hub welcomes anyone and offers four quick-access question shortcuts", () => {
   assert.match(html, /Selamat datang di <span class="accent">SAPA UPI/);
   assert.match(app, /QUICK_CARDS/);
-  for (const title of ["Jadwal Kuliah", "Perkuliahan & KRS", "Sidang & Skripsi", "Administrasi"]) {
+  for (const title of ["Jalur Tugas Akhir", "Seminar Proposal", "Sidang & Skripsi", "Penulisan Ilmiah"]) {
     assert.ok(app.includes(title), `missing quick card: ${title}`);
   }
 

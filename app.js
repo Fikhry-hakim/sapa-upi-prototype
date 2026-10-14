@@ -13,41 +13,41 @@ const QUICK_CARDS = [
     badgeClass: "badge-reguler",
     badgeText: "REGULER",
     icon: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',
-    title: "Jadwal Kuliah",
-    description: "Informasi jadwal perkuliahan, ruang, & dosen berjalan.",
+    title: "Jalur Tugas Akhir",
+    description: "Skripsi, artikel ilmiah, atau karya teknologi tepat guna.",
     footIcon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-    footText: "SIAKAD Aktif",
-    question: "Di mana saya dapat melihat jadwal kuliah?",
+    footText: "3 Jalur",
+    question: "Apa saja jalur penyelesaian tugas akhir?",
   },
   {
     badgeClass: "badge-revisi",
     badgeText: "MASA REVISI",
     icon: '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 12h6M10 15.5h6"/>',
-    title: "Perkuliahan & KRS",
-    description: "Ketentuan presensi, beban SKS & kontrak perkuliahan.",
+    title: "Seminar Proposal",
+    description: "Dokumen, alur pendaftaran, & ketentuan pelaksanaan.",
     footIcon: '<path d="M9 12.5 11 14.5l4-5"/><circle cx="12" cy="12" r="9"/>',
-    footText: "Maks 24 SKS",
-    question: "Berapa minimal kehadiran untuk mengikuti ujian?",
+    footText: "Map Kuning",
+    question: "Bagaimana cara mendaftar seminar proposal?",
   },
   {
     badgeClass: "badge-akhir",
     badgeText: "TINGKAT AKHIR",
     icon: '<path d="m2.5 9 9.5-4.5L21.5 9 12 13.5 2.5 9Z"/><path d="M6.5 11.2V16c3 2.2 8 2.2 11 0v-4.8M21.5 9v6"/>',
     title: "Sidang & Skripsi",
-    description: "Syarat dan alur pendaftaran sidang sarjana & seminar proposal.",
+    description: "Syarat pendaftaran ujian sidang & berkas yang diperlukan.",
     footIcon: '<path d="M7 3.5h8.5A1.5 1.5 0 0 1 17 5v16l-5-3-5 3V5A1.5 1.5 0 0 1 7 3.5Z"/>',
-    footText: "Alur SK Rektor",
+    footText: "TESOL 400",
     question: "Apa saja persyaratan pendaftaran sidang?",
   },
   {
     badgeClass: "badge-layanan",
     badgeText: "LAYANAN",
     icon: '<rect x="4.5" y="3.5" width="15" height="17" rx="2.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
-    title: "Administrasi",
-    description: "Cuti kuliah, surat izin aktif kuliah & berkas kemahasiswaan.",
+    title: "Penulisan Ilmiah",
+    description: "Format penulisan, uji similaritas, & penggunaan AI.",
     footIcon: '<path d="M8.5 12.5 15 5a3 3 0 0 1 4 4l-8.5 8.5a5 5 0 0 1-7-7L12 2"/>',
-    footText: "Format Resmi TU",
-    question: "Bagaimana cara mengajukan surat keterangan mahasiswa aktif?",
+    footText: "Pedoman 2024",
+    question: "Bagaimana format penulisan skripsi?",
   },
 ];
 
@@ -191,7 +191,7 @@ function showProcessing() {
   body.innerHTML = `
     <div class="bot-label-row"><strong>SAPA AI Academic Hub</strong><span class="pill pill-soft">RETRIEVAL AUGMENTED GENERATION</span></div>
     <div class="processing-card">
-      <p class="processing-title">Mencari rujukan yang sesuai di pedoman contoh...</p>
+      <p class="processing-title">Mencari rujukan yang sesuai di pedoman akademik...</p>
       <div class="processing-steps">
         <span class="step-done">${CHECK_ICON}Mencocokkan pertanyaan</span>
         <span class="step-done">${CHECK_ICON}Memilih rujukan pedoman</span>
@@ -279,6 +279,7 @@ function renderSourceRow(entry, body) {
   const detail = createElement("div", "source-detail");
   detail.hidden = true;
   const fields = [
+    ["Dokumen", entry.sourceRef],
     ["Pemilik informasi", entry.sourceOwner],
     ["Periode berlaku", entry.validPeriod],
     ["Terakhir diperbarui", entry.updatedAt],
@@ -751,7 +752,7 @@ function renderModelPopover() {
     <p></p>
     <dl class="popover-facts">
       <dt>Model</dt><dd>Gemini (gemini-3.5-flash-lite)</dd>
-      <dt>Rujukan</dt><dd>Knowledge base contoh, bukan dokumen resmi UPI</dd>
+      <dt>Rujukan</dt><dd>Pedoman tugas akhir prodi, pedoman karya ilmiah UPI, dan pengumuman prodi</dd>
       <dt>Cadangan</dt><dd>Pencocokan kata kunci di browser bila model tak terjangkau</dd>
     </dl>
   `;

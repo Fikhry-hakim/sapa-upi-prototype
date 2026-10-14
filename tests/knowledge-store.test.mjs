@@ -20,7 +20,7 @@ const entryRow = {
   source_owner: "Pengelola Tugas Akhir",
   valid_period: "Semester Ganjil 2026/2027",
   updated_at: "12 September 2026",
-  source_url: "https://example.com/sidang",
+  source_ref: "Nomor T-207/UN40.C3.4.4/PK.03.03/2026",
   escalation: "Hubungi pengelola tugas akhir.",
   table_json: null,
 };

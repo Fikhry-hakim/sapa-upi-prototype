@@ -15,12 +15,13 @@ CREATE TABLE IF NOT EXISTS entries (
   lead          TEXT NOT NULL,
   closing       TEXT NOT NULL,
 
-  -- provenance; rendered from here, never generated, so a citation stays real
+  -- provenance; rendered from here, never generated, so a citation stays real.
+  -- source_ref carries the real document number or edition, not a guessed URL.
   source_title  TEXT NOT NULL,
   source_owner  TEXT NOT NULL,
   valid_period  TEXT NOT NULL,
   updated_at    TEXT NOT NULL,
-  source_url    TEXT NOT NULL,
+  source_ref    TEXT NOT NULL,
   escalation    TEXT NOT NULL,
 
   -- optional rendered table (e.g. sidang requirements), as JSON

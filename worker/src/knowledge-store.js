@@ -53,7 +53,7 @@ export function assembleEntries(entryRows, listRows) {
       sourceOwner: row.source_owner,
       validPeriod: row.valid_period,
       updatedAt: row.updated_at,
-      sourceUrl: row.source_url,
+      sourceRef: row.source_ref,
       escalation: row.escalation,
     };
 

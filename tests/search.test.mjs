@@ -18,14 +18,14 @@ test("exact academic question returns the matching knowledge entry", () => {
   );
 
   assert.equal(result.status, "match");
-  assert.equal(result.best.entry.id, "sidang-pendaftaran");
+  assert.equal(result.best.entry.id, "sidang-syarat-skripsi");
 });
 
-test("informal TA wording resolves to the Tugas Akhir topic", () => {
+test("informal TA wording resolves to a Tugas Akhir topic", () => {
   const result = searchKnowledgeBase("Gimana mulai TA?", knowledgeBase);
 
   assert.equal(result.status, "match");
-  assert.equal(result.best.entry.id, "tugas-akhir-pengajuan");
+  assert.equal(result.best.entry.category, "Tugas Akhir");
 });
 
 test("empty input returns empty without a best result", () => {
@@ -46,13 +46,18 @@ test("unrelated input returns none", () => {
   assert.deepEqual(result.alternatives, []);
 });
 
-test("a broad sidang and berkas query returns close topic suggestions", () => {
-  const result = searchKnowledgeBase("informasi berkas sidang", knowledgeBase);
+test("a bare sidang query returns close topic suggestions", () => {
+  // Several entries answer "sidang": the requirements, how it is run, the
+  // result categories. One word does not choose between them.
+  const result = searchKnowledgeBase("sidang", knowledgeBase);
   const suggestedIds = result.alternatives.map(({ entry }) => entry.id);
 
   assert.equal(result.status, "ambiguous");
-  assert.ok(suggestedIds.includes("sidang-pendaftaran"));
-  assert.ok(suggestedIds.includes("sidang-batas-berkas"));
+  assert.ok(suggestedIds.length >= 2, "expected more than one close topic");
+  assert.ok(
+    suggestedIds.every((id) => knowledgeBase.some((entry) => entry.id === id)),
+    "suggestions must be real entries",
+  );
 });
 
 test("a question naming the sidang wins over the thesis topic it mentions", () => {
@@ -65,14 +70,32 @@ test("a question naming the sidang wins over the thesis topic it mentions", () =
     "mau daftar sidang skripsi gimana",
   ]) {
     const result = searchKnowledgeBase(query, knowledgeBase);
-    assert.equal(result.best.entry.id, "sidang-pendaftaran", `wrong topic for: ${query}`);
+    assert.equal(result.best.entry.id, "sidang-syarat-skripsi", `wrong topic for: ${query}`);
   }
 });
 
-test("asking about the thesis itself still lands on the Tugas Akhir topic", () => {
-  for (const query of ["cara ajuin judul skripsi", "mau mulai skripsi mulai dari mana"]) {
+test("asking about starting the thesis lands on the Tugas Akhir topic", () => {
+  for (const query of ["mau mulai skripsi mulai dari mana", "Apa syarat mengambil skripsi?"]) {
     const result = searchKnowledgeBase(query, knowledgeBase);
-    assert.equal(result.best.entry.id, "tugas-akhir-pengajuan", `wrong topic for: ${query}`);
+    assert.equal(
+      result.best.entry.id,
+      "skripsi-syarat-mengambil",
+      `wrong topic for: ${query}`,
+    );
+  }
+});
+
+test("a question these documents do not cover is refused, not force-matched", () => {
+  // The four source documents say nothing about attendance, tuition or leave.
+  // A weak coincidental overlap must not be served as an answer.
+  for (const query of [
+    "Berapa minimal kehadiran kuliah?",
+    "cara bayar ukt",
+    "cuti kuliah gimana",
+    "beasiswa apa saja",
+  ]) {
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.equal(result.status, "none", `should not have matched: ${query}`);
   }
 });
 
@@ -93,8 +116,9 @@ test("stem lets official wording and student shorthand meet", () => {
 
 test("colloquial phrasing reaches the same entry as the formal question", () => {
   const pairs = [
-    ["Berapa minimal kehadiran kuliah?", "absen kurang gimana"],
-    ["Kapan batas pengumpulan berkas sidang?", "deadline berkas skripsi kapan"],
+    ["Bagaimana cara mengganti dosen pembimbing skripsi?", "gimana ganti pembimbing"],
+    ["Bagaimana aturan penggunaan AI dalam skripsi?", "boleh pakai ai ga buat skripsi"],
+    ["Apa ketentuan berpakaian saat seminar hasil?", "pakaian semhas gimana"],
   ];
 
   for (const [formal, casual] of pairs) {
@@ -121,11 +145,11 @@ test("ambiguity is judged on the gap in proportion, not a fixed number of points
 });
 
 test("an entry cannot win by listing one concept several ways", () => {
-  // tugas-akhir-pengajuan lists "ta", "skripsi" and "tugas akhir" as separate
-  // keywords; they normalize to the same phrase and must be counted once.
+  // "ta", "skripsi" and "tugas akhir" normalize to the same phrase, so an
+  // entry listing several of them must not collect the bonus several times.
   const viaSynonym = searchKnowledgeBase("sidang skripsi", knowledgeBase);
   const viaFullWord = searchKnowledgeBase("sidang tugas akhir", knowledgeBase);
 
   assert.equal(viaSynonym.best.entry.id, viaFullWord.best.entry.id);
-  assert.equal(viaSynonym.best.entry.id, "sidang-pendaftaran");
+  assert.equal(viaSynonym.best.entry.id, "sidang-syarat-skripsi");
 });

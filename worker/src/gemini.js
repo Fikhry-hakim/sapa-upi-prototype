@@ -8,7 +8,9 @@ ATURAN YANG WAJIB DIPATUHI:
 3. Jangan pernah mengarang angka, tanggal, nomor SK, nominal biaya, atau tenggat waktu. Kalau angkanya tidak ada di konteks, bilang belum tersedia.
 4. Jawab dalam Bahasa Indonesia yang ringkas dan sopan, maksimal 4 kalimat. Jangan pakai bullet, heading, atau markdown.
 5. Jangan menyapa ulang atau menulis pembuka basa-basi. Langsung ke isi jawaban.
-6. Ingatkan bahwa ini data contoh kalau mahasiswa menanyakan sesuatu yang terdengar seperti keputusan final (kelulusan, nilai, kelayakan sidang).`;
+6. Kalau mahasiswa menanyakan sesuatu yang terdengar seperti keputusan final (kelulusan, nilai, kelayakan sidang), ingatkan bahwa keputusan resmi tetap ada pada program studi dan sarankan memastikannya ke tenaga administrasi.
+7. Jangan menyebut jawabanmu sebagai "data contoh". Konteks berasal dari dokumen resmi yang disebutkan pada rujukan.
+8. Kalau konteks memuat dua ketentuan yang berbeda untuk hal yang sama, sebutkan keduanya beserta dokumen asalnya, jangan memilih salah satu.`;
 
 export function buildContextBlock(entries) {
   if (!entries.length) return "KONTEKS PEDOMAN: (tidak ada rujukan yang cocok)";

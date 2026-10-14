@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 
 import { knowledgeBase } from "../data/knowledge-base.js";
 
+// The categories the four source documents actually cover. Adding one here
+// without a document behind it would be padding, not coverage.
 const requiredCategories = [
-  "Jadwal",
-  "Administrasi",
-  "Perkuliahan",
   "Tugas Akhir",
   "Sidang",
   "Kelulusan",
+  "Penulisan Ilmiah",
+  "Administrasi",
 ];
 
 const requiredFields = [
@@ -24,7 +25,7 @@ const requiredFields = [
   "sourceOwner",
   "validPeriod",
   "updatedAt",
-  "sourceUrl",
+  "sourceRef",
   "escalation",
 ];
 

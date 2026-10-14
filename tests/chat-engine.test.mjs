@@ -5,35 +5,28 @@ import { knowledgeBase } from "../data/knowledge-base.js";
 import { createChatResponse } from "../lib/chat-engine.js";
 
 test("known question returns a sourced answer response", () => {
-  const response = createChatResponse(
-    "Bagaimana cara mengajukan surat keterangan mahasiswa aktif?",
-    knowledgeBase,
-  );
+  const response = createChatResponse("Apa saja persyaratan pendaftaran sidang?", knowledgeBase);
 
   assert.equal(response.type, "answer");
-  assert.equal(response.entry.id, "administrasi-surat-aktif");
+  assert.equal(response.entry.id, "sidang-syarat-skripsi");
   assert.equal(response.message, response.entry.answer);
-  assert.equal(response.verificationLabel, "Berdasarkan sumber informasi contoh");
+  assert.equal(response.verificationLabel, "Berdasarkan pedoman akademik");
   assert.equal(response.confidenceLabel, "Kecocokan tinggi");
-  assert.deepEqual(response.followUpQuestions, [
-    "Bagaimana alur pengajuannya?",
-    "Dokumen apa yang diperlukan?",
-    "Berapa lama prosesnya?",
-    "Siapa yang harus saya hubungi?",
-  ]);
+  assert.equal(response.followUpQuestions.length, 4);
   for (const field of [
     "sourceTitle",
     "sourceOwner",
     "validPeriod",
     "updatedAt",
-    "sourceUrl",
+    "sourceRef",
   ]) {
     assert.ok(response.entry[field]);
   }
 });
 
 test("broad question returns topic suggestions", () => {
-  const response = createChatResponse("informasi berkas sidang", knowledgeBase);
+  // One bare word several topics answer: pendaftaran, pelaksanaan, hasil.
+  const response = createChatResponse("sidang", knowledgeBase);
 
   assert.equal(response.type, "suggestions");
   assert.ok(response.suggestions.length >= 2);
@@ -49,7 +42,7 @@ test("unrelated question returns fallback with official escalation options", () 
 
   assert.equal(response.type, "fallback");
   assert.match(response.message, /belum menemukan/i);
-  assert.equal(response.reason, "Informasi tidak tersedia pada knowledge base contoh.");
+  assert.equal(response.reason, "Informasi tidak tersedia pada pedoman yang terindeks.");
   assert.deepEqual(response.escalationOptions, [
     "Tenaga Administrasi Program Studi",
     "Dosen atau pihak yang berwenang",

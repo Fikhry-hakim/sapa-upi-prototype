@@ -13,12 +13,19 @@ import {
   TOTAL_BUDGET_MS,
 } from "../worker/src/gemini.js";
 
-const sidang = knowledgeBase.find((entry) => entry.id === "sidang-pendaftaran");
+const sidang = knowledgeBase.find((entry) => entry.id === "sidang-syarat-skripsi");
 
 test("system instruction forbids answering outside the supplied context", () => {
   assert.match(SYSTEM_INSTRUCTION, /HANYA berdasarkan "KONTEKS PEDOMAN"/);
   assert.match(SYSTEM_INSTRUCTION, /Jangan mengarang/i);
   assert.match(SYSTEM_INSTRUCTION, /Jangan pernah mengarang angka/i);
+});
+
+test("the model is told not to call real documents sample data", () => {
+  // The knowledge base used to be invented, and the instruction said so. It is
+  // now four real documents, so that disclaimer would be a false one.
+  assert.match(SYSTEM_INSTRUCTION, /Jangan menyebut jawabanmu sebagai "data contoh"/);
+  assert.match(SYSTEM_INSTRUCTION, /dua ketentuan yang berbeda/);
 });
 
 test("context block carries the answer and its provenance", () => {
