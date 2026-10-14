@@ -554,15 +554,7 @@ function writeSaved(questions) {
   } catch {
     showToast("Browser menolak menyimpan. Coba matikan mode penyamaran.");
   }
-  elements.loginButton.addEventListener("click", startLogin);
-  elements.logoutButton.addEventListener("click", logout);
-
   refreshSavedCount();
-
-  captureTokenFromUrl();
-  sessionToken = sessionToken ?? readStoredToken();
-  renderAccount();
-  loadAccount();
 }
 
 function refreshSavedCount() {
@@ -1131,7 +1123,15 @@ function initialize() {
     stopVoice();
   });
 
+  elements.loginButton.addEventListener("click", startLogin);
+  elements.logoutButton.addEventListener("click", logout);
+
   refreshSavedCount();
+
+  captureTokenFromUrl();
+  sessionToken = sessionToken ?? readStoredToken();
+  renderAccount();
+  loadAccount();
 }
 
 if (typeof document !== "undefined") initialize();

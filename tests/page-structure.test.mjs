@@ -184,3 +184,26 @@ test("sidebar search ranks with the same scorer that answers the question", () =
   assert.match(app, /import \{ searchKnowledgeBase \} from "\.\/lib\/search\.js"/);
   assert.match(app, /renderSearchResults/);
 });
+
+test("startup wiring lives in initialize, not in whatever function matched a patch", () => {
+  // The account wiring was once appended to writeSaved() because that function
+  // happened to end the same way as initialize(). Everything still parsed and
+  // every other test passed, but the login button was never shown and the
+  // listeners were re-attached on every save.
+  const init = app.slice(app.indexOf("function initialize("));
+  assert.ok(init.length > 0, "initialize() must exist");
+
+  for (const call of ["renderAccount()", "loadAccount()", "captureTokenFromUrl()", "refreshSavedCount()"]) {
+    assert.ok(init.includes(call), `initialize() must perform startup step: ${call}`);
+  }
+
+  // Each of these belongs to startup and must run exactly once in the file.
+  for (const call of ["loadAccount();", "captureTokenFromUrl();"]) {
+    const occurrences = app.split(call).length - 1;
+    assert.equal(occurrences, 1, `${call} should be called once, found ${occurrences}`);
+  }
+
+  // Listener registration must not sit inside a function called repeatedly.
+  const writeSaved = app.slice(app.indexOf("function writeSaved("), app.indexOf("function refreshSavedCount("));
+  assert.ok(!writeSaved.includes("addEventListener"), "writeSaved must not register listeners");
+});
