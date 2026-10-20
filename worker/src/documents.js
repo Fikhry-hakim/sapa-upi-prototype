@@ -21,6 +21,18 @@ export const STATUS_LABELS = {
   expired: "Tidak Berlaku",
 };
 
+export const CATEGORIES = [
+  "Pedoman Akademik",
+  "Tugas Akhir & Skripsi",
+  "Surat Keputusan",
+  "Pengumuman",
+  "Kalender Akademik",
+  "Lainnya",
+];
+
+/** Cara dokumen unggahan diperlakukan terhadap dokumen yang sudah ada. */
+export const STORAGE_METHODS = ["baru", "gabung", "versi"];
+
 export const MAX_FILE_BYTES = 24 * 1024 * 1024; // batas nilai KV 25 MB
 export const MAX_PAGES = 600;
 export const MAX_PAGE_CHARS = 20_000;
@@ -38,7 +50,8 @@ export async function listDocuments(db) {
   const { results } = await db
     .prepare(
       `SELECT id, title, owner, reference, period, kind, pages, size_bytes, file, bundled,
-              status, rag_active, uploaded_by, validated_by, created_at, updated_at
+              status, rag_active, uploaded_by, validated_by, created_at, updated_at,
+              category, effective_date, description, related_to, supersedes
          FROM documents ORDER BY bundled DESC, created_at DESC`,
     )
     .all();
@@ -69,6 +82,11 @@ function toDocument(row) {
     validatedBy: row.validated_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    category: row.category ?? null,
+    effectiveDate: row.effective_date ?? null,
+    description: row.description ?? null,
+    relatedTo: row.related_to ?? null,
+    supersedes: row.supersedes ?? null,
   };
 }
 
@@ -155,6 +173,21 @@ export function checkUpload(body) {
   if (title.length < 3) errors.push("Judul dokumen wajib diisi.");
   if (title.length > 160) errors.push("Judul terlalu panjang.");
 
+  const category = String(body?.category ?? "").trim();
+  if (!CATEGORIES.includes(category)) errors.push("Kategori dokumen wajib dipilih.");
+
+  const owner = String(body?.owner ?? "").trim();
+  if (owner.length < 2) errors.push("Penerbit atau unit kerja wajib diisi.");
+
+  const effectiveDate = String(body?.effectiveDate ?? "").trim();
+  if (effectiveDate && (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate) || Number.isNaN(Date.parse(effectiveDate)))) {
+    errors.push("Tanggal berlaku tidak sah.");
+  }
+
+  const method = STORAGE_METHODS.includes(body?.method) ? body.method : "baru";
+  const targetId = String(body?.targetId ?? "").trim();
+  if (method !== "baru" && !targetId) errors.push("Pilih dokumen yang dihubungkan atau diperbarui.");
+
   const pages = Array.isArray(body?.passages) ? body.passages : [];
   if (!pages.length) errors.push("Teks dokumen belum terbaca.");
   if (pages.length > MAX_PAGES) errors.push(`Dokumen melebihi ${MAX_PAGES} halaman.`);
@@ -181,7 +214,12 @@ export function checkUpload(body) {
     value: {
       title,
       reference: String(body?.reference ?? "").trim().slice(0, 120) || "Belum dicantumkan",
-      owner: String(body?.owner ?? "").trim().slice(0, 120) || "Belum dicantumkan",
+      owner: owner.slice(0, 120),
+      category,
+      effectiveDate: effectiveDate || null,
+      description: String(body?.description ?? "").trim().slice(0, 500) || null,
+      method,
+      targetId: method === "baru" ? null : targetId,
       period: String(body?.period ?? "").trim().slice(0, 120) || "Belum dicantumkan",
       pages: cleaned.length,
       sizeBytes: Math.max(0, Number(body?.sizeBytes) || 0),
@@ -195,10 +233,16 @@ export async function createDocument(db, actor, value, id = newDocumentId(value.
   const status = value.parsed ? "validating" : "parse_failed";
   await db
     .prepare(
-      `INSERT INTO documents (id, title, owner, reference, period, kind, pages, size_bytes, bundled, status, rag_active, uploaded_by)
-       VALUES (?, ?, ?, ?, ?, 'PDF', ?, ?, 0, ?, 0, ?)`,
+      `INSERT INTO documents (id, title, owner, reference, period, kind, pages, size_bytes, bundled, status, rag_active, uploaded_by,
+                              category, effective_date, description, related_to, supersedes)
+       VALUES (?, ?, ?, ?, ?, 'PDF', ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?)`,
     )
-    .bind(id, value.title, value.owner, value.reference, value.period, value.pages, value.sizeBytes, status, actor)
+    .bind(
+      id, value.title, value.owner, value.reference, value.period, value.pages, value.sizeBytes, status, actor,
+      value.category ?? null, value.effectiveDate ?? null, value.description ?? null,
+      value.method === "gabung" ? value.targetId : null,
+      value.method === "versi" ? value.targetId : null,
+    )
     .run();
 
   const statements = value.passages
@@ -209,7 +253,9 @@ export async function createDocument(db, actor, value, id = newDocumentId(value.
   // D1 membatasi ukuran satu batch; dipotong supaya dokumen tebal tetap masuk.
   for (let i = 0; i < statements.length; i += 40) await db.batch(statements.slice(i, i + 40));
 
-  await audit(db, actor, "unggah", id, `${value.title} (${value.pages} halaman)`);
+  const how =
+    value.method === "versi" ? `, memperbarui ${value.targetId}` : value.method === "gabung" ? `, terkait ${value.targetId}` : "";
+  await audit(db, actor, "unggah", id, `${value.title} (${value.pages} halaman${how})`);
   clearDocumentCache();
   return { id, status };
 }
@@ -219,6 +265,7 @@ export async function setFile(db, id, fileUrl) {
 }
 
 export async function validateDocument(db, actor, id) {
+  const doc = await getDocument(db, id);
   const { meta } = await db
     .prepare(
       `UPDATE documents SET status = 'ready', rag_active = 1, validated_by = ?, updated_at = datetime('now')
@@ -228,6 +275,19 @@ export async function validateDocument(db, actor, id) {
     .run();
   if (!(meta?.changes > 0)) return false;
   await audit(db, actor, "validasi", id, "Dokumen divalidasi dan diaktifkan untuk RAG");
+
+  // "Perbarui Versi": revisi lama berhenti dipakai tepat saat yang baru disahkan,
+  // jadi tidak pernah ada saat jawaban bisa memakai dua versi yang bertentangan.
+  if (doc?.supersedes) {
+    const { meta: old } = await db
+      .prepare(
+        `UPDATE documents SET status = 'expired', rag_active = 0, updated_at = datetime('now')
+          WHERE id = ? AND status != 'expired'`,
+      )
+      .bind(doc.supersedes)
+      .run();
+    if (old?.changes > 0) await audit(db, actor, "digantikan", doc.supersedes, `Digantikan oleh ${id}`);
+  }
   clearDocumentCache();
   return true;
 }

@@ -38,7 +38,12 @@ CREATE TABLE IF NOT EXISTS documents (
   uploaded_by  TEXT,
   validated_by TEXT,
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  category       TEXT,
+  effective_date TEXT,
+  description    TEXT,
+  related_to     TEXT,
+  supersedes     TEXT
 );
 
 -- Teks tiap halaman dokumen unggahan, untuk pencarian. Bobot peringkat dihitung

@@ -9,6 +9,7 @@
 import { authenticate, can, roleOf } from "./auth.js";
 import {
   audit,
+  CATEGORIES,
   checkUpload,
   createDocument,
   deleteDocument,
@@ -91,6 +92,7 @@ export async function handleAdmin(request, env, cors, path) {
         stats: documentStats(docs),
         role: assignment,
         limits: { maxFileBytes: MAX_FILE_BYTES },
+        categories: CATEGORIES,
       },
       { headers },
     );
@@ -110,6 +112,11 @@ export async function handleAdmin(request, env, cors, path) {
     }
     const check = checkUpload(body);
     if (!check.ok) return json({ error: check.errors.join(" ") }, { status: 400, headers });
+
+    if (check.value.targetId) {
+      const target = await getDocument(db, check.value.targetId);
+      if (!target) return json({ error: "Dokumen yang dituju tidak ditemukan." }, { status: 400, headers });
+    }
 
     const created = await createDocument(db, user.email, check.value);
     return json({ ...created, warnings: check.warnings }, { status: 201, headers });

@@ -12,6 +12,7 @@ import {
 } from "../worker/src/events.js";
 import {
   checkUpload,
+  validateDocument,
   documentStats,
   ftsQuery,
   highlightFor,
@@ -135,6 +136,8 @@ test("an upload is validated before it reaches the database", () => {
 
   const ok = checkUpload({
     title: "  Pedoman Baru  ",
+    category: "Pedoman Akademik",
+    owner: "Program Studi Bisnis Digital",
     passages: [
       { page: 1, text: "Mahasiswa wajib   menyelesaikan   administrasi pendaftaran." },
       { page: 2, text: "Halaman kedua memuat ketentuan lanjutan yang cukup panjang." },
@@ -149,7 +152,7 @@ test("an upload is validated before it reaches the database", () => {
 });
 
 test("a scanned document is accepted but flagged, because it cannot be searched", () => {
-  const scanned = checkUpload({ title: "Hasil Pindai", passages: [{ page: 1, text: "" }, { page: 2, text: "  " }] });
+  const scanned = checkUpload({ title: "Hasil Pindai", category: "Lainnya", owner: "Prodi", passages: [{ page: 1, text: "" }, { page: 2, text: "  " }] });
   assert.equal(scanned.ok, true);
   assert.equal(scanned.value.parsed, false);
   assert.ok(scanned.warnings.length > 0);
@@ -237,4 +240,56 @@ test("every admin route refuses anonymous callers and signed-in non-staff alike"
     const response = await handleAdmin(request, env, {}, path);
     assert.equal(response.status, 401, `${method} ${path} must need a session`);
   }
+});
+
+/* ---------- isian unggah dan metode penyimpanan ---------- */
+
+const PAGES = [{ page: 1, text: "Ketentuan pelaksanaan yang cukup panjang untuk dibaca." }];
+
+test("an upload needs a category and a publisher, and rejects a malformed date", () => {
+  const base = { title: "Pedoman Baru", passages: PAGES };
+  assert.match(checkUpload({ ...base, owner: "Prodi" }).errors.join(" "), /Kategori/);
+  assert.match(checkUpload({ ...base, category: "Lainnya" }).errors.join(" "), /Penerbit/);
+  assert.match(
+    checkUpload({ ...base, category: "Lainnya", owner: "Prodi", effectiveDate: "31/12/2026" }).errors.join(" "),
+    /Tanggal/,
+  );
+  assert.equal(
+    checkUpload({ ...base, category: "Lainnya", owner: "Prodi", effectiveDate: "2026-12-31" }).ok,
+    true,
+  );
+});
+
+test("linking or replacing needs a target document; a new document needs none", () => {
+  const base = { title: "Pedoman Baru", passages: PAGES, category: "Lainnya", owner: "Prodi" };
+  assert.equal(checkUpload({ ...base, method: "baru" }).ok, true);
+  assert.equal(checkUpload({ ...base, method: "versi" }).ok, false);
+  assert.equal(checkUpload({ ...base, method: "gabung" }).ok, false);
+  const replace = checkUpload({ ...base, method: "versi", targetId: "buku-panduan" });
+  assert.equal(replace.ok, true);
+  assert.equal(replace.value.targetId, "buku-panduan");
+  assert.equal(checkUpload({ ...base, method: "baru", targetId: "buku-panduan" }).value.targetId, null);
+});
+
+test("validating a new version retires the old one in the same step", async () => {
+  const statements = [];
+  const db = {
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        first: async () =>
+          /FROM documents WHERE id/.test(sql)
+            ? { id: args[0], title: "Baru", status: "validating", supersedes: "lama", rag_active: 0, bundled: 0 }
+            : null,
+        run: async () => {
+          statements.push({ sql, args });
+          return { meta: { changes: 1 } };
+        },
+      }),
+    }),
+  };
+  assert.equal(await validateDocument(db, "admin@upi.edu", "baru"), true);
+  const expire = statements.find((s) => /SET status = 'expired'/.test(s.sql));
+  assert.ok(expire, "the old version must be expired");
+  assert.equal(expire.args[0], "lama");
+  assert.ok(statements.some((s) => s.args.includes("digantikan")), "and the audit log says so");
 });

@@ -41,6 +41,11 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   trend: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 5-5 4 4 7-8M15 6h5v5"/></svg>',
+  cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10a4 4 0 0 1 0 8"/><path d="M12 12v8M9 14.5l3-3 3 3"/></svg>',
+  file: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>',
+  link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 13.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1 1M14.5 10.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1-1"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
 };
 
@@ -883,101 +888,238 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
 
   const STEPS = ["Membaca berkas", "Mengekstrak teks per halaman", "Mengunggah dokumen", "Menunggu validasi"];
 
-  function openUpload(onDone) {
+  const METHODS = [
+    { id: "baru", icon: "doc", title: "Dokumen Baru", text: "Unggah sebagai dokumen baru yang berdiri sendiri dalam repositori RAG." },
+    { id: "gabung", icon: "link", title: "Gabungkan Terkait", text: "Hubungkan dengan dokumen yang telah ada tanpa mengubah file master sebelumnya." },
+    { id: "versi", icon: "clock", title: "Perbarui Versi", text: "Ganti revisi arsip dari berkas aktif untuk menimpa vektor indexing lama." },
+  ];
+  const FALLBACK_CATEGORIES = ["Pedoman Akademik", "Tugas Akhir & Skripsi", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Lainnya"];
+  const MAX_UPLOAD = 24 * 1024 * 1024;
+
+  async function openUpload(onDone) {
+    let existing = [];
+    let categories = FALLBACK_CATEGORIES;
+    try {
+      const catalog = await api("/admin/documents");
+      existing = catalog.documents ?? [];
+      categories = catalog.categories ?? categories;
+    } catch {
+      /* metode "Dokumen Baru" tetap bisa dipakai tanpa daftar */
+    }
+
     const dialog = make("div", "modal");
     dialog.setAttribute("role", "dialog");
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", "upload-title");
     const scrim = make("div", "modal-scrim");
-    const box = make("div", "modal-box");
+    const box = make("form", "modal-box upload-box");
+    box.noValidate = true;
     dialog.append(scrim, box);
 
-    const close = () => dialog.remove();
+    const close = () => {
+      dialog.remove();
+      document.removeEventListener("keydown", onKey);
+    };
+    function onKey(event) {
+      if (event.key === "Escape") close();
+    }
+    document.addEventListener("keydown", onKey);
     scrim.addEventListener("click", close);
-    document.addEventListener(
-      "keydown",
-      function onKey(event) {
-        if (event.key === "Escape") {
-          close();
-          document.removeEventListener("keydown", onKey);
-        }
-      },
-    );
 
-    const head = make("div", "modal-head");
-    const title = make("h2", "", "Upload File");
+    /* ---- kepala ---- */
+    const head = make("div", "upload-head");
+    const badge = make("span", "upload-badge");
+    badge.append(icon("doc"));
+    const titles = make("div", "upload-titles");
+    const title = make("h2", "", "Upload Dokumen");
     title.id = "upload-title";
+    titles.append(title, make("p", "", "Tambahkan dokumen akademik ke Knowledge Base SAPA UPI."));
     const closeButton = make("button", "icon-btn");
     closeButton.type = "button";
     closeButton.setAttribute("aria-label", "Tutup");
     closeButton.append(icon("close"));
     closeButton.addEventListener("click", close);
-    head.append(title, closeButton);
+    head.append(badge, titles, closeButton);
 
-    const intro = make("p", "modal-intro", "Berkas PDF dibaca di browsermu, lalu teksnya dikirim untuk dicari. Dokumen baru berstatus Menunggu Validasi dan belum dipakai menjawab sampai divalidasi.");
-
-    const drop = make("label", "dropzone");
-    drop.append(icon("upload"), make("strong", "", "Pilih berkas PDF"), make("small", "", "Maksimum 24 MB"));
+    /* ---- kolom kiri: berkas ---- */
+    const left = make("div", "upload-col");
+    const leftLabel = make("div", "upload-label-row");
+    leftLabel.append(make("span", "upload-label", "Berkas Dokumen"), make("span", "upload-required", "Wajib diisi"));
+    const drop = make("div", "upload-drop");
     const picker = make("input");
     picker.type = "file";
     picker.accept = "application/pdf,.pdf";
     picker.className = "sr-only";
-    drop.append(picker);
+    picker.id = "upload-file";
+    const pickButton = make("button", "upload-pick");
+    pickButton.type = "button";
+    pickButton.append(icon("file"), "Pilih File");
+    pickButton.addEventListener("click", () => picker.click());
+    drop.append(
+      icon("cloud"),
+      make("strong", "", "Tarik & letakkan file di sini"),
+      make("small", "", "atau pilih file dari perangkat lokal"),
+      pickButton,
+      make("em", "", "Format didukung: PDF (Maksimal 24 MB)"),
+      picker,
+    );
+    const chosenLine = make("div", "upload-chosen");
+    chosenLine.append(icon("file"));
+    const chosenText = make("span", "", "Belum ada file yang dipilih");
+    chosenLine.append(chosenText);
+    left.append(leftLabel, drop, chosenLine);
 
-    const form = make("form", "upload-form");
-    form.hidden = true;
-    const field = (label, name, placeholder, required = false) => {
-      const wrap = make("label", "form-field");
-      wrap.append(make("span", "", label));
-      const input = make("input");
-      input.name = name;
-      input.placeholder = placeholder;
-      input.required = required;
-      input.maxLength = 160;
-      wrap.append(input);
-      form.append(wrap);
+    /* ---- kolom kanan: isian ---- */
+    const right = make("div", "upload-col");
+    const field = (label, { required = false, tag = "input", type = "text", placeholder = "", span = 2, options } = {}) => {
+      const wrap = make("label", `upload-field span-${span}`);
+      const text = make("span", "upload-label", label);
+      if (required) text.append(make("b", "", " *"));
+      const input = tag === "select" ? make("select") : tag === "textarea" ? make("textarea") : make("input");
+      if (tag === "input") input.type = type;
+      if (placeholder) input.placeholder = placeholder;
+      if (tag === "textarea") input.rows = 3;
+      if (tag === "select") {
+        input.append(Object.assign(make("option", "", "Pilih Kategori..."), { value: "" }));
+        for (const item of options) input.append(Object.assign(make("option", "", item), { value: item }));
+      } else {
+        input.maxLength = tag === "textarea" ? 500 : 160;
+      }
+      wrap.append(text, input);
+      right.append(wrap);
       return input;
     };
-    const titleInput = field("Judul dokumen", "title", "Mis. Pedoman Akademik 2027", true);
-    const referenceInput = field("Nomor atau edisi", "reference", "Mis. Nomor SK atau Edisi 2027");
-    const ownerInput = field("Pemilik dokumen", "owner", "Mis. Program Studi Bisnis Digital");
-    const periodInput = field("Masa berlaku", "period", "Mis. Tahun Akademik 2026/2027");
+    right.classList.add("upload-grid");
+    const titleInput = field("Nama Dokumen Resmi", { required: true, placeholder: "Contoh: Buku Pedoman Akademik UPI 2024" });
+    const categoryInput = field("Kategori Dokumen Knowledge Base", { required: true, tag: "select", options: categories });
+    const ownerInput = field("Penerbit / Unit Kerja", { required: true, placeholder: "Direktorat / Prodi...", span: 1 });
+    const referenceInput = field("Nomor Surat / SK Resmi", { placeholder: "Nomor SK Rektor...", span: 1 });
+    const dateInput = field("Tanggal Berlaku", { type: "date", span: 1 });
+    const periodInput = field("Periode Akademik", { placeholder: "Semester Ganjil 2024/2025", span: 1 });
+    const descInput = field("Deskripsi / Singkat Dokumen", {
+      tag: "textarea",
+      placeholder: "Ringkasan konteks atau cakupan materi dokumen untuk mempermudah indexing RAG...",
+    });
+
+    const body = make("div", "upload-body");
+    body.append(left, right);
+
+    /* ---- metode penyimpanan ---- */
+    const methodWrap = make("div", "upload-methods");
+    methodWrap.append(make("span", "upload-section", "METODE PENYIMPANAN DOKUMEN"));
+    const cards = make("div", "upload-method-cards");
+    let method = "baru";
+    const targetRow = make("label", "upload-field upload-target");
+    const targetLabel = make("span", "upload-label");
+    const targetSelect = make("select");
+    targetRow.append(targetLabel, targetSelect);
+    targetRow.hidden = true;
+
+    const cardButtons = METHODS.map((item) => {
+      const card = make("button", "method-card");
+      card.type = "button";
+      card.setAttribute("role", "radio");
+      const mark = make("i", "method-mark");
+      const top = make("div", "method-top");
+      top.append(icon(item.icon), mark);
+      card.append(top, make("strong", "", item.title), make("small", "", item.text));
+      card.addEventListener("click", () => selectMethod(item.id));
+      cards.append(card);
+      return [item.id, card];
+    });
+
+    function selectMethod(id) {
+      method = id;
+      for (const [key, card] of cardButtons) {
+        card.classList.toggle("is-active", key === id);
+        card.setAttribute("aria-checked", String(key === id));
+      }
+      targetRow.hidden = id === "baru";
+      if (id !== "baru") {
+        targetLabel.textContent = id === "versi" ? "Dokumen yang diperbarui (akan Tidak Berlaku setelah versi baru divalidasi)" : "Dokumen yang dihubungkan";
+        targetSelect.replaceChildren(Object.assign(make("option", "", "Pilih dokumen..."), { value: "" }));
+        for (const doc of existing.filter((d) => d.status !== "expired")) {
+          targetSelect.append(Object.assign(make("option", "", doc.title), { value: doc.id }));
+        }
+      }
+      refresh();
+    }
+    methodWrap.append(cards, targetRow);
+
+    /* ---- kaki ---- */
+    const message = make("p", "modal-message");
+    message.setAttribute("role", "status");
+    message.hidden = true;
+    const footer = make("div", "upload-foot");
+    const note = make("p", "upload-note");
+    note.append(icon("info"), "Dokumen akan diproses otomatis melalui pipeline ekstraksi teks & embedding RAG UPI.");
+    const cancel = make("button", "btn upload-cancel", "Batal");
+    cancel.type = "button";
+    cancel.addEventListener("click", close);
+    const submit = make("button", "btn-primary upload-submit");
+    submit.type = "submit";
+    submit.append(icon("cloud"), "Upload Dokumen");
+    footer.append(note, cancel, submit);
 
     const progress = make("ol", "steps-progress");
     progress.hidden = true;
     for (const step of STEPS) progress.append(make("li", "", step));
 
-    const message = make("p", "modal-message");
-    message.setAttribute("role", "status");
-
-    const submit = make("button", "btn-primary");
-    submit.type = "submit";
-    submit.append(icon("upload"), "Unggah & Ekstrak");
-    form.append(submit);
-
-    box.append(head, intro, drop, form, progress, message);
+    box.append(head, body, methodWrap, progress, message, footer);
     document.body.append(dialog);
 
+    /* ---- perilaku ---- */
     let chosen = null;
 
-    picker.addEventListener("change", () => {
-      const file = picker.files?.[0];
+    function refresh() {
+      const needsTarget = method !== "baru";
+      const ready =
+        chosen &&
+        titleInput.value.trim().length >= 3 &&
+        categoryInput.value &&
+        ownerInput.value.trim().length >= 2 &&
+        (!needsTarget || targetSelect.value);
+      submit.disabled = !ready;
+    }
+
+    const accept = (file) => {
       if (!file) return;
+      message.hidden = false;
       if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
-        message.textContent = "Hanya berkas PDF yang diterima.";
+        message.textContent = "Hanya berkas PDF yang bisa dibaca saat ini.";
         return;
       }
-      if (file.size > 24 * 1024 * 1024) {
+      if (file.size > MAX_UPLOAD) {
         message.textContent = "Berkas melebihi 24 MB.";
         return;
       }
+      message.hidden = true;
       chosen = file;
-      message.textContent = "";
-      drop.hidden = true;
-      form.hidden = false;
-      titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
-      titleInput.focus();
+      chosenText.textContent = `${file.name} • ${(file.size / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+      drop.classList.add("has-file");
+      if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
+      refresh();
+    };
+
+    picker.addEventListener("change", () => accept(picker.files?.[0]));
+    for (const type of ["dragenter", "dragover"]) {
+      drop.addEventListener(type, (event) => {
+        event.preventDefault();
+        drop.classList.add("is-over");
+      });
+    }
+    for (const type of ["dragleave", "drop"]) {
+      drop.addEventListener(type, () => drop.classList.remove("is-over"));
+    }
+    drop.addEventListener("drop", (event) => {
+      event.preventDefault();
+      accept(event.dataTransfer?.files?.[0]);
     });
+    for (const input of [titleInput, categoryInput, ownerInput, targetSelect]) {
+      input.addEventListener("input", refresh);
+      input.addEventListener("change", refresh);
+    }
+    selectMethod("baru");
 
     const mark = (index) => {
       [...progress.children].forEach((li, i) => {
@@ -985,12 +1127,14 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       });
     };
 
-    form.addEventListener("submit", async (event) => {
+    box.addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (!chosen) return;
-      form.hidden = true;
+      if (!chosen || submit.disabled) return;
+      body.hidden = true;
+      methodWrap.hidden = true;
+      footer.hidden = true;
       progress.hidden = false;
-      message.textContent = "";
+      message.hidden = true;
 
       try {
         mark(0);
@@ -1012,9 +1156,14 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
           method: "POST",
           body: JSON.stringify({
             title: titleInput.value,
-            reference: referenceInput.value,
+            category: categoryInput.value,
             owner: ownerInput.value,
+            reference: referenceInput.value,
+            effectiveDate: dateInput.value,
             period: periodInput.value,
+            description: descInput.value,
+            method,
+            targetId: method === "baru" ? undefined : targetSelect.value,
             sizeBytes: chosen.size,
             passages,
           }),
@@ -1026,18 +1175,30 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         });
 
         mark(4);
+        message.hidden = false;
         message.textContent = created.warnings?.length
           ? `Diunggah, tetapi: ${created.warnings.join(" ")}`
-          : "Dokumen diunggah dan menunggu validasi.";
+          : method === "versi"
+            ? "Dokumen diunggah. Versi lama berhenti dipakai begitu versi baru divalidasi."
+            : "Dokumen diunggah dan menunggu validasi.";
         showToast("Dokumen diunggah.");
         onDone?.();
-        setTimeout(close, created.warnings?.length ? 4000 : 1400);
+        setTimeout(close, created.warnings?.length ? 4000 : 1600);
       } catch (error) {
         console.warn("Unggah gagal:", error);
+        message.hidden = false;
         message.textContent =
-          error.status === 403 ? "Peranmu tidak berwenang mengunggah." : error.status === 413 ? "Berkas terlalu besar." : "Unggah gagal. Periksa berkasnya, lalu coba lagi.";
+          error.status === 403
+            ? "Peranmu tidak berwenang mengunggah."
+            : error.status === 413
+              ? "Berkas terlalu besar."
+              : error.status === 400
+                ? error.message
+                : "Unggah gagal. Periksa berkasnya, lalu coba lagi.";
         progress.hidden = true;
-        form.hidden = false;
+        body.hidden = false;
+        methodWrap.hidden = false;
+        footer.hidden = false;
       }
     });
   }
