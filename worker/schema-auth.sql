@@ -77,6 +77,15 @@ CREATE TABLE IF NOT EXISTS credentials (
 -- Percobaan masuk yang gagal, per email, untuk pembatasan.
 CREATE TABLE IF NOT EXISTS login_failures (
   email  TEXT NOT NULL,
-  at     TEXT NOT NULL
+  at     TEXT NOT NULL,
+  ip     TEXT               -- hash klien, supaya orang asing tak bisa mengunci akun orang lain
+);
+
+-- Pembatasan laju per klien (lihat schema-hardening.sql untuk basis data lama).
+CREATE TABLE IF NOT EXISTS rate_limits (
+  bucket        TEXT NOT NULL,
+  window_start  INTEGER NOT NULL,
+  hits          INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (bucket, window_start)
 );
 CREATE INDEX IF NOT EXISTS login_failures_email ON login_failures (email, at);

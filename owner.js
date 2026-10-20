@@ -6,7 +6,7 @@
  * bukan angka yang terlihat meyakinkan tetapi tidak nyata.
  */
 
-import { documentStatusCard, evaluationCard, failureStageCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
+import { documentStatusCard, evaluationCard, failureStageCard, feedbackCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
 import { buildDashboardWorkbook, buildRecapCsv } from "./lib/report.js";
 import { loadPdfJs } from "./viewer.js";
 
@@ -249,6 +249,10 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       root.append(pick);
     }
 
+    if (s.truncated) {
+      root.append(make("p", "owner-note", "Periode ini memuat lebih dari 20.000 interaksi; angka dihitung dari 20.000 interaksi paling awal. Persempit rentang waktu untuk hasil yang utuh."));
+    }
+
     /* --- kartu angka --- */
     const grid = make("div", "stat-grid");
     const card = (title, value, suffix, caption, iconName, tone, delta) => {
@@ -298,6 +302,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       documentStatusCard(overview.documents, SOURCE_STATE),
       topicsCard(s),
       failureStageCard(s),
+      feedbackCard(overview.feedback),
       evaluationCard(),
     );
     root.append(more);

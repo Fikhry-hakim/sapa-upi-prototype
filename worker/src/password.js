@@ -15,7 +15,9 @@ import { base64url } from "./auth.js";
 export const PBKDF2_ITERATIONS = 100_000; // batas tertinggi yang diizinkan Workers
 export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 128;
-export const MAX_FAILURES = 5;
+export const MAX_FAILURES = 5; // per pasangan email + klien
+export const MAX_FAILURES_ANY_CLIENT = 25; // per email dari klien mana pun
+export const MAX_EMAIL_LENGTH = 254;
 export const LOCKOUT_MS = 15 * 60 * 1000;
 
 const encoder = new TextEncoder();
@@ -67,22 +69,32 @@ export function passwordProblem(password, email = "") {
 
 const iso = (ms) => new Date(ms).toISOString();
 
-export async function isLockedOut(db, email, now = Date.now) {
-  const row = await db
-    .prepare("SELECT COUNT(*) AS n FROM login_failures WHERE email = ? AND at > ?")
-    .bind(email, iso(now() - LOCKOUT_MS))
+/**
+ * Terkunci kalau satu klien gagal berulang atas email ini, atau kalau gagalnya
+ * sangat banyak dari klien mana pun. Dengan begitu orang asing tidak bisa
+ * mengunci pemilik akun dari perangkatnya sendiri hanya dengan menebak.
+ */
+export async function isLockedOut(db, email, ip = null, now = Date.now) {
+  const since = iso(now() - LOCKOUT_MS);
+  const total = await db.prepare("SELECT COUNT(*) AS n FROM login_failures WHERE email = ? AND at > ?").bind(email, since).first();
+  if ((total?.n ?? 0) >= MAX_FAILURES_ANY_CLIENT) return true;
+  if (!ip) return (total?.n ?? 0) >= MAX_FAILURES;
+  const mine = await db
+    .prepare("SELECT COUNT(*) AS n FROM login_failures WHERE email = ? AND ip = ? AND at > ?")
+    .bind(email, ip, since)
     .first();
-  return (row?.n ?? 0) >= MAX_FAILURES;
+  return (mine?.n ?? 0) >= MAX_FAILURES;
 }
 
-export async function recordFailure(db, email, now = Date.now) {
-  await db.prepare("INSERT INTO login_failures (email, at) VALUES (?, ?)").bind(email, iso(now())).run();
+export async function recordFailure(db, email, ip = null, now = Date.now) {
+  await db.prepare("INSERT INTO login_failures (email, at, ip) VALUES (?, ?, ?)").bind(email, iso(now()), ip).run();
   // Catatan lama tidak berguna lagi; sekalian dibersihkan supaya tabel tidak tumbuh.
   await db.prepare("DELETE FROM login_failures WHERE at <= ?").bind(iso(now() - LOCKOUT_MS)).run();
 }
 
-export async function clearFailures(db, email) {
-  await db.prepare("DELETE FROM login_failures WHERE email = ?").bind(email).run();
+export async function clearFailures(db, email, ip = null) {
+  if (ip) await db.prepare("DELETE FROM login_failures WHERE email = ? AND ip = ?").bind(email, ip).run();
+  else await db.prepare("DELETE FROM login_failures WHERE email = ?").bind(email).run();
 }
 
 export async function storedHashFor(db, userId) {
@@ -111,12 +123,14 @@ export async function hasPassword(db, userId) {
  */
 const DECOY = `pbkdf2$${PBKDF2_ITERATIONS}$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
 
-export async function attemptLogin(db, { email, password }, { domainOk }) {
+export async function attemptLogin(db, { email, password }, { domainOk, ip = null }) {
   const clean = String(email ?? "").trim().toLowerCase();
   const generic = { error: "Email atau kata sandi salah.", status: 401 };
-  if (!clean || typeof password !== "string" || password.length > MAX_PASSWORD_LENGTH) return generic;
+  // Masukan yang jelas bukan email tidak perlu menyentuh basis data sama sekali.
+  if (!clean || clean.length > MAX_EMAIL_LENGTH || !clean.includes("@")) return generic;
+  if (typeof password !== "string" || password.length > MAX_PASSWORD_LENGTH) return generic;
 
-  if (await isLockedOut(db, clean)) {
+  if (await isLockedOut(db, clean, ip)) {
     return { error: "Terlalu banyak percobaan. Coba lagi dalam 15 menit.", status: 429 };
   }
 
@@ -127,10 +141,10 @@ export async function attemptLogin(db, { email, password }, { domainOk }) {
 
   const ok = await verifyPassword(password, stored ?? DECOY);
   if (!user || !stored || !ok) {
-    await recordFailure(db, clean);
+    await recordFailure(db, clean, ip);
     return generic;
   }
 
-  await clearFailures(db, clean);
+  await clearFailures(db, clean, ip);
   return { user };
 }

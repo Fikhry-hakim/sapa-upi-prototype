@@ -10,6 +10,7 @@ import {
   authenticate,
   createSession,
   destroyAllSessions,
+  destroyOtherSessions,
   destroySession,
   isFreshGoogleSession,
   roleOf,
@@ -26,6 +27,8 @@ import {
   storedHashFor,
   verifyPassword,
 } from "./password.js";
+import { checkFeedback, recordFeedback } from "./feedback.js";
+import { clientKey, hit } from "./rate-limit.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
   deleteAllConversations,
@@ -38,6 +41,9 @@ import {
 } from "./history.js";
 
 const MAX_QUESTION_LENGTH = 300;
+const ASK_PER_MINUTE = 20;
+const LOGIN_PER_TEN_MINUTES = 30;
+const FEEDBACK_PER_TEN_MINUTES = 60;
 const MAX_ANSWER_LENGTH = 4000;
 const MAX_CONTEXT_ENTRIES = 3;
 
@@ -113,6 +119,16 @@ async function handleAsk(request, env, cors, ctx) {
   }
 
   const db = env.sapa_upi_kb;
+
+  // Setiap pertanyaan memakai kuota model; tanpa batas, satu klien bisa menghabiskannya.
+  const limited = await hit(db, `ask:${await clientKey(request)}`, { limit: ASK_PER_MINUTE, windowMs: 60_000 });
+  if (!limited.allowed) {
+    return json(
+      { error: "Terlalu banyak pertanyaan. Coba lagi sebentar." },
+      { status: 429, headers: { ...cors, "Retry-After": String(limited.retryAfter) } },
+    );
+  }
+
   const startedAt = Date.now();
   const user = await authenticate(db, request);
 
@@ -211,10 +227,11 @@ async function handleAsk(request, env, cors, ctx) {
       { headers: cors },
     );
   } catch (error) {
+    console.warn("gemini:", String(error).slice(0, 300));
     note(true);
     // Quota, outage, bad model name — let the browser fall back to local matching.
     return json(
-      { error: "LLM tidak tersedia", detail: String(error).slice(0, 200) },
+      { error: "LLM tidak tersedia" },
       { status: 502, headers: cors },
     );
   }
@@ -240,7 +257,15 @@ async function handleAuth(request, env, cors, path) {
     } catch {
       return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
     }
-    const result = await attemptLogin(db, body ?? {}, { domainOk: (email) => isAllowedEmail(email, allowedDomains(env)) });
+    const ip = await clientKey(request);
+    const throttled = await hit(db, `login:${ip}`, { limit: LOGIN_PER_TEN_MINUTES, windowMs: 600_000 });
+    if (!throttled.allowed) {
+      return json(
+        { error: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
+        { status: 429, headers: { ...cors, "Retry-After": String(throttled.retryAfter) } },
+      );
+    }
+    const result = await attemptLogin(db, body ?? {}, { domainOk: (email) => isAllowedEmail(email, allowedDomains(env)), ip });
     if (!result.user) return json({ error: result.error }, { status: result.status, headers: cors });
 
     await upsertUser(db, result.user);
@@ -268,17 +293,21 @@ async function handleAuth(request, env, cors, path) {
     const existing = await storedHashFor(db, user.id);
     const fresh = await isFreshGoogleSession(db, request);
     if (existing && !fresh) {
-      if (await isLockedOut(db, user.email)) {
+      const ip = await clientKey(request);
+      if (await isLockedOut(db, user.email, ip)) {
         return json({ error: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." }, { status: 429, headers: cors });
       }
       if (typeof body.current !== "string" || !(await verifyPassword(body.current, existing))) {
-        await recordFailure(db, user.email);
+        await recordFailure(db, user.email, ip);
         return json({ error: "Kata sandi saat ini salah." }, { status: 403, headers: cors });
       }
-      await clearFailures(db, user.email);
+      await clearFailures(db, user.email, ip);
     }
 
     await setPassword(db, user.id, body.password);
+    // Sesi di perangkat lain dicabut: kalau salah satunya dicuri, mengganti
+    // kata sandi harus benar-benar menutup aksesnya.
+    await destroyOtherSessions(db, user, request);
     return json({ ok: true }, { headers: cors });
   }
 
@@ -405,6 +434,36 @@ async function handleConversations(request, env, cors, path) {
   return json({ conversation }, { headers: cors });
 }
 
+/** Penilaian singkat setelah jawaban. Terbuka untuk siapa pun, seperti bertanya itu sendiri. */
+async function handleFeedback(request, env, cors) {
+  const db = env.sapa_upi_kb;
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
+  }
+
+  const value = checkFeedback(body);
+  if (!value) return json({ error: "Penilaian tidak sah" }, { status: 400, headers: cors });
+
+  const limited = await hit(db, `feedback:${await clientKey(request)}`, { limit: FEEDBACK_PER_TEN_MINUTES, windowMs: 600_000 });
+  if (!limited.allowed) {
+    return json(
+      { error: "Terlalu banyak penilaian. Coba lagi nanti." },
+      { status: 429, headers: { ...cors, "Retry-After": String(limited.retryAfter) } },
+    );
+  }
+
+  try {
+    await recordFeedback(db, value);
+  } catch (error) {
+    console.warn("feedback:", String(error).slice(0, 200));
+    return json({ error: "Gagal menyimpan" }, { status: 503, headers: cors });
+  }
+  return json({ ok: true }, { headers: cors });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const cors = corsHeaders(request, env);
@@ -423,6 +482,7 @@ export default {
     if (request.method !== "POST") {
       return json({ error: "Gunakan POST" }, { status: 405, headers: cors });
     }
+    if (path === "/feedback") return handleFeedback(request, env, cors);
     return handleAsk(request, env, cors, ctx);
   },
 };

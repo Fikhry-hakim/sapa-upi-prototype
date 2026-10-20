@@ -159,12 +159,19 @@ function percentile(sorted, p) {
   return sorted[Math.max(0, index)];
 }
 
+/** Batas baris yang dibaca per ringkasan; kalau terlampaui, hasil ditandai terpotong. */
+export const SUMMARY_ROW_LIMIT = 20_000;
+
 export async function summarize(db, window) {
   const { results } = await db
-    .prepare("SELECT at, outcome, duration_ms, category FROM events WHERE at >= ? AND at < ? ORDER BY at LIMIT 20000")
+    .prepare(
+      `SELECT at, outcome, duration_ms, category FROM events WHERE at >= ? AND at < ? ORDER BY at LIMIT ${SUMMARY_ROW_LIMIT + 1}`,
+    )
     .bind(sqlTime(window.start), sqlTime(window.end))
     .all();
-  const rows = results ?? [];
+  const fetched = results ?? [];
+  const truncated = fetched.length > SUMMARY_ROW_LIMIT;
+  const rows = truncated ? fetched.slice(0, SUMMARY_ROW_LIMIT) : fetched;
 
   const previous = await db
     .prepare("SELECT COUNT(*) AS n FROM events WHERE at >= ? AND at < ?")
@@ -202,6 +209,7 @@ export async function summarize(db, window) {
   return {
     range: window.range,
     label: window.label,
+    truncated,
     total,
     previousTotal: before,
     change: before ? Math.round(((total - before) / before) * 1000) / 10 : null,

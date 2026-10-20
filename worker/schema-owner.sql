@@ -65,3 +65,14 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS audit_at ON audit_log(at DESC);
+
+-- Umpan balik singkat setelah jawaban; tanpa pertanyaan dan tanpa identitas (lihat schema-feedback.sql).
+CREATE TABLE IF NOT EXISTS feedback (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  at        TEXT NOT NULL DEFAULT (datetime('now')),
+  rating    TEXT NOT NULL CHECK (rating IN ('buruk', 'cukup', 'baik')),
+  kind      TEXT NOT NULL CHECK (kind IN ('ai', 'offline', 'fallback')),
+  entry_id  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS feedback_at ON feedback(at);

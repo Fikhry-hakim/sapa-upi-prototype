@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 import { bearerToken, can, hashToken, createToken } from "../worker/src/auth.js";
-import { isAllowedEmail, decodeIdToken, allowedDomains } from "../worker/src/google-oidc.js";
+import { isAllowedEmail, decodeIdToken, allowedDomains, safeRedirect } from "../worker/src/google-oidc.js";
 import { titleFrom } from "../worker/src/history.js";
+import { clientKey, hit } from "../worker/src/rate-limit.js";
 
 const request = (headers = {}) => new Request("https://example.test", { headers });
 
@@ -90,4 +91,69 @@ test("CORS admits the session header and the methods the history needs", async (
   for (const method of ["GET", "POST", "DELETE"]) {
     assert.ok(methods.includes(method), `history needs ${method}`);
   }
+});
+
+test("after login the token only ever goes back to this app, never to an arbitrary address", () => {
+  const env = { APP_URL: "https://fikhry-hakim.github.io/sapa-upi-prototype/" };
+
+  assert.equal(
+    safeRedirect("https://fikhry-hakim.github.io/sapa-upi-prototype/?x=1#frag", env),
+    "https://fikhry-hakim.github.io/sapa-upi-prototype/?x=1",
+    "the app itself is fine, and any fragment is dropped",
+  );
+  assert.ok(safeRedirect("http://localhost:4173/", env), "local development is fine");
+  assert.ok(safeRedirect("http://127.0.0.1:8080/index.html", env));
+
+  for (const bad of [
+    "https://evil.example/",
+    "https://fikhry-hakim.github.io.evil.example/",
+    "https://evil.example/https://fikhry-hakim.github.io/",
+    "https://fikhry-hakim.github.io@evil.example/",
+    "https://user:pw@fikhry-hakim.github.io/",
+    "http://fikhry-hakim.github.io/sapa-upi-prototype/",
+    "javascript:alert(1)",
+    "//evil.example",
+    "not a url",
+    "",
+    null,
+  ]) {
+    assert.equal(safeRedirect(bad, env), null, String(bad));
+  }
+  assert.equal(safeRedirect("https://fikhry-hakim.github.io/", {}), null, "no APP_URL configured: only localhost passes");
+});
+
+test("the rate limiter counts per window, refuses past the limit, and lets go when the database fails", async () => {
+  const counts = new Map();
+  const db = {
+    prepare: () => ({
+      bind: (bucket, windowStart) => ({
+        first: async () => {
+          const key = `${bucket}|${windowStart}`;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+          return { hits: counts.get(key) };
+        },
+        run: async () => ({}),
+      }),
+    }),
+  };
+  const options = { limit: 3, windowMs: 60_000, now: () => 1_000_000 };
+
+  for (let i = 0; i < 3; i += 1) assert.equal((await hit(db, "ask:x", options)).allowed, true);
+  const blocked = await hit(db, "ask:x", options);
+  assert.equal(blocked.allowed, false);
+  assert.ok(blocked.retryAfter >= 1 && blocked.retryAfter <= 60);
+  assert.equal((await hit(db, "ask:y", options)).allowed, true, "another client is unaffected");
+  assert.equal((await hit(db, "ask:x", { ...options, now: () => 1_000_000 + 60_000 })).allowed, true, "a new window starts fresh");
+
+  const broken = { prepare: () => ({ bind: () => ({ first: async () => { throw new Error("D1 down"); } }) }) };
+  assert.equal((await hit(broken, "ask:x", options)).allowed, true, "fails open");
+  assert.equal((await hit(null, "ask:x", options)).allowed, true);
+});
+
+test("the client key is a short hash, never the address itself", async () => {
+  const key = await clientKey(new Request("https://x.test", { headers: { "CF-Connecting-IP": "203.0.113.7" } }));
+  assert.equal(key.length, 16);
+  assert.ok(!key.includes("203"));
+  assert.equal(key, await clientKey(new Request("https://x.test", { headers: { "CF-Connecting-IP": "203.0.113.7" } })));
+  assert.notEqual(key, await clientKey(new Request("https://x.test", { headers: { "CF-Connecting-IP": "203.0.113.8" } })));
 });

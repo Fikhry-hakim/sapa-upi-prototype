@@ -249,3 +249,23 @@ test("an attempt that times out is retried rather than failing the question", as
   assert.equal(answer, "Jawaban.");
   assert.equal(attempts, 2);
 });
+
+test("timed-out attempts can never add up to more than the total budget", async () => {
+  let clock = 0;
+  let calls = 0;
+  const timeouts = [];
+  const fetchImpl = async (_url, options) => {
+    calls += 1;
+    timeouts.push(options.signal);
+    clock += 12_000; // every attempt burns the whole per-attempt allowance
+    throw new Error("The operation was aborted due to timeout");
+  };
+
+  await assert.rejects(
+    askGemini({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl, sleep: async () => {}, now: () => clock }),
+    /timeout/,
+  );
+
+  assert.equal(calls, 2, "a third attempt must not start once the budget is gone");
+  assert.ok(clock <= TOTAL_BUDGET_MS + 12_000, "at most one attempt past the budget line, never two");
+});

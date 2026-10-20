@@ -4,7 +4,9 @@ import test from "node:test";
 import {
   attemptLogin,
   hashPassword,
+  MAX_EMAIL_LENGTH,
   MAX_FAILURES,
+  MAX_FAILURES_ANY_CLIENT,
   passwordProblem,
   verifyPassword,
 } from "../worker/src/password.js";
@@ -15,6 +17,10 @@ function memoryDb({ users = [], credentials = {} } = {}) {
   const run = (sql, args) => ({
     first: async () => {
       if (/COUNT\(\*\)/.test(sql)) {
+        if (/AND ip = \?/.test(sql)) {
+          const [email, ip, since] = args;
+          return { n: failures.filter((f) => f.email === email && f.ip === ip && f.at > since).length };
+        }
         const [email, since] = args;
         return { n: failures.filter((f) => f.email === email && f.at > since).length };
       }
@@ -23,8 +29,10 @@ function memoryDb({ users = [], credentials = {} } = {}) {
       return null;
     },
     run: async () => {
-      if (/INSERT INTO login_failures/.test(sql)) failures.push({ email: args[0], at: args[1] });
-      if (/DELETE FROM login_failures WHERE email/.test(sql)) {
+      if (/INSERT INTO login_failures/.test(sql)) failures.push({ email: args[0], at: args[1], ip: args[2] });
+      if (/DELETE FROM login_failures WHERE email = \? AND ip/.test(sql)) {
+        for (let i = failures.length - 1; i >= 0; i -= 1) if (failures[i].email === args[0] && failures[i].ip === args[1]) failures.splice(i, 1);
+      } else if (/DELETE FROM login_failures WHERE email/.test(sql)) {
         for (let i = failures.length - 1; i >= 0; i -= 1) if (failures[i].email === args[0]) failures.splice(i, 1);
       }
       return {};
@@ -107,4 +115,37 @@ test("after too many failures even the right password is refused for a while", a
   const locked = await attemptLogin(db, { email: "ani@upi.edu", password: "kata-sandi-panjang-1" }, { domainOk });
   assert.equal(locked.status, 429);
   assert.equal(locked.user, undefined);
+});
+
+test("a stranger guessing from their own address cannot lock the real owner out", async () => {
+  const stored = await hashPassword("kata-sandi-panjang-1");
+  const db = memoryDb({ users: [{ id: "g1", email: "ani@upi.edu", name: "Ani" }], credentials: { g1: stored } });
+
+  for (let i = 0; i < MAX_FAILURES; i += 1) {
+    await attemptLogin(db, { email: "ani@upi.edu", password: "salah-salah-1" }, { domainOk, ip: "penyerang" });
+  }
+  const attacker = await attemptLogin(db, { email: "ani@upi.edu", password: "kata-sandi-panjang-1" }, { domainOk, ip: "penyerang" });
+  assert.equal(attacker.status, 429, "the guesser's own address is blocked");
+
+  const owner = await attemptLogin(db, { email: "ani@upi.edu", password: "kata-sandi-panjang-1" }, { domainOk, ip: "pemilik" });
+  assert.equal(owner.user.id, "g1", "the owner, from elsewhere, still gets in");
+});
+
+test("a flood from many addresses still trips the per-email ceiling", async () => {
+  const stored = await hashPassword("kata-sandi-panjang-1");
+  const db = memoryDb({ users: [{ id: "g1", email: "ani@upi.edu", name: "Ani" }], credentials: { g1: stored } });
+  for (let i = 0; i < MAX_FAILURES_ANY_CLIENT; i += 1) {
+    db.failures.push({ email: "ani@upi.edu", at: new Date().toISOString(), ip: `klien-${i}` });
+  }
+  const result = await attemptLogin(db, { email: "ani@upi.edu", password: "kata-sandi-panjang-1" }, { domainOk, ip: "baru" });
+  assert.equal(result.status, 429);
+});
+
+test("input that cannot be an email never reaches the database", async () => {
+  const db = memoryDb();
+  for (const email of ["a".repeat(MAX_EMAIL_LENGTH + 1) + "@upi.edu", "tanpa-at-sign", ""]) {
+    const result = await attemptLogin(db, { email, password: "x" }, { domainOk });
+    assert.equal(result.status, 401);
+  }
+  assert.equal(db.failures.length, 0, "no failure rows are written for junk input");
 });

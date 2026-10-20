@@ -31,6 +31,7 @@ const ICON = {
   database: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
   help: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5M12 17h.01"/></svg>',
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>',
+  close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
 };
 
 const refs = {
@@ -102,7 +103,8 @@ const VIEWS = ["home", "chat", "search", "files", "settings", "dashboard", "metr
    STATE
 ============================================================ */
 
-const BACKEND_TIMEOUT_MS = 15_000;
+// Sedikit di atas batas total Worker (15 dtk), supaya galatnya sampai sebelum browser menyerah.
+const BACKEND_TIMEOUT_MS = 18_000;
 
 const state = {
   view: "home",
@@ -451,7 +453,53 @@ function renderFollowUps(questions) {
   return row;
 }
 
-function fillCard(card, response) {
+const FEEDBACK_OPTIONS = [
+  ["buruk", "Kurang"],
+  ["cukup", "Cukup"],
+  ["baik", "Baik"],
+];
+
+const feedbackKind = (response) => (response.type === "fallback" ? "fallback" : response.generated ? "ai" : "offline");
+
+/**
+ * Penilaian singkat di bawah jawaban baru. Yang dikirim hanya penilaian, jenis
+ * jawaban, dan topik rujukannya: tidak ada teks pertanyaan dan tidak ada identitas.
+ */
+function feedbackRow(response) {
+  const row = make("div", "feedback-row");
+  row.setAttribute("role", "group");
+  row.setAttribute("aria-label", "Penilaian jawaban");
+  row.append(make("span", "feedback-label", "Bagaimana jawaban SAPA ini?"));
+
+  for (const [rating, label] of FEEDBACK_OPTIONS) {
+    const button = make("button", `feedback-option feedback-${rating}`, label);
+    button.type = "button";
+    button.addEventListener("click", async () => {
+      row.replaceChildren(make("span", "feedback-thanks", "Terima kasih atas masukanmu."));
+      try {
+        await fetch(`${API_URL}/feedback`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ rating, kind: feedbackKind(response), entryId: response.entry?.id ?? "" }),
+          signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+        });
+      } catch (error) {
+        console.warn("Penilaian tidak terkirim:", error);
+      }
+    });
+    row.append(button);
+  }
+
+  const dismiss = make("button", "feedback-dismiss");
+  dismiss.type = "button";
+  dismiss.setAttribute("aria-label", "Tutup penilaian");
+  dismiss.innerHTML = ICON.close;
+  dismiss.addEventListener("click", () => row.remove());
+  row.append(dismiss);
+  return row;
+}
+
+function fillCard(card, response, { feedback = false } = {}) {
   const head = card.querySelector(".bot-head");
   const body = card.querySelector(".bot-body");
   head.querySelector(".pill")?.remove();
@@ -511,6 +559,9 @@ function fillCard(card, response) {
   }
 
   if (followUps) body.append(followUps);
+  if (feedback && API_URL && (response.type === "answer" || response.type === "fallback")) {
+    body.append(feedbackRow(response));
+  }
 }
 
 /** Teks jawaban, apa adanya yang dilihat pembaca; dipakai untuk riwayat dan salin. */
@@ -638,7 +689,7 @@ async function submitQuestion(raw) {
 
   if (requestId !== state.latestRequestId) return;
 
-  fillCard(card, response);
+  fillCard(card, response, { feedback: true });
   scrollToEnd();
 
   trackLocalChat(question, response);
@@ -1566,6 +1617,7 @@ function showAuthScreen(mode) {
   $("auth-error").hidden = true;
   $("auth-password").value = "";
   refs.signinPage.dataset.mode = mode;
+  if (refs.signinPage.hidden) authOpener = document.activeElement;
   refs.signinPage.hidden = false;
   document.body.classList.add("auth-open");
   (isLogin ? $("auth-email") : $("auth-google")).focus();
@@ -1607,9 +1659,31 @@ async function submitPasswordLogin(event) {
   }
 }
 
+let authOpener = null;
+
 function hideAuthScreen() {
   refs.signinPage.hidden = true;
   document.body.classList.remove("auth-open");
+  authOpener?.focus?.();
+  authOpener = null;
+}
+
+/** Tab dan Shift+Tab berputar di dalam layar masuk, tidak keluar ke halaman di belakangnya. */
+function trapAuthFocus(event) {
+  if (event.key !== "Tab" || refs.signinPage.hidden) return;
+  const focusable = [...refs.signinPage.querySelectorAll("button, input, a[href], select, textarea")].filter(
+    (node) => !node.disabled && node.offsetParent !== null,
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && (document.activeElement === first || !refs.signinPage.contains(document.activeElement))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (document.activeElement === last || !refs.signinPage.contains(document.activeElement))) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 /** Worker mengembalikan alasan penolakan lewat fragment (tanpa data pribadi). */
@@ -1909,6 +1983,7 @@ function initialize() {
   $("auth-skip").addEventListener("click", hideAuthScreen);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !refs.signinPage.hidden) hideAuthScreen();
+    trapAuthFocus(event);
   });
   refs.settingsBack.addEventListener("click", () => showView("home"));
   NARROW.addEventListener("change", () => (refs.question.placeholder = placeholderText()));

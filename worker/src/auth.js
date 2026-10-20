@@ -145,3 +145,13 @@ export async function destroyAllSessions(db, user) {
   const { meta } = await db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
   return meta?.changes ?? 0;
 }
+
+/** Cabut semua sesi pengguna kecuali yang sedang dipakai (mis. setelah ganti kata sandi). */
+export async function destroyOtherSessions(db, user, request) {
+  const token = bearerToken(request);
+  if (!db || !token) return;
+  await db
+    .prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash != ?")
+    .bind(user.id, await hashToken(token))
+    .run();
+}

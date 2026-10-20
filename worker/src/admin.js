@@ -25,6 +25,7 @@ import {
   setRag,
   validateDocument,
 } from "./documents.js";
+import { feedbackSummary } from "./feedback.js";
 import { INTERACTION_PAGE_SIZE, listInteractions, outcomeTotals, summarize, windowFor } from "./events.js";
 
 function json(body, { status = 200, headers = {} } = {}) {
@@ -73,8 +74,14 @@ export async function handleAdmin(request, env, cors, path) {
       url.searchParams.get("from"),
       url.searchParams.get("to"),
     );
-    const [summary, docs, totals] = await Promise.all([summarize(db, window), listDocuments(db), outcomeTotals(db)]);
-    return json({ summary, documents: documentStats(docs), totals, role: assignment }, { headers });
+    const [summary, docs, totals, feedback] = await Promise.all([
+      summarize(db, window),
+      listDocuments(db),
+      outcomeTotals(db),
+      // Tabel umpan balik belum tentu sudah dimigrasi; Dashboard tetap jalan tanpanya.
+      feedbackSummary(db, window).catch(() => null),
+    ]);
+    return json({ summary, documents: documentStats(docs), totals, feedback, role: assignment }, { headers });
   }
 
   if (path === "/admin/interactions" && method === "GET") {

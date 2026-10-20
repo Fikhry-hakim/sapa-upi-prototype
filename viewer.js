@@ -13,6 +13,16 @@
 const PDFJS_VERSION = "3.11.174";
 const PDFJS_BASE = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
 
+/**
+ * Hash SHA-384 kedua berkas PDF.js. Kalau CDN menyajikan isi yang lain dari yang
+ * kita periksa, browser menolak menjalankannya, jadi CDN yang dibobol tidak bisa
+ * menyisipkan kode ke halaman. Ubah hash ini bersamaan dengan PDFJS_VERSION.
+ */
+const PDFJS_INTEGRITY = {
+  main: "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e",
+  worker: "sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2",
+};
+
 export const ZOOM_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2];
 
 /** Huruf dan angka saja, huruf kecil — tahan terhadap spasi dan tanda baca yang berbeda. */
@@ -69,10 +79,14 @@ export function loadPdfJs() {
   pdfjsPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = `${PDFJS_BASE}/pdf.min.js`;
+    script.integrity = PDFJS_INTEGRITY.main;
+    script.crossOrigin = "anonymous";
     script.onload = async () => {
       try {
         // Worker lintas origin ditolak browser, jadi diambil lalu dibungkus blob.
-        const code = await (await fetch(`${PDFJS_BASE}/pdf.worker.min.js`)).text();
+        // fetch memeriksa hash yang sama sebelum isinya dijadikan worker.
+        const response = await fetch(`${PDFJS_BASE}/pdf.worker.min.js`, { integrity: PDFJS_INTEGRITY.worker });
+        const code = await response.text();
         const blob = new Blob([code], { type: "text/javascript" });
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
         resolve(window.pdfjsLib);

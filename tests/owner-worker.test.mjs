@@ -5,6 +5,7 @@ import {
   classifyOutcome,
   windowFor,
   summarize,
+  SUMMARY_ROW_LIMIT,
   sqlTime,
   interactionCode,
   LOW_EVIDENCE_SCORE,
@@ -335,4 +336,14 @@ test("reprocessing swaps the page text and never switches RAG on by itself", asy
   const scanned = await replacePassages(db, "a@upi.edu", "doc-1", [{ page: 1, text: "  " }]);
   assert.equal(scanned.status, "parse_failed");
   assert.equal((await replacePassages(db, "a@upi.edu", "doc-1", [])).ok, false);
+});
+
+test("a window with more rows than the limit says so instead of silently under-counting", async () => {
+  const w = windowFor("harian", NOW);
+  const row = { at: sqlTime(w.buckets[6].start + 3_600_000), outcome: "berbasis_sumber", duration_ms: 1000 };
+  const rows = Array.from({ length: SUMMARY_ROW_LIMIT + 1 }, () => row);
+  const s = await summarize(fakeEventsDb(rows, 0), w);
+  assert.equal(s.truncated, true);
+  assert.equal(s.total, SUMMARY_ROW_LIMIT);
+  assert.equal((await summarize(fakeEventsDb([row], 0), w)).truncated, false);
 });

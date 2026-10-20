@@ -39,6 +39,35 @@ export function isAllowedEmail(email, domains) {
   return domains.some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
+/**
+ * Alamat tujuan setelah login yang boleh dipakai: hanya situs aplikasi sendiri
+ * (APP_URL) dan localhost untuk pengembangan. Token sesi ikut terkirim ke
+ * alamat itu, jadi alamat sembarang berarti token bisa dikirim ke pihak lain.
+ * Mengembalikan alamat yang sudah dinormalkan, atau null kalau tidak boleh.
+ */
+export function safeRedirect(target, env) {
+  if (!target) return null;
+  let url;
+  try {
+    url = new URL(target);
+  } catch {
+    return null;
+  }
+  if (url.username || url.password) return null;
+
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && url.protocol === "http:";
+  let appOrigin = null;
+  try {
+    appOrigin = env.APP_URL ? new URL(env.APP_URL).origin : null;
+  } catch {
+    /* APP_URL tidak sah: hanya localhost yang lolos */
+  }
+  if (!local && !(appOrigin && url.origin === appOrigin && url.protocol === "https:")) return null;
+
+  url.hash = "";
+  return url.toString();
+}
+
 /** Mulai login: simpan state + verifier, lalu arahkan ke Google. */
 export async function startLogin(db, env, redirectTo, now = Date.now) {
   const state = createToken();
@@ -48,7 +77,7 @@ export async function startLogin(db, env, redirectTo, now = Date.now) {
     .prepare(
       "INSERT INTO auth_states (state, code_verifier, redirect_to, expires_at) VALUES (?, ?, ?, ?)",
     )
-    .bind(state, codeVerifier, redirectTo ?? null, new Date(now() + AUTH_STATE_TTL_MS).toISOString())
+    .bind(state, codeVerifier, safeRedirect(redirectTo, env), new Date(now() + AUTH_STATE_TTL_MS).toISOString())
     .run();
 
   const url = new URL(AUTH_ENDPOINT);

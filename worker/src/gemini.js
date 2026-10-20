@@ -56,10 +56,13 @@ export const MAX_ATTEMPTS = 3;
 export const RETRY_DELAY_MS = 250;
 
 /** Cap on one call to Gemini. A throttled model can otherwise stall for minutes. */
-export const ATTEMPT_TIMEOUT_MS = 9_000;
+export const ATTEMPT_TIMEOUT_MS = 12_000;
 
 /** Cap on all attempts together, so retrying never costs more than answering. */
-export const TOTAL_BUDGET_MS = 24_000;
+export const TOTAL_BUDGET_MS = 15_000;
+
+/** Percobaan yang tersisa waktunya kurang dari ini tidak layak dimulai. */
+export const MIN_ATTEMPT_MS = 3_000;
 
 /**
  * Whether another attempt could plausibly succeed.
@@ -93,12 +96,20 @@ export async function askGemini({
     // who asked it. Nothing about the reader reaches the prompt, and a fixed
     // seed keeps the decoding reproducible too. The provider does not promise
     // this across model updates, so treat it as stability, not a guarantee.
-    generation_config: { seed: ANSWER_SEED },
+    // Jawaban disusun dari kutipan yang sudah diberikan, jadi tidak perlu berpikir
+    // panjang; thinking rendah memangkas waktu tunggu dari belasan detik.
+    generation_config: { seed: ANSWER_SEED, thinking_level: "low" },
   });
 
   let lastError;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    // Anggaran total adalah batas keras: percobaan terakhir dipotong ke sisa
+    // waktu, dan tidak dimulai sama sekali kalau sisanya terlalu sedikit.
+    const remaining = TOTAL_BUDGET_MS - (now() - startedAt);
+    if (attempt > 1 && remaining < MIN_ATTEMPT_MS) throw lastError;
+    const attemptTimeout = Math.min(ATTEMPT_TIMEOUT_MS, Math.max(remaining, MIN_ATTEMPT_MS));
+
     let response;
     try {
       response = await fetchImpl(GEMINI_URL, {
@@ -108,7 +119,7 @@ export async function askGemini({
           "content-type": "application/json",
         },
         body,
-        signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
+        signal: AbortSignal.timeout(attemptTimeout),
       });
     } catch (error) {
       // A timed-out or aborted attempt is worth another go, within the budget.
