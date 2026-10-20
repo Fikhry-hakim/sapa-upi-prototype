@@ -2,13 +2,23 @@ import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base
 import { searchKnowledgeBase } from "../../lib/search.js";
 import { askGemini } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
-import { authenticate, createSession, destroySession, roleOf, upsertUser } from "./auth.js";
+import {
+  authenticate,
+  createSession,
+  destroyAllSessions,
+  destroySession,
+  roleOf,
+  upsertUser,
+} from "./auth.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
+  deleteAllConversations,
   deleteConversation,
+  exportConversations,
   listConversations,
   readConversation,
   recordExchange,
+  searchConversations,
 } from "./history.js";
 
 const MAX_QUESTION_LENGTH = 300;
@@ -36,8 +46,11 @@ function json(body, { status = 200, headers = {} } = {}) {
 }
 
 /** Top entries the question actually relates to, used as grounding context. */
-function retrieve(question, knowledgeBase) {
-  const result = searchKnowledgeBase(question, knowledgeBase);
+function retrieve(question, knowledgeBase, scope = null) {
+  // A reader can ask about one document only. The scope narrows what may be
+  // retrieved; it never adds to it, and nothing about the reader is involved.
+  const pool = scope ? knowledgeBase.filter((entry) => entry.sourceUrl === scope) : knowledgeBase;
+  const result = searchKnowledgeBase(question, pool);
   if (result.status === "empty" || result.status === "none") return [];
   const ranked = [result.best, ...result.alternatives].filter(Boolean);
   const seen = new Set();
@@ -56,8 +69,9 @@ function loginConfigured(env) {
 async function handleAsk(request, env, cors) {
   let question = "";
   let conversationId = null;
+  let scope = null;
   try {
-    ({ question = "", conversationId = null } = await request.json());
+    ({ question = "", conversationId = null, scope = null } = await request.json());
   } catch {
     return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
   }
@@ -76,7 +90,7 @@ async function handleAsk(request, env, cors) {
   const knowledgeBase = await loadKnowledgeBase(env.sapa_upi_kb, bundledKnowledgeBase);
   // Only the question reaches retrieval. Nothing about the reader does, so two
   // people asking the same thing are answered from the same sources.
-  const entries = retrieve(question, knowledgeBase);
+  const entries = retrieve(question, knowledgeBase, typeof scope === "string" ? scope : null);
 
   try {
     const answer = await askGemini({
@@ -131,6 +145,13 @@ async function handleAuth(request, env, cors, path) {
 
   if (path === "/auth/logout") {
     await destroySession(db, request);
+    return json({ ok: true }, { headers: cors });
+  }
+
+  if (path === "/auth/logout-all") {
+    const user = await authenticate(db, request);
+    if (!user) return json({ error: "Perlu masuk" }, { status: 401, headers: cors });
+    await destroyAllSessions(db, user);
     return json({ ok: true }, { headers: cors });
   }
 
@@ -216,7 +237,19 @@ async function handleConversations(request, env, cors, path) {
   const id = path.slice("/conversations/".length);
 
   if (path === "/conversations") {
-    return json({ conversations: await listConversations(db, user) }, { headers: cors });
+    if (request.method === "DELETE") {
+      const removed = await deleteAllConversations(db, user);
+      return json({ ok: true, removed }, { headers: cors });
+    }
+    const term = new URL(request.url).searchParams.get("q")?.trim();
+    const conversations = term
+      ? await searchConversations(db, user, term.slice(0, 80))
+      : await listConversations(db, user);
+    return json({ conversations }, { headers: cors });
+  }
+
+  if (path === "/conversations/export") {
+    return json(await exportConversations(db, user), { headers: cors });
   }
 
   if (request.method === "DELETE") {

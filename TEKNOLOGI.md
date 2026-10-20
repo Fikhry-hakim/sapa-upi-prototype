@@ -48,6 +48,8 @@ Kalau Worker atau model tidak terjangkau, browser otomatis menjawab dari pencoco
 | Backend | **JavaScript** di Cloudflare Workers runtime | — |
 | Runtime pengembangan | **Node.js** | v25.9.0 |
 | Tooling deploy | **Wrangler** (CLI Cloudflare) | 4.150.0 |
+| Pembaca PDF | **PDF.js** dari cdnjs, dimuat hanya saat panel dokumen dibuka | 3.11.174 |
+| Font | **Plus Jakarta Sans** (Google Fonts) | — |
 
 **Tidak memakai framework** — tanpa React, Vue, Next.js, atau sejenisnya. Tanpa bundler, tanpa langkah build, tanpa transpiler.
 

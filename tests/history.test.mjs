@@ -6,6 +6,10 @@ import {
   listConversations,
   readConversation,
   deleteConversation,
+  likePattern,
+  searchConversations,
+  deleteAllConversations,
+  exportConversations,
 } from "../worker/src/history.js";
 
 /**
@@ -138,4 +142,43 @@ test("an offline answer is recorded as offline, not as something the model wrote
   const assistant = db.calls.find((call) => call.sql.includes("'assistant'"));
   assert.ok(assistant.bindings.includes("offline"), "the source must say where it came from");
   assert.ok(assistant.bindings.includes("skripsi-syarat-mengambil"));
+});
+
+test("search characters are matched literally, not as wildcards", () => {
+  assert.equal(likePattern("50%"), "%50\\%%");
+  assert.equal(likePattern("a_b"), "%a\\_b%");
+  assert.equal(likePattern("sidang"), "%sidang%");
+});
+
+test("searching always filters by the owner, in the title and the messages", async () => {
+  const db = fakeDb({ results: [{ id: "c1", title: "Syarat sidang", updated_at: "x" }] });
+
+  const found = await searchConversations(db, user, "sidang");
+
+  assert.equal(found.length, 1);
+  const [call] = db.calls;
+  assert.match(call.sql, /WHERE c\.user_id = \?/);
+  assert.equal(call.bindings[0], user.id);
+  assert.match(call.sql, /m\.content LIKE/);
+  assert.deepEqual(await searchConversations(db, null, "x"), []);
+});
+
+test("deleting everything touches only the asker's conversations", async () => {
+  const db = fakeDb({ changes: 3 });
+
+  assert.equal(await deleteAllConversations(db, user), 3);
+  assert.match(db.calls[0].sql, /DELETE FROM conversations WHERE user_id = \?/);
+  assert.deepEqual(db.calls[0].bindings, [user.id]);
+  assert.equal(await deleteAllConversations(db, null), 0);
+});
+
+test("the export is scoped to the asker through the conversation owner", async () => {
+  const db = fakeDb({ results: [] });
+
+  const data = await exportConversations(db, user);
+
+  assert.deepEqual(data.conversations, []);
+  assert.equal(data.account, user.email);
+  for (const call of db.calls) assert.ok(call.bindings.includes(user.id), "every export query must bind the owner");
+  assert.deepEqual((await exportConversations(db, null)).conversations, []);
 });

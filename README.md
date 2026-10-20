@@ -152,27 +152,48 @@ Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/
 - Worker tidak punya lokasi keluar yang tetap, sehingga sebagian permintaan ditolak Gemini dengan *"User location is not supported"*. Permintaan seperti itu dicoba ulang otomatis; yang tetap gagal jatuh ke mode offline.
 - Model gratis kadang membalas *"currently experiencing high load"* atau menggantung sampai lebih dari satu menit. Batas waktu menahan ini di 24 detik pada Worker dan 15 detik pada browser, lalu jawaban diambil dari pencocokan lokal. Artinya saat Google sedang padat, demo tetap menjawab tetapi dalam mode offline.
 
+## Tampilan
+
+Antarmuka mengikuti section **MVP** pada desain Figma (frame New Chat, Answering Question, Source, Student' Files, Profile, Settings):
+
+- **New Chat** — sapaan dengan nama akun, satu kotak tanya, tanpa kartu pintasan.
+- **Jawaban** — kartu dengan status asal jawaban, tabel bernomor, dan kotak *Rujukan Dokumen Resmi*.
+- **Panel dokumen** — klik rujukan untuk membuka PDF aslinya di halaman yang dikutip, dengan kalimat rujukan disorot (PDF.js, dimuat hanya saat dibutuhkan). Terbuka untuk siapa pun, tanpa login.
+- **Files** — daftar dokumen yang disajikan, dengan sampul halaman pertama dan penanda favorit.
+- **Tanya dokumen** — tombol **+** membatasi pertanyaan pada satu dokumen; di Worker, pembatasan hanya mempersempit rujukan, tidak pernah menambah.
+- **Search Chats** — mencari judul dan isi riwayat milik sendiri (perlu masuk).
+- **Profile / Settings / Help** — profil dari akun Google, keluar dari semua perangkat, unduh dan hapus riwayat, serta kontak program studi.
+
+Halaman owner pada desain (Dashboard, Metrics, Knowledge Base, Upload) belum dibangun.
+
 ## Struktur proyek
 
 ```text
 .
 ├── index.html
 ├── style.css
-├── app.js
+├── app.js                 # logika antarmuka
+├── viewer.js              # pembaca dokumen (PDF.js)
 ├── config.js              # alamat Worker
+├── dokumen/               # PDF sumber yang disajikan bersama situs
+├── assets/                # maskot dan sampul dokumen
 ├── data/
 │   ├── knowledge-base.js  # benih D1 + cadangan offline
-│   └── student-data.js    # profil mahasiswa (contoh)
+│   └── sources.js         # katalog dokumen + halaman kutipan tiap topik
 ├── lib/
 │   ├── chat-engine.js     # fallback offline
 │   └── search.js          # skoring retrieval
 ├── worker/
 │   ├── wrangler.toml
-│   ├── schema.sql         # skema D1
-│   ├── seed.mjs           # knowledge-base.js -> SQL
+│   ├── schema.sql         # skema knowledge base
+│   ├── schema-auth.sql    # akun, sesi, peran, riwayat
+│   ├── seed.mjs
 │   └── src/
-│       ├── index.js       # HTTP, CORS, validasi
+│       ├── index.js            # HTTP, CORS, rute
+│       ├── auth.js             # sesi dan peran
+│       ├── google-oidc.js      # masuk dengan Google
+│       ├── history.js          # riwayat percakapan
 │       ├── knowledge-store.js  # baca knowledge base dari D1
-│       └── gemini.js      # prompt & parsing respons
+│       └── gemini.js           # prompt & parsing respons
 └── tests/
 ```

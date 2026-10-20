@@ -118,3 +118,10 @@ export async function upsertUser(db, { id, email, name }, now = Date.now) {
     .bind(id, email.toLowerCase(), name ?? null, iso(now()))
     .run();
 }
+
+/** Akhiri setiap sesi milik pengguna, di semua perangkat. */
+export async function destroyAllSessions(db, user) {
+  if (!db || !user) return 0;
+  const { meta } = await db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.id).run();
+  return meta?.changes ?? 0;
+}

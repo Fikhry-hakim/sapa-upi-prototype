@@ -1,424 +1,533 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
+import { documents, citationFor } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
-import { searchKnowledgeBase } from "./lib/search.js";
 import { API_URL } from "./config.js";
+import { createViewer } from "./viewer.js";
 
-const SPARKLE_ICON =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6Z"/></svg>';
-const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>';
-const CLOCK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+/* ============================================================
+   PRIMITIF
+============================================================ */
 
-const QUICK_CARDS = [
-  {
-    badgeClass: "badge-reguler",
-    badgeText: "REGULER",
-    icon: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',
-    title: "Jalur Tugas Akhir",
-    description: "Skripsi, artikel ilmiah, atau karya teknologi tepat guna.",
-    footIcon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-    footText: "3 Jalur",
-    question: "Apa saja jalur penyelesaian tugas akhir?",
-  },
-  {
-    badgeClass: "badge-revisi",
-    badgeText: "MASA REVISI",
-    icon: '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 12h6M10 15.5h6"/>',
-    title: "Seminar Proposal",
-    description: "Dokumen, alur pendaftaran, & ketentuan pelaksanaan.",
-    footIcon: '<path d="M9 12.5 11 14.5l4-5"/><circle cx="12" cy="12" r="9"/>',
-    footText: "Map Kuning",
-    question: "Bagaimana cara mendaftar seminar proposal?",
-  },
-  {
-    badgeClass: "badge-akhir",
-    badgeText: "TINGKAT AKHIR",
-    icon: '<path d="m2.5 9 9.5-4.5L21.5 9 12 13.5 2.5 9Z"/><path d="M6.5 11.2V16c3 2.2 8 2.2 11 0v-4.8M21.5 9v6"/>',
-    title: "Sidang & Skripsi",
-    description: "Syarat pendaftaran ujian sidang & berkas yang diperlukan.",
-    footIcon: '<path d="M7 3.5h8.5A1.5 1.5 0 0 1 17 5v16l-5-3-5 3V5A1.5 1.5 0 0 1 7 3.5Z"/>',
-    footText: "TESOL 400",
-    question: "Apa saja persyaratan pendaftaran sidang?",
-  },
-  {
-    badgeClass: "badge-layanan",
-    badgeText: "LAYANAN",
-    icon: '<rect x="4.5" y="3.5" width="15" height="17" rx="2.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
-    title: "Penulisan Ilmiah",
-    description: "Format penulisan, uji similaritas, & penggunaan AI.",
-    footIcon: '<path d="M8.5 12.5 15 5a3 3 0 0 1 4 4l-8.5 8.5a5 5 0 0 1-7-7L12 2"/>',
-    footText: "Pedoman 2024",
-    question: "Bagaimana format penulisan skripsi?",
-  },
-];
+const $ = (id) => document.getElementById(id);
 
-const el = (id) => document.getElementById(id);
-
-const elements =
-  typeof document === "undefined"
-    ? {}
-    : {
-        sidebar: el("sidebar"),
-        sidebarOpen: el("sidebar-open"),
-        sidebarClose: el("sidebar-close"),
-        sidebarBackdrop: el("sidebar-backdrop"),
-        resetChat: el("reset-chat"),
-        homeScroll: el("home-scroll"),
-        chatLog: el("chat-log"),
-        quickCards: el("quick-cards"),
-        chatForm: el("chat-form"),
-        chatInput: el("chat-input"),
-        deepSearchToggle: el("deep-search-toggle"),
-        deepSearchToggleBottom: el("deep-search-toggle-bottom"),
-        chatFormBottom: el("chat-form-bottom"),
-        chatInputBottom: el("chat-input-bottom"),
-        sidebarSearch: el("sidebar-search"),
-        searchResults: el("search-results"),
-        navChat: el("nav-chat"),
-        modelChip: el("model-chip"),
-        shareButton: el("share-button"),
-        overflowButton: el("overflow-button"),
-        voiceButton: el("voice-button"),
-        savedButton: el("saved-button"),
-        savedButtonBottom: el("saved-button-bottom"),
-        popoverModel: el("popover-model"),
-        popoverOverflow: el("popover-overflow"),
-        popoverSaved: el("popover-saved"),
-        toast: el("toast"),
-        sidebarHistory: el("sidebar-history"),
-        historyList: el("history-list"),
-        accountNote: el("account-note"),
-        loginButton: el("login-button"),
-        accountSignedIn: el("account-signed-in"),
-        accountName: el("account-name"),
-        accountEmail: el("account-email"),
-        logoutButton: el("logout-button"),
-      };
-
-let latestRequestId = 0;
-let chatStarted = false;
-
-/** Whether the last answer came from the model; null before the first question. */
-let lastAnswerWasGenerated = null;
-
-/** The question the last answer belongs to, so it can be saved from the answer. */
-let lastQuestion = "";
-
-/** Signed-in reader, or null. Only used to store and show their own history. */
-let account = null;
-
-/** The conversation this session is appending to, assigned by the server. */
-let conversationId = null;
-
-function createElement(tag, className, html) {
+function make(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
-  if (html !== undefined) node.innerHTML = html;
+  if (text !== undefined) node.textContent = text;
   return node;
 }
 
-function formatTime() {
-  return new Date()
-    .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
-    .replace(".", ":");
+/** Ikon sebagai string SVG; dipakai di tempat yang dibangun dari JS. */
+const ICON = {
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
+  file: '<svg class="file-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 12.5h6M10 16h4"/></svg>',
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8Z"/></svg>',
+  user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.4-3.4 4-5 7-5s5.6 1.6 7 5"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.4 3 7.6 7.5 9.5 4.5-1.9 7.5-5.1 7.5-9.5V6Z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>',
+  database: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>',
+  help: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5M12 17h.01"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>',
+};
+
+const refs = {
+  app: $("app"),
+  sidebar: $("sidebar"),
+  scrim: $("scrim"),
+  menuButton: $("menu-button"),
+  sidebarClose: $("sidebar-close"),
+  navNew: $("nav-new"),
+  navSearch: $("nav-search"),
+  navFiles: $("nav-files"),
+  navRecent: $("nav-recent"),
+  recentList: $("recent-list"),
+  loginButton: $("login-button"),
+  loginNote: $("login-note"),
+  profile: $("profile"),
+  profileTrigger: $("profile-trigger"),
+  profileMenu: $("profile-menu"),
+  profileName: $("profile-name"),
+  profileSub: $("profile-sub"),
+  homeComma: $("home-comma"),
+  homeName: $("home-name"),
+  homeSlot: $("home-slot"),
+  chatSlot: $("chat-slot"),
+  chatScroll: $("chat-scroll"),
+  chatLog: $("chat-log"),
+  composer: $("composer"),
+  question: $("question"),
+  sendButton: $("send-button"),
+  voiceButton: $("voice-button"),
+  attachButton: $("attach-button"),
+  attachMenu: $("attach-menu"),
+  attachChip: $("attach-chip"),
+  attachTitle: $("attach-title"),
+  attachRemove: $("attach-remove"),
+  historyButton: $("history-button"),
+  shareButton: $("share-button"),
+  moreButton: $("more-button"),
+  moreMenu: $("more-menu"),
+  searchInput: $("search-input"),
+  searchResults: $("search-results"),
+  searchEmpty: $("search-empty"),
+  filesSearch: $("files-search"),
+  filesTabs: $("files-tabs"),
+  fileGrid: $("file-grid"),
+  filesEmpty: $("files-empty"),
+  settingsBack: $("settings-back"),
+  settingsItems: $("settings-items"),
+  settingsTitle: $("settings-title"),
+  settingsCard: $("settings-card"),
+  toast: $("toast"),
+};
+
+const VIEWS = ["home", "chat", "search", "files", "settings"];
+
+/* ============================================================
+   STATE
+============================================================ */
+
+const BACKEND_TIMEOUT_MS = 15_000;
+
+const state = {
+  view: "home",
+  account: null, // { id, email, name, role? }
+  loginEnabled: Boolean(API_URL),
+  sessionToken: null,
+  conversationId: null, // percakapan yang sedang dibuka (id dari server)
+  conversations: [], // riwayat tersimpan milik pengguna
+  sessionChats: [], // percakapan sesi ini bagi yang belum masuk (tidak disimpan)
+  activeLocalChat: null,
+  scopeDocumentId: null,
+  latestRequestId: 0,
+  settingsSection: "profile",
+  filesTab: "suggested",
+};
+
+const viewer = createViewer({ onCopy: (message) => showToast(message) });
+
+/* ============================================================
+   TOAST + MENU
+============================================================ */
+
+let toastTimer;
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  refs.toast.textContent = message;
+  refs.toast.hidden = false;
+  refs.toast.classList.remove("is-visible");
+  void refs.toast.offsetWidth;
+  refs.toast.classList.add("is-visible");
+  toastTimer = setTimeout(() => {
+    refs.toast.classList.remove("is-visible");
+    toastTimer = setTimeout(() => (refs.toast.hidden = true), 200);
+  }, 2600);
 }
 
-function scrollChat() {
-  requestAnimationFrame(() => {
-    elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
-  });
+const menus = () => [
+  [refs.profileMenu, refs.profileTrigger],
+  [refs.moreMenu, refs.moreButton],
+  [refs.attachMenu, refs.attachButton],
+];
+
+function closeMenus(except) {
+  for (const [menu, trigger] of menus()) {
+    if (menu === except) continue;
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
+function toggleMenu(menu, trigger, build) {
+  const open = menu.hidden;
+  closeMenus(open ? menu : null);
+  if (!open) {
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    return;
+  }
+  build?.();
+  menu.hidden = false;
+  trigger.setAttribute("aria-expanded", "true");
+}
+
+async function copyText(text, success) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(success);
+    return;
+  } catch {
+    /* lanjut ke cara lama */
+  }
+
+  const scratch = document.createElement("textarea");
+  scratch.value = text;
+  scratch.setAttribute("readonly", "");
+  scratch.style.cssText = "position:fixed;opacity:0";
+  document.body.append(scratch);
+  scratch.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  scratch.remove();
+
+  if (copied) showToast(success);
+  else window.prompt("Salin manual dengan Cmd/Ctrl+C:", text);
 }
 
 /* ============================================================
-   SIDEBAR (mobile off-canvas)
+   TAMPILAN
 ============================================================ */
 
+function showView(name) {
+  if (!VIEWS.includes(name)) return;
+  state.view = name;
+  refs.app.dataset.view = name;
+  closeMenus();
+
+  for (const view of VIEWS) {
+    const section = $(`view-${view}`);
+    if (section) section.hidden = view !== name;
+  }
+
+  // Composer hanya ada di beranda dan percakapan, dan berpindah di antara keduanya.
+  const composerHost = name === "home" ? refs.homeSlot : name === "chat" ? refs.chatSlot : null;
+  if (composerHost) {
+    composerHost.append(refs.composer);
+    refs.composer.hidden = false;
+  } else {
+    refs.composer.hidden = true;
+  }
+
+  refs.navNew.classList.toggle("is-active", name === "home");
+  refs.navSearch.classList.toggle("is-active", name === "search");
+  refs.navFiles.classList.toggle("is-active", name === "files");
+  highlightRecent();
+  closeSidebar();
+
+  if (name === "home" || name === "chat") refs.question.focus({ preventScroll: true });
+}
+
 function openSidebar() {
-  elements.sidebar.classList.add("is-open");
-  elements.sidebarBackdrop.hidden = false;
-  requestAnimationFrame(() => elements.sidebarBackdrop.classList.add("is-visible"));
+  refs.sidebar.classList.add("is-open");
+  refs.scrim.hidden = false;
 }
 
 function closeSidebar() {
-  elements.sidebar.classList.remove("is-open");
-  elements.sidebarBackdrop.classList.remove("is-visible");
-  elements.sidebarBackdrop.hidden = true;
+  refs.sidebar.classList.remove("is-open");
+  refs.scrim.hidden = true;
+}
+
+function firstWord(name) {
+  return String(name ?? "").trim();
+}
+
+function renderGreeting() {
+  const signedIn = Boolean(state.account);
+  const name = signedIn ? firstWord(state.account.name || state.account.email.split("@")[0]) : "";
+  refs.homeName.textContent = name;
+  refs.homeComma.textContent = signedIn ? ", " : "!";
 }
 
 /* ============================================================
-   HOME: quick cards
+   RECENT
 ============================================================ */
 
-function renderQuickCards() {
-  elements.quickCards.replaceChildren();
-  for (const card of QUICK_CARDS) {
-    const button = createElement("button", "quick-card");
-    button.type = "button";
-    button.innerHTML = `
-      <div class="quick-card-top">
-        <span class="quick-card-icon"><svg viewBox="0 0 24 24">${card.icon}</svg></span>
-        <span class="quick-card-badge ${card.badgeClass}">${card.badgeText}</span>
-      </div>
-      <strong>${card.title}</strong>
-      <p>${card.description}</p>
-      <span class="quick-card-foot"><svg viewBox="0 0 24 24">${card.footIcon}</svg>${card.footText}</span>
-    `;
-    button.addEventListener("click", () => submitQuestion(card.question));
-    elements.quickCards.append(button);
+function recentEntries() {
+  if (state.account) return state.conversations.map((c) => ({ id: c.id, title: c.title, saved: true }));
+  return state.sessionChats.map((c) => ({ id: c.localId, title: c.title, saved: false }));
+}
+
+function renderRecent() {
+  refs.recentList.replaceChildren();
+  const entries = recentEntries();
+
+  if (!entries.length) {
+    const empty = make("li", "recent-empty", state.account ? "Belum ada percakapan." : "Belum ada percakapan di sesi ini.");
+    refs.recentList.append(empty);
   }
+
+  for (const entry of entries) {
+    const item = make("li");
+    const button = make("button", "recent-item", entry.title);
+    button.type = "button";
+    button.title = entry.title;
+    button.dataset.id = entry.id;
+    button.addEventListener("click", () => {
+      if (entry.saved) openConversation(entry.id);
+      else openLocalChat(entry.id);
+    });
+    item.append(button);
+    refs.recentList.append(item);
+  }
+  highlightRecent();
+}
+
+function highlightRecent() {
+  const activeId = state.account ? state.conversationId : state.activeLocalChat;
+  for (const button of refs.recentList.querySelectorAll(".recent-item")) {
+    button.classList.toggle("is-active", state.view === "chat" && button.dataset.id === String(activeId));
+  }
+}
+
+function setRecentOpen(open) {
+  refs.navRecent.setAttribute("aria-expanded", String(open));
+  refs.recentList.hidden = !open;
 }
 
 /* ============================================================
    CHAT
 ============================================================ */
 
-function enterChatState() {
-  if (chatStarted) return;
-  chatStarted = true;
-  elements.homeScroll.hidden = true;
-  elements.chatLog.hidden = false;
-  elements.chatFormBottom.hidden = false;
+function scrollToEnd() {
+  requestAnimationFrame(() => {
+    refs.chatScroll.scrollTo({ top: refs.chatScroll.scrollHeight, behavior: "smooth" });
+  });
 }
 
-function appendUserMessage(text) {
-  const article = createElement("article", "message user-message");
-  article.innerHTML = `
-    <div class="user-bubble"></div>
-    <div class="user-meta-row"><span>${formatTime()}</span>${CHECK_ICON}</div>
-  `;
-  article.querySelector(".user-bubble").textContent = text;
-  elements.chatLog.append(article);
-  scrollChat();
+/** Teks biasa dengan tautan http(s) yang bisa diklik; tidak pernah memakai innerHTML. */
+function appendRichText(parent, text) {
+  const pattern = /(https?:\/\/[^\s)]+[^\s).,;])/g;
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > last) parent.append(text.slice(last, match.index));
+    const link = document.createElement("a");
+    link.href = match[0];
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = match[0];
+    parent.append(link);
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parent.append(text.slice(last));
 }
 
-function createBotArticle() {
-  const article = createElement("article", "message bot-message");
-  article.innerHTML = `
-    <div class="message-avatar"><img src="./assets/mascot-sapa.png" alt=""/></div>
-    <div class="message-body"></div>
-  `;
-  return { article, body: article.querySelector(".message-body") };
+function paragraph(text) {
+  const p = make("p");
+  appendRichText(p, text);
+  return p;
+}
+
+function appendUserMessage(question, documentId) {
+  if (documentId) {
+    const doc = documents[documentId];
+    const chip = make("div", "bubble-file");
+    chip.innerHTML = ICON.file;
+    chip.append(make("span", "", doc.title));
+    refs.chatLog.append(chip);
+  }
+  refs.chatLog.append(make("p", "bubble", question));
+}
+
+function createBotCard() {
+  const card = make("article", "bot-card");
+  const head = make("header", "bot-head");
+  head.append(make("strong", "", "SAPA AI Academic Hub"));
+  const body = make("div", "bot-body");
+  card.append(head, body);
+  refs.chatLog.append(card);
+  return { card, head, body };
+}
+
+function pill(text, kind) {
+  const node = make("span", `pill${kind ? ` pill-${kind}` : ""}`);
+  if (kind === "ok") node.innerHTML = ICON.check;
+  node.append(text);
+  return node;
 }
 
 function showProcessing() {
-  const { article, body } = createBotArticle();
-  article.dataset.processing = "true";
-  body.innerHTML = `
-    <div class="bot-label-row"><strong>SAPA AI Academic Hub</strong><span class="pill pill-soft">RETRIEVAL AUGMENTED GENERATION</span></div>
-    <div class="processing-card">
-      <p class="processing-title">Mencari rujukan yang sesuai di pedoman akademik...</p>
-      <div class="processing-steps">
-        <span class="step-done">${CHECK_ICON}Mencocokkan pertanyaan</span>
-        <span class="step-done">${CHECK_ICON}Memilih rujukan pedoman</span>
-        <span>${CLOCK_ICON}Menyusun jawaban</span>
-      </div>
-      <div class="skeleton-lines"><span style="width:100%"></span><span style="width:88%"></span><span style="width:64%"></span></div>
-      <div class="processing-footer"><i class="dot dot-live"></i><span>Menyusun jawaban dari rujukan yang ditemukan...</span><span class="grow"></span><span>Gemini via Worker</span></div>
-    </div>
-  `;
-  elements.chatLog.append(article);
-  scrollChat();
+  const { card, head, body } = createBotCard();
+  card.dataset.processing = "true";
+  head.append(pill("Mencari rujukan...", "busy"));
+
+  const steps = make("div", "steps");
+  for (const [label, done] of [
+    ["Mencocokkan pertanyaan", true],
+    ["Memilih rujukan pedoman", true],
+    ["Menyusun jawaban", false],
+  ]) {
+    const step = make("span", `step${done ? " is-done" : ""}`);
+    if (done) step.innerHTML = ICON.check;
+    step.append(label);
+    steps.append(step);
+  }
+  const skeleton = make("div", "skeleton");
+  skeleton.innerHTML = '<span style="width:100%"></span><span style="width:86%"></span><span style="width:58%"></span>';
+  body.append(steps, skeleton);
+  scrollToEnd();
+  return card;
 }
 
-function removeProcessing() {
-  elements.chatLog.querySelector("[data-processing='true']")?.remove();
-}
+function renderTable(table, parent) {
+  parent.append(make("h3", "section-title", `1. ${table.title}`));
+  const wrap = make("div", "table-wrap");
+  const element = make("table", "data-table");
 
-function renderAnswerBody(response, body) {
-  const badge = response.generated
-    ? `<span class="pill pill-soft">${CHECK_ICON}Dijawab AI &bull; dirujuk ke Pedoman</span>`
-    : `<span class="pill pill-muted">Mode offline &bull; pencocokan kata kunci</span>`;
-  body.innerHTML = `<div class="bot-label-row"><strong>SAPA AI Academic Hub</strong>${badge}</div>`;
+  const headRow = document.createElement("tr");
+  const noHead = make("th", "col-no", "NO");
+  headRow.append(noHead);
+  for (const column of table.columns) headRow.append(make("th", "", column));
+  const thead = document.createElement("thead");
+  thead.append(headRow);
 
-  const card = createElement("div", "answer-card");
-  const entry = response.entry;
-  const prose = response.generated ? response.message : entry?.lead ?? response.message;
-  card.innerHTML = `<p></p>`;
-  card.querySelector("p").textContent = prose;
-
-  // Offline, the lead is only an introduction — the points carry the actual
-  // guidance. A generated answer already states them in its own prose.
-  if (!response.generated && entry?.points?.length) {
-    const list = createElement("ul", "answer-points");
-    for (const point of entry.points) {
-      const item = document.createElement("li");
-      item.textContent = point;
-      list.append(item);
-    }
-    card.append(list);
-  }
-
-  if (entry?.table) {
-    // Rendered from the knowledge base exactly as written, with as many columns
-    // as the table actually has. Nothing here reflects the reader's own record:
-    // there is no SIAKAD integration, so no cell may claim to know their status.
-    const wrap = createElement("div", "answer-table-wrap");
-    const head = createElement("div", "answer-table-head");
-    head.innerHTML = `<strong><span class="num">1</span></strong>`;
-    head.querySelector("strong").append(entry.table.title);
-
-    const table = createElement("table", "data-table");
-    const thead = document.createElement("thead");
-    const headRow = document.createElement("tr");
-    for (const column of entry.table.columns) {
-      const th = document.createElement("th");
-      th.textContent = column;
-      headRow.append(th);
-    }
-    thead.append(headRow);
-
-    const tbody = document.createElement("tbody");
-    for (const row of entry.table.rows) {
-      const tr = document.createElement("tr");
-      for (const cell of row) {
-        const td = document.createElement("td");
-        td.textContent = cell;
-        tr.append(td);
-      }
-      tbody.append(tr);
-    }
-
-    table.append(thead, tbody);
-    wrap.append(head, table);
-    card.append(wrap);
-  }
-
-  if (!response.generated && entry?.closing) {
-    card.insertAdjacentHTML("beforeend", `<p>${entry.closing}</p>`);
-  }
-  body.append(card);
-
-  if (entry) renderSourceRow(entry, body);
-  if (response.followUpQuestions) renderFollowUps(response.followUpQuestions, body);
-}
-
-function renderSourceRow(entry, body) {
-  const row = createElement(
-    "div",
-    "source-row",
-    `<button type="button" class="source-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg><span>Source: ${entry.sourceTitle}</span></button><span class="message-time">${formatTime()}</span>`,
-  );
-  body.append(row);
-
-  const detail = createElement("div", "source-detail");
-  detail.hidden = true;
-  const fields = [
-    ["Dokumen", entry.sourceRef],
-    ["Pemilik informasi", entry.sourceOwner],
-    ["Periode berlaku", entry.validPeriod],
-    ["Terakhir diperbarui", entry.updatedAt],
-    ["Kategori", entry.category],
-  ];
-  detail.innerHTML = `
-    <dl class="source-meta">${fields.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
-    <p class="escalation-text">Jika masih perlu dipastikan: ${entry.escalation}</p>
-  `;
-
-  // Anyone can read the document the answer came from, signed in or not.
-  const openDoc = createElement("p", "source-open");
-  if (entry.sourceUrl) {
-    const link = document.createElement("a");
-    link.href = entry.sourceUrl;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>`;
-    link.append("Buka dokumen sumber");
-    openDoc.append(link);
-  } else {
-    openDoc.classList.add("source-open-missing");
-    openDoc.textContent = "Dokumen sumber belum dipublikasikan di sini.";
-  }
-  detail.append(openDoc);
-  const pill = row.querySelector(".source-pill");
-  pill.addEventListener("click", () => {
-    detail.hidden = !detail.hidden;
+  const tbody = document.createElement("tbody");
+  table.rows.forEach((row, index) => {
+    const tr = document.createElement("tr");
+    tr.append(make("td", "col-no", String(index + 1).padStart(2, "0")));
+    for (const cell of row) tr.append(make("td", "", cell));
+    tbody.append(tr);
   });
-  body.append(detail);
+
+  element.append(thead, tbody);
+  wrap.append(element);
+  parent.append(wrap);
 }
 
-function renderFollowUps(questions, body) {
-  const row = createElement("div", "chip-row");
-  for (const question of questions) {
-    const button = createElement("button", "chip-button", `${SPARKLE_ICON}<span>${question}</span>`);
-    button.type = "button";
-    button.addEventListener("click", () => submitQuestion(question));
-    row.append(button);
-  }
-  body.append(row);
-}
+function renderReferences(entry, parent) {
+  const citation = citationFor(entry);
+  const box = make("div", "refs");
+  box.append(make("p", "refs-label", "RUJUKAN DOKUMEN RESMI"));
+  const list = make("div", "refs-list");
 
-function renderSuggestionsBody(response, body) {
-  body.innerHTML = `<div class="bot-label-row"><strong>SAPA AI Academic Hub</strong></div>`;
-  const card = createElement("div", "answer-card", `<p>${response.message}</p>`);
-  body.append(card);
-  const list = createElement("div", "suggestion-list");
-  for (const suggestion of response.suggestions) {
-    const button = createElement(
-      "button",
-      "suggestion-button",
-      `<span><strong>${suggestion.title}</strong><small>${suggestion.category}</small></span><span>→</span>`,
+  if (citation) {
+    const chip = make("button", "ref-chip");
+    chip.type = "button";
+    chip.innerHTML = ICON.file;
+    chip.append(`${citation.document.title}, hal. ${citation.page}`);
+    chip.addEventListener("click", () =>
+      viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
     );
-    button.type = "button";
-    button.addEventListener("click", () => submitQuestion(suggestion.sampleQuestion));
-    list.append(button);
+    list.append(chip);
+  } else {
+    const chip = make("span", "ref-chip ref-chip-muted");
+    chip.innerHTML = ICON.file;
+    chip.append(entry.sourceRef || entry.sourceTitle);
+    list.append(chip);
   }
-  body.append(list);
+  box.append(list);
+
+  if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
+  parent.append(box);
 }
 
-function renderFallbackBody(response, body) {
-  body.innerHTML = `<div class="bot-label-row"><strong>SAPA AI Academic Hub</strong></div>`;
-  const card = createElement("div", "answer-card", `<p>${response.message}</p>`);
-  const fallback = createElement(
-    "div",
-    "fallback-card",
-    `<strong>Butuh bantuan? Hubungi pihak berwenang</strong><ul>${response.escalationOptions
-      .map((o) => `<li>${o}</li>`)
-      .join("")}</ul>`,
-  );
-  card.append(fallback);
-  body.append(card);
+function renderFollowUps(questions) {
+  if (!questions?.length) return;
+  const row = make("div", "follow-ups");
+  for (const question of questions) {
+    const chip = make("button", "follow-chip");
+    chip.type = "button";
+    chip.append(question);
+    chip.insertAdjacentHTML("beforeend", ICON.chevron);
+    chip.addEventListener("click", () => submitQuestion(question));
+    row.append(chip);
+  }
+  return row;
 }
 
-/** Lets the reader keep the question that produced this answer. */
-function renderSaveQuestion(question, body) {
-  const button = createElement("button", "save-question");
-  button.type = "button";
-  button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 3.8Z"/></svg><span>Simpan pertanyaan</span>`;
-  button.addEventListener("click", () => saveQuestion(question));
-  body.append(button);
+function fillCard(card, response) {
+  const head = card.querySelector(".bot-head");
+  const body = card.querySelector(".bot-body");
+  head.querySelector(".pill")?.remove();
+  body.replaceChildren();
+  delete card.dataset.processing;
+
+  const entry = response.entry;
+  let followUps = null;
+
+  if (response.type === "answer") {
+    head.append(
+      response.generated
+        ? pill("Dijawab AI • dirujuk ke Pedoman", "ok")
+        : pill("Mode offline • pencocokan kata kunci"),
+    );
+
+    if (response.generated) {
+      for (const part of String(response.message).split(/\n{2,}/)) body.append(paragraph(part.trim()));
+    } else {
+      body.append(paragraph(entry?.lead ?? response.message));
+      if (entry?.points?.length) {
+        const list = make("ul", "bot-list");
+        for (const point of entry.points) {
+          const li = document.createElement("li");
+          appendRichText(li, point);
+          list.append(li);
+        }
+        body.append(list);
+      }
+    }
+
+    if (entry?.table) renderTable(entry.table, body);
+    if (entry) renderReferences(entry, body);
+    followUps = renderFollowUps(response.followUpQuestions);
+  } else if (response.type === "suggestions") {
+    body.append(paragraph(response.message));
+    const list = make("div", "result-list");
+    for (const suggestion of response.suggestions) {
+      const button = make("button", "result");
+      button.type = "button";
+      button.append(make("strong", "", suggestion.title), make("small", "", suggestion.category));
+      button.addEventListener("click", () => submitQuestion(suggestion.sampleQuestion));
+      list.append(button);
+    }
+    body.append(list);
+  } else if (response.type === "fallback") {
+    head.append(pill("Di luar cakupan pedoman"));
+    body.append(paragraph(response.message));
+    const box = make("div", "refs");
+    box.append(make("p", "refs-label", "BUTUH BANTUAN? HUBUNGI PIHAK BERWENANG"));
+    const list = make("ul", "bot-list");
+    for (const option of response.escalationOptions ?? []) list.append(make("li", "", option));
+    box.append(list);
+    body.append(box);
+  } else {
+    body.append(paragraph(response.message ?? ""));
+  }
+
+  if (followUps) body.append(followUps);
 }
 
-function appendBotResponse(response) {
-  const { article, body } = createBotArticle();
-  if (response.type === "answer") renderAnswerBody(response, body);
-  else if (response.type === "suggestions") renderSuggestionsBody(response, body);
-  else if (response.type === "fallback") renderFallbackBody(response, body);
-  else body.innerHTML = `<div class="answer-card"><p>${response.message}</p></div>`;
-  if (lastQuestion) renderSaveQuestion(lastQuestion, body);
-  elements.chatLog.append(article);
-  scrollChat();
+/** Teks jawaban, apa adanya yang dilihat pembaca; dipakai untuk riwayat dan salin. */
+function answerText(response) {
+  if (response.type === "answer") {
+    if (response.generated) return String(response.message);
+    const entry = response.entry;
+    return [entry?.lead ?? response.message, ...(entry?.points ?? []).map((p) => `- ${p}`)]
+      .filter(Boolean)
+      .join("\n");
+  }
+  return response.message ?? "";
 }
 
-/** Ask the Worker, which grounds Gemini on the knowledge base. */
-/**
- * How long to wait for a grounded answer before answering locally instead.
- * A slow or throttled model must not leave the question hanging: the offline
- * matcher has an answer ready, and says so in its badge.
- */
-const BACKEND_TIMEOUT_MS = 15_000;
+/* ============================================================
+   BACKEND + OFFLINE
+============================================================ */
+
+function authHeaders() {
+  return state.sessionToken ? { Authorization: `Bearer ${state.sessionToken}` } : {};
+}
+
+function scopedEntries() {
+  const scope = state.scopeDocumentId ? documents[state.scopeDocumentId]?.file : null;
+  return scope ? knowledgeBase.filter((entry) => entry.sourceUrl === scope) : knowledgeBase;
+}
 
 async function askBackend(question) {
+  const scope = state.scopeDocumentId ? documents[state.scopeDocumentId]?.file : null;
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
 
   const data = await response.json();
-  // The server decides which conversation this belongs to; it is the only
-  // thing about the reader that comes back, and it never changes the answer.
-  if (data.conversationId) conversationId = data.conversationId;
+  if (data.conversationId) state.conversationId = data.conversationId;
   return {
     type: "answer",
     generated: true,
@@ -428,62 +537,8 @@ async function askBackend(question) {
   };
 }
 
-async function submitQuestion(rawQuestion) {
-  const question = String(rawQuestion ?? "").trim();
-  if (!question) return;
-
-  const requestId = ++latestRequestId;
-  enterChatState();
-  removeProcessing();
-  appendUserMessage(question);
-  elements.chatInput.value = "";
-  elements.chatInputBottom.value = "";
-  showProcessing();
-
-  let response;
-  if (API_URL) {
-    try {
-      response = await askBackend(question);
-    } catch (error) {
-      // Quota habis, Worker mati, atau offline — jatuh ke mesin lokal.
-      console.warn("Backend tidak tersedia, pakai pencocokan lokal:", error);
-    }
-  }
-  let answeredLocally = false;
-  if (!response) {
-    response = createChatResponse(question, knowledgeBase);
-    answeredLocally = true;
-  }
-
-  // A newer question was asked while this one was in flight.
-  if (requestId !== latestRequestId) return;
-
-  removeProcessing();
-  lastAnswerWasGenerated = Boolean(response.generated);
-  lastQuestion = question;
-  appendBotResponse(response);
-
-  // The server records what it answers itself. An answer produced here never
-  // reached it, so without this the history loses every exchange that happened
-  // while the model was unreachable.
-  if (answeredLocally) await recordLocalAnswer(question, response);
-
-  if (account) refreshHistory();
-}
-
-/** Text of a locally produced answer, as the reader saw it. */
-function answerText(response) {
-  if (response.type === "answer") {
-    const parts = [response.entry?.lead ?? response.message];
-    for (const point of response.entry?.points ?? []) parts.push(`- ${point}`);
-    if (response.entry?.closing) parts.push(response.entry.closing);
-    return parts.filter(Boolean).join("\n");
-  }
-  return response.message ?? "";
-}
-
 async function recordLocalAnswer(question, response) {
-  if (!account || !API_URL) return;
+  if (!state.account || !API_URL) return;
   const answer = answerText(response);
   if (!answer) return;
 
@@ -492,7 +547,7 @@ async function recordLocalAnswer(question, response) {
       method: "POST",
       headers: { "content-type": "application/json", ...authHeaders() },
       body: JSON.stringify({
-        conversationId,
+        conversationId: state.conversationId,
         question,
         answer,
         entryId: response.entry?.id ?? null,
@@ -501,246 +556,698 @@ async function recordLocalAnswer(question, response) {
     });
     if (!result.ok) throw new Error(`record ${result.status}`);
     const data = await result.json();
-    if (data.conversationId) conversationId = data.conversationId;
+    if (data.conversationId) state.conversationId = data.conversationId;
   } catch (error) {
-    // Losing the history entry must not disturb the answer already on screen.
     console.warn("Tidak bisa menyimpan percakapan offline:", error);
   }
 }
 
-function resetConversation() {
-  latestRequestId += 1; // drop any in-flight answer
-  elements.chatLog.replaceChildren();
-  chatStarted = false;
-  elements.homeScroll.hidden = false;
-  elements.chatLog.hidden = true;
-  elements.chatFormBottom.hidden = true;
-  elements.chatInput.value = "";
-  elements.chatInputBottom.value = "";
-  conversationId = null;
-  closeAllPopovers();
-  closeSidebar();
+function titleFrom(question) {
+  const clean = question.replace(/\s+/g, " ").trim();
+  return clean.length > 60 ? `${clean.slice(0, 59)}…` : clean;
+}
+
+/** Percakapan sesi ini bagi yang belum masuk: hanya ada selama tab terbuka. */
+function trackLocalChat(question, response) {
+  if (state.account) return;
+  let chat = state.sessionChats.find((c) => c.localId === state.activeLocalChat);
+  if (!chat) {
+    chat = { localId: `local-${Date.now()}`, title: titleFrom(question), turns: [] };
+    state.sessionChats.unshift(chat);
+    state.activeLocalChat = chat.localId;
+  }
+  chat.turns.push({ question, response, documentId: state.scopeDocumentId });
+  renderRecent();
+  setRecentOpen(true);
+}
+
+async function submitQuestion(raw) {
+  const question = String(raw ?? "").trim();
+  if (!question) return;
+
+  const requestId = ++state.latestRequestId;
+  const documentId = state.scopeDocumentId;
+
+  if (state.view !== "chat") {
+    refs.chatLog.replaceChildren();
+    showView("chat");
+  }
+  refs.question.value = "";
+  resizeComposer();
+
+  appendUserMessage(question, documentId);
+  const card = showProcessing();
+
+  let response;
+  if (API_URL) {
+    try {
+      response = await askBackend(question);
+    } catch (error) {
+      console.warn("Backend tidak tersedia, pakai pencocokan lokal:", error);
+    }
+  }
+
+  let answeredLocally = false;
+  if (!response) {
+    response = createChatResponse(question, scopedEntries());
+    answeredLocally = true;
+  }
+
+  if (requestId !== state.latestRequestId) return;
+
+  fillCard(card, response);
+  scrollToEnd();
+
+  trackLocalChat(question, response);
+  if (answeredLocally) await recordLocalAnswer(question, response);
+  if (state.account) refreshHistory();
+}
+
+function resetChat() {
+  state.latestRequestId += 1; // buang jawaban yang masih dalam perjalanan
+  state.conversationId = null;
+  state.activeLocalChat = null;
+  clearScope();
+  refs.chatLog.replaceChildren();
+  refs.question.value = "";
+  resizeComposer();
+  showView("home");
+}
+
+function resizeComposer() {
+  refs.question.style.height = "auto";
+  refs.question.style.height = `${Math.min(refs.question.scrollHeight, 120)}px`;
+}
+
+/* ------------------------------------------------------------ dokumen terlampir */
+
+const NARROW = window.matchMedia("(max-width: 520px)");
+
+/** Placeholder yang muat dalam satu baris, karena textarea tidak memotongnya. */
+function placeholderText() {
+  if (state.scopeDocumentId) {
+    return NARROW.matches ? "Tanyakan dokumen ini..." : "Tanyakan sesuatu tentang dokumen ini...";
+  }
+  return NARROW.matches
+    ? "Tanyakan seputar pedoman..."
+    : "Tanyakan informasi KRS, Jadwal, atau Pedoman Akademik...";
+}
+
+function setScope(documentId) {
+  state.scopeDocumentId = documentId;
+  refs.attachChip.hidden = !documentId;
+  if (documentId) refs.attachTitle.textContent = documents[documentId].title;
+  refs.question.placeholder = placeholderText();
+}
+
+function clearScope() {
+  setScope(null);
+}
+
+function buildAttachMenu() {
+  refs.attachMenu.replaceChildren(make("p", "pop-menu-label", "Tanya tentang dokumen"));
+  for (const [id, doc] of Object.entries(documents)) {
+    const button = make("button", "menu-doc");
+    button.type = "button";
+    button.setAttribute("role", "menuitem");
+    button.innerHTML = ICON.doc;
+    const text = make("span");
+    text.append(make("span", "", doc.title), make("small", "", `${doc.reference} • ${doc.pages} halaman`));
+    button.append(text);
+    button.addEventListener("click", () => {
+      setScope(id);
+      closeMenus();
+      refs.question.focus();
+    });
+    refs.attachMenu.append(button);
+  }
+}
+
+/* ------------------------------------------------------------ percakapan tersimpan */
+
+function openLocalChat(localId) {
+  const chat = state.sessionChats.find((c) => c.localId === localId);
+  if (!chat) return;
+
+  state.latestRequestId += 1;
+  state.activeLocalChat = localId;
+  refs.chatLog.replaceChildren();
+  showView("chat");
+
+  for (const turn of chat.turns) {
+    appendUserMessage(turn.question, turn.documentId);
+    const { card } = createBotCard();
+    fillCard(card, turn.response);
+  }
+  scrollToEnd();
+}
+
+async function openConversation(id) {
+  try {
+    const response = await fetch(`${API_URL}/conversations/${id}`, { headers: authHeaders() });
+    if (!response.ok) {
+      showToast("Percakapan tidak ditemukan.");
+      return;
+    }
+    const { conversation } = await response.json();
+
+    state.latestRequestId += 1;
+    state.conversationId = conversation.id;
+    clearScope();
+    refs.chatLog.replaceChildren();
+    showView("chat");
+
+    for (const message of conversation.messages) {
+      if (message.role === "user") {
+        appendUserMessage(message.content);
+      } else {
+        const entry = knowledgeBase.find((e) => e.id === message.entry_id) ?? null;
+        const { card } = createBotCard();
+        fillCard(card, {
+          type: "answer",
+          generated: message.answer_source === "llm",
+          message: message.content,
+          entry,
+          followUpQuestions: [],
+        });
+      }
+    }
+    scrollToEnd();
+  } catch (error) {
+    console.warn("Tidak bisa membuka percakapan:", error);
+    showToast("Gagal membuka percakapan.");
+  }
+}
+
+async function refreshHistory() {
+  if (!state.account) return;
+  try {
+    const response = await fetch(`${API_URL}/conversations`, { headers: authHeaders() });
+    if (!response.ok) return;
+    state.conversations = (await response.json()).conversations ?? [];
+    renderRecent();
+  } catch (error) {
+    console.warn("Tidak bisa memuat riwayat:", error);
+  }
+}
+
+async function deleteCurrentConversation() {
+  if (!state.account || !state.conversationId) {
+    showToast("Percakapan ini belum tersimpan.");
+    return;
+  }
+  const id = state.conversationId;
+  const response = await fetch(`${API_URL}/conversations/${id}`, { method: "DELETE", headers: authHeaders() });
+  if (!response.ok) {
+    showToast("Gagal menghapus percakapan.");
+    return;
+  }
+  showToast("Percakapan dihapus.");
+  resetChat();
+  refreshHistory();
+}
+
+function transcript() {
+  const lines = [];
+  for (const node of refs.chatLog.children) {
+    if (node.classList.contains("bubble")) lines.push(`Mahasiswa:\n${node.textContent}`);
+    else if (node.classList.contains("bot-card") && !node.dataset.processing) {
+      lines.push(`SAPA UPI:\n${node.querySelector(".bot-body").innerText.trim()}`);
+    }
+  }
+  return lines.join("\n\n");
+}
+
+function buildMoreMenu() {
+  refs.moreMenu.replaceChildren();
+  const actions = [
+    [
+      "Salin transkrip percakapan",
+      () => {
+        const text = transcript();
+        if (text) copyText(text, "Transkrip disalin.");
+        else showToast("Belum ada percakapan untuk disalin.");
+      },
+    ],
+    ["Mulai percakapan baru", () => resetChat()],
+  ];
+  if (state.account) actions.push(["Hapus percakapan ini", deleteCurrentConversation]);
+
+  for (const [label, action] of actions) {
+    const button = make("button", "", label);
+    button.type = "button";
+    button.setAttribute("role", "menuitem");
+    button.addEventListener("click", () => {
+      closeMenus();
+      action();
+    });
+    refs.moreMenu.append(button);
+  }
 }
 
 /* ============================================================
-   PROFILE POPOVER
+   SEARCH CHATS
 ============================================================ */
 
-/* ============================================================
-   TOAST
-============================================================ */
+let searchTimer;
 
-let toastTimer;
+function loginPrompt(message) {
+  refs.searchResults.replaceChildren();
+  refs.searchEmpty.hidden = false;
+  refs.searchEmpty.replaceChildren(message);
+  if (state.loginEnabled) {
+    const button = make("button", "login-btn");
+    button.type = "button";
+    button.innerHTML = ICON.user;
+    button.append(make("span", "", "Masuk dengan akun UPI"));
+    button.addEventListener("click", startLogin);
+    refs.searchEmpty.append(document.createElement("br"), button);
+  }
+}
 
-/** Brief, non-blocking feedback. Nothing important lives only here. */
-function showToast(message) {
-  clearTimeout(toastTimer);
-  elements.toast.textContent = message;
-  elements.toast.hidden = false;
-  // restart the entrance animation even if a toast is already showing
-  elements.toast.classList.remove("is-visible");
-  void elements.toast.offsetWidth;
-  elements.toast.classList.add("is-visible");
-  toastTimer = setTimeout(() => {
-    elements.toast.classList.remove("is-visible");
-    toastTimer = setTimeout(() => (elements.toast.hidden = true), 200);
-  }, 2600);
+async function runSearch() {
+  const term = refs.searchInput.value.trim();
+
+  if (!state.account) {
+    loginPrompt("Masuk untuk mencari di riwayat percakapanmu. Percakapan sebelum masuk tidak disimpan.");
+    return;
+  }
+
+  let results = state.conversations;
+  if (term) {
+    try {
+      const response = await fetch(`${API_URL}/conversations?q=${encodeURIComponent(term)}`, {
+        headers: authHeaders(),
+      });
+      if (response.ok) results = (await response.json()).conversations ?? [];
+    } catch (error) {
+      console.warn("Pencarian gagal:", error);
+    }
+  }
+
+  refs.searchResults.replaceChildren();
+  refs.searchEmpty.hidden = results.length > 0;
+  refs.searchEmpty.textContent = term ? "Tidak ada percakapan yang cocok." : "Belum ada percakapan tersimpan.";
+
+  for (const conversation of results) {
+    const item = make("li");
+    const button = make("button", "result");
+    button.type = "button";
+    button.append(make("strong", "", conversation.title), make("small", "", formatDate(conversation.updated_at)));
+    button.addEventListener("click", () => openConversation(conversation.id));
+    item.append(button);
+    refs.searchResults.append(item);
+  }
+}
+
+function formatDate(value) {
+  const date = new Date(String(value).includes("T") ? value : `${String(value).replace(" ", "T")}Z`);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
 /* ============================================================
-   POPOVERS
+   FILES
 ============================================================ */
 
-const popovers = () => [
-  [elements.popoverModel, elements.modelChip],
-  [elements.popoverOverflow, elements.overflowButton],
-  [elements.popoverSaved, elements.savedButton, elements.savedButtonBottom],
+const FAV_KEY = "sapa-upi:favorite-documents";
+
+function readFavorites() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FAV_KEY) ?? "[]");
+    return new Set(Array.isArray(raw) ? raw : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeFavorites(set) {
+  try {
+    localStorage.setItem(FAV_KEY, JSON.stringify([...set]));
+  } catch {
+    showToast("Browser menolak menyimpan favorit.");
+  }
+}
+
+const FILE_TABS = [
+  ["suggested", "Suggested"],
+  ["favorites", "Favorites"],
+  ["all", "All"],
 ];
 
-function closeAllPopovers() {
-  for (const [popover, ...triggers] of popovers()) {
-    popover.hidden = true;
-    for (const trigger of triggers) trigger?.setAttribute("aria-expanded", "false");
+function renderFilesTabs() {
+  refs.filesTabs.replaceChildren();
+  for (const [id, label] of FILE_TABS) {
+    const tab = make("button", "tab", label);
+    tab.type = "button";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(state.filesTab === id));
+    tab.addEventListener("click", () => {
+      state.filesTab = id;
+      renderFiles();
+    });
+    refs.filesTabs.append(tab);
   }
 }
 
-/** Opens one popover and closes the rest, or closes it if it was already open. */
-function togglePopover(popover, trigger, render) {
-  const wasOpen = !popover.hidden;
-  closeAllPopovers();
-  if (wasOpen) return;
+function renderFiles() {
+  renderFilesTabs();
+  const term = refs.filesSearch.value.trim().toLowerCase();
+  const favorites = readFavorites();
 
-  render();
-  popover.hidden = false;
-  trigger.setAttribute("aria-expanded", "true");
+  let list = Object.entries(documents);
+  if (state.filesTab === "favorites") list = list.filter(([id]) => favorites.has(id));
+  if (term) {
+    list = list.filter(([, doc]) =>
+      `${doc.title} ${doc.owner} ${doc.reference}`.toLowerCase().includes(term),
+    );
+  }
 
-  // Anchor under the trigger on the trigger's own side, kept on screen.
-  const rect = trigger.getBoundingClientRect();
-  const width = popover.offsetWidth || 300;
-  const margin = 12;
+  refs.fileGrid.replaceChildren();
+  refs.filesEmpty.hidden = list.length > 0;
+  refs.filesEmpty.textContent =
+    state.filesTab === "favorites" && !term
+      ? "Belum ada favorit. Tandai dokumen dengan bintang."
+      : "Tidak ada dokumen yang cocok.";
 
-  popover.style.right = "auto";
-  const left = Math.min(
-    Math.max(margin, rect.left),
-    Math.max(margin, window.innerWidth - width - margin),
-  );
-  popover.style.left = `${left}px`;
+  for (const [id, doc] of list) {
+    const card = make("div", "file-card");
+    const open = make("button", "file-open");
+    open.type = "button";
+    open.style.cssText = "all:unset;display:grid;gap:10px;cursor:pointer";
+    open.setAttribute("aria-label", `Buka ${doc.title}`);
 
-  const below = rect.bottom + 8;
-  const maxTop = window.innerHeight - popover.offsetHeight - margin;
-  popover.style.top = `${Math.max(margin, Math.min(below, maxTop))}px`;
+    const thumb = make("div", "file-thumb");
+    const image = document.createElement("img");
+    image.src = `./assets/thumbs/${id}.jpg`;
+    image.alt = "";
+    image.loading = "lazy";
+    image.addEventListener("error", () => image.remove());
+    thumb.append(image, make("span", "file-tag", doc.kind));
+
+    const info = make("div", "file-info");
+    info.append(
+      make("span", "file-name", doc.title),
+      make("span", "file-sub", doc.reference),
+      make("span", "file-meta", `${doc.sizeLabel} • ${doc.pages} halaman • ${doc.dateLabel}`),
+    );
+    open.append(thumb, info);
+    open.addEventListener("click", () => viewer.open(doc, { page: 1 }));
+
+    const star = make("button", "file-star");
+    star.type = "button";
+    star.innerHTML = ICON.star;
+    star.setAttribute("aria-pressed", String(favorites.has(id)));
+    star.setAttribute("aria-label", `Favoritkan ${doc.title}`);
+    star.addEventListener("click", () => {
+      const current = readFavorites();
+      if (current.has(id)) current.delete(id);
+      else current.add(id);
+      writeFavorites(current);
+      renderFiles();
+    });
+
+    card.append(open, star);
+    refs.fileGrid.append(card);
+  }
 }
 
 /* ============================================================
-   SAVED QUESTIONS
+   SETTINGS
 ============================================================ */
 
-const SAVED_KEY = "sapa-upi:saved-questions";
-const MAX_SAVED = 20;
+const HELP_CONTACT = {
+  program: "Program Studi Bisnis Digital, UPI Kampus Tasikmalaya",
+  email: "bisnisdigital@upi.edu",
+  phone: "(0265) 331860",
+  address: "Jalan Dadaha Nomor 18, Kota Tasikmalaya 46115",
+  site: "http://www.kd-tasikmalaya.upi.edu",
+};
 
-/** Stored per browser. Reading can throw in private mode, so never assume it works. */
-function readSaved() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "[]");
-    return Array.isArray(raw) ? raw.filter((q) => typeof q === "string") : [];
-  } catch {
-    return [];
-  }
+const SETTINGS_SECTIONS = [
+  { id: "profile", label: "Profile", icon: ICON.user, needsAccount: true },
+  { id: "security", label: "Security and login", icon: ICON.shield, needsAccount: true },
+  { id: "data", label: "Data controls", icon: ICON.database, needsAccount: true },
+  { id: "help", label: "Help", icon: ICON.help, needsAccount: false },
+];
+
+function row(label, description, value) {
+  const wrap = make("div", "settings-row");
+  const text = make("div", "label");
+  text.append(make("strong", "", label));
+  if (description) text.append(make("small", "", description));
+  wrap.append(text);
+  if (value instanceof Node) wrap.append(value);
+  else if (value !== undefined) wrap.append(make("span", "value", value));
+  return wrap;
 }
 
-function writeSaved(questions) {
-  try {
-    localStorage.setItem(SAVED_KEY, JSON.stringify(questions.slice(0, MAX_SAVED)));
-  } catch {
-    showToast("Browser menolak menyimpan. Coba matikan mode penyamaran.");
-  }
-  refreshSavedCount();
+function actionButton(label, handler, danger = false) {
+  const button = make("button", `btn${danger ? " btn-danger" : ""}`, label);
+  button.type = "button";
+  button.addEventListener("click", handler);
+  return button;
 }
 
-function refreshSavedCount() {
-  const count = readSaved().length;
-  for (const span of document.querySelectorAll("[data-saved-count]")) {
-    span.textContent = String(count);
-  }
-}
-
-function saveQuestion(question) {
-  const saved = readSaved();
-  if (saved.includes(question)) {
-    showToast("Pertanyaan ini sudah tersimpan.");
-    return;
-  }
-  writeSaved([question, ...saved]);
-  showToast("Pertanyaan disimpan.");
-}
-
-function renderSavedPopover() {
-  const saved = readSaved();
-  elements.popoverSaved.replaceChildren();
-
-  const head = createElement("div", "popover-head");
-  head.textContent = saved.length ? "Pertanyaan tersimpan" : "Belum ada pertanyaan tersimpan";
-  elements.popoverSaved.append(head);
-
-  if (!saved.length) {
-    const hint = createElement("p", "popover-empty");
-    hint.textContent = "Simpan pertanyaan lewat tombol di bawah setiap jawaban.";
-    elements.popoverSaved.append(hint);
-    return;
-  }
-
-  const list = createElement("div", "popover-list");
-  for (const question of saved) {
-    const row = createElement("div", "popover-row");
-
-    const ask = createElement("button", "popover-row-main");
-    ask.type = "button";
-    ask.textContent = question;
-    ask.addEventListener("click", () => {
-      closeAllPopovers();
-      submitQuestion(question);
-    });
-
-    const remove = createElement("button", "popover-row-remove");
-    remove.type = "button";
-    remove.setAttribute("aria-label", `Hapus "${question}"`);
-    remove.textContent = "\u00d7";
-    remove.addEventListener("click", () => {
-      writeSaved(readSaved().filter((q) => q !== question));
-      renderSavedPopover();
-    });
-
-    row.append(ask, remove);
-    list.append(row);
-  }
-  elements.popoverSaved.append(list);
-}
-
-/* ============================================================
-   SIDEBAR SEARCH
-============================================================ */
-
-function renderSearchResults(query) {
-  const results = elements.searchResults;
-  results.replaceChildren();
-
-  const trimmed = query.trim();
-  if (trimmed.length < 2) {
-    results.hidden = true;
-    elements.sidebarSearch.setAttribute("aria-expanded", "false");
-    return;
-  }
-
-  // Ranked by the same scorer the assistant answers with, so the sidebar and
-  // the answer never disagree about which topic a question belongs to.
-  const found = searchKnowledgeBase(trimmed, knowledgeBase);
-  const entries = [found.best, ...found.alternatives]
-    .filter(Boolean)
-    .map(({ entry }) => entry)
-    .filter((entry, index, all) => all.findIndex((e) => e.id === entry.id) === index)
-    .slice(0, 5);
-
-  if (!entries.length) {
-    const empty = createElement("li", "search-empty");
-    empty.textContent = "Tidak ada panduan yang cocok.";
-    results.append(empty);
-  }
-
-  for (const entry of entries) {
-    const item = createElement("li");
-    const button = createElement("button", "search-result");
+function renderSettings() {
+  refs.settingsItems.replaceChildren();
+  for (const section of SETTINGS_SECTIONS) {
+    const button = make("button", `settings-item${state.settingsSection === section.id ? " is-active" : ""}`);
     button.type = "button";
-    button.setAttribute("role", "option");
-    button.innerHTML = `<strong></strong><small></small>`;
-    button.querySelector("strong").textContent = entry.title;
-    button.querySelector("small").textContent = entry.category;
+    button.innerHTML = section.icon;
+    button.append(make("span", "", section.label));
     button.addEventListener("click", () => {
-      elements.sidebarSearch.value = "";
-      renderSearchResults("");
-      closeSidebar();
-      submitQuestion(entry.questions[0]);
+      state.settingsSection = section.id;
+      renderSettings();
     });
-    item.append(button);
-    results.append(item);
+    refs.settingsItems.append(button);
   }
 
-  results.hidden = false;
-  elements.sidebarSearch.setAttribute("aria-expanded", "true");
+  const section = SETTINGS_SECTIONS.find((s) => s.id === state.settingsSection);
+  refs.settingsTitle.textContent = section.label;
+  refs.settingsCard.replaceChildren();
+
+  if (section.needsAccount && !state.account) {
+    refs.settingsCard.append(row("Belum masuk", "Masuk dengan akun UPI untuk membuka pengaturan ini."));
+    return;
+  }
+
+  const account = state.account;
+
+  if (section.id === "profile") {
+    refs.settingsCard.append(
+      row("Nama", "Sesuai akun Google UPI", account.name || "—"),
+      row("Email", "Dipakai untuk masuk", account.email),
+      row("Peran", "Hak akses pada SAPA UPI", account.role ? roleLabel(account) : "Pengguna"),
+    );
+  } else if (section.id === "security") {
+    refs.settingsCard.append(
+      row("Akun masuk", "SAPA UPI tidak menyimpan kata sandi", "Google • upi.edu"),
+      row(
+        "Keluar dari semua perangkat",
+        "Mengakhiri setiap sesi yang sedang aktif, termasuk yang ini",
+        actionButton("Keluar semua", logoutEverywhere),
+      ),
+    );
+  } else if (section.id === "data") {
+    refs.settingsCard.append(
+      row(
+        "Unduh riwayat percakapan",
+        "Seluruh percakapanmu dalam satu berkas JSON",
+        actionButton("Unduh", exportHistory),
+      ),
+      row(
+        "Hapus semua riwayat",
+        "Menghapus seluruh percakapan tersimpan. Tidak bisa dibatalkan",
+        actionButton("Hapus semua", deleteAllHistory, true),
+      ),
+    );
+  } else if (section.id === "help") {
+    const link = (href, text) => {
+      const a = make("a", "", text);
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      return a;
+    };
+    refs.settingsCard.append(
+      row("Program Studi", "Pihak yang menerbitkan pedoman", HELP_CONTACT.program),
+      row("Email", "", link(`mailto:${HELP_CONTACT.email}`, HELP_CONTACT.email)),
+      row("Telepon", "", HELP_CONTACT.phone),
+      row("Alamat", "", HELP_CONTACT.address),
+      row("Laman", "", link(HELP_CONTACT.site, "kd-tasikmalaya.upi.edu")),
+      row(
+        "Tentang jawaban SAPA",
+        "Dirujuk ke pedoman yang tersedia. Keputusan resmi tetap pada program studi",
+        "",
+      ),
+    );
+  }
+}
+
+function roleLabel(account) {
+  const unit = account.unit ? ` • ${account.unit}` : "";
+  return `${account.role}${unit}`;
+}
+
+function openSettings(section = "profile") {
+  state.settingsSection = section;
+  renderSettings();
+  showView("settings");
+}
+
+async function exportHistory() {
+  try {
+    const response = await fetch(`${API_URL}/conversations/export`, { headers: authHeaders() });
+    if (!response.ok) throw new Error(`export ${response.status}`);
+    const blob = new Blob([JSON.stringify(await response.json(), null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "riwayat-sapa-upi.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } catch (error) {
+    console.warn("Ekspor gagal:", error);
+    showToast("Gagal mengunduh riwayat.");
+  }
+}
+
+async function deleteAllHistory() {
+  if (!window.confirm("Hapus semua riwayat percakapan? Ini tidak bisa dibatalkan.")) return;
+  try {
+    const response = await fetch(`${API_URL}/conversations`, { method: "DELETE", headers: authHeaders() });
+    if (!response.ok) throw new Error(`delete ${response.status}`);
+    state.conversations = [];
+    state.conversationId = null;
+    renderRecent();
+    showToast("Semua riwayat dihapus.");
+  } catch (error) {
+    console.warn("Hapus riwayat gagal:", error);
+    showToast("Gagal menghapus riwayat.");
+  }
 }
 
 /* ============================================================
-   VOICE INPUT
+   AKUN
 ============================================================ */
 
-const SpeechRecognition =
-  typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+const TOKEN_KEY = "sapa-upi:session";
 
+function readStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* sesi hanya bertahan selama halaman terbuka */
+  }
+}
+
+/** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
+function captureTokenFromUrl() {
+  if (!window.location.hash.startsWith("#token=")) return;
+  const token = decodeURIComponent(window.location.hash.slice("#token=".length));
+  if (token) {
+    state.sessionToken = token;
+    storeToken(token);
+  }
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
+function renderAccount() {
+  const signedIn = Boolean(state.account);
+
+  refs.loginButton.hidden = signedIn || !state.loginEnabled;
+  refs.loginNote.hidden = signedIn || !state.loginEnabled;
+  refs.profile.hidden = !signedIn;
+
+  if (signedIn) {
+    refs.profileName.textContent = state.account.name || state.account.email;
+    refs.profileSub.textContent = state.account.role
+      ? `${state.account.email} • ${state.account.role}`
+      : state.account.email;
+  }
+  renderGreeting();
+  renderRecent();
+}
+
+async function loadAccount() {
+  if (!API_URL) return;
+  try {
+    const response = await fetch(`${API_URL}/auth/me`, { headers: authHeaders() });
+    if (!response.ok) throw new Error(`auth/me ${response.status}`);
+    const data = await response.json();
+    state.loginEnabled = Boolean(data.loginEnabled);
+    state.account = data.user ?? null;
+    if (!state.account) {
+      state.sessionToken = null;
+      storeToken(null);
+    }
+  } catch (error) {
+    // Pemeriksaan yang gagal tidak boleh menyembunyikan jalan masuk.
+    console.warn("Tidak bisa memeriksa sesi:", error);
+    state.account = null;
+  }
+  renderAccount();
+  if (state.account) refreshHistory();
+}
+
+function startLogin() {
+  const back = encodeURIComponent(window.location.href.split("#")[0]);
+  window.location.href = `${API_URL}/auth/start?redirect_to=${back}`;
+}
+
+async function logout() {
+  try {
+    await fetch(`${API_URL}/auth/logout`, { method: "POST", headers: authHeaders() });
+  } catch {
+    /* sesi tetap dibuang dari sisi browser */
+  }
+  signOutLocally("Kamu sudah keluar.");
+}
+
+async function logoutEverywhere() {
+  try {
+    const response = await fetch(`${API_URL}/auth/logout-all`, { method: "POST", headers: authHeaders() });
+    if (!response.ok) throw new Error(`logout-all ${response.status}`);
+  } catch (error) {
+    console.warn("Keluar semua gagal:", error);
+    showToast("Gagal keluar dari semua perangkat.");
+    return;
+  }
+  signOutLocally("Keluar dari semua perangkat.");
+}
+
+function signOutLocally(message) {
+  state.sessionToken = null;
+  storeToken(null);
+  state.account = null;
+  state.conversations = [];
+  state.conversationId = null;
+  refs.chatLog.replaceChildren();
+  renderAccount();
+  showView("home");
+  showToast(message);
+}
+
+/* ============================================================
+   DIKTE SUARA
+============================================================ */
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 
 function stopVoice() {
   recognition?.stop();
   recognition = null;
-  elements.voiceButton.setAttribute("aria-pressed", "false");
+  refs.voiceButton.setAttribute("aria-pressed", "false");
 }
 
 function toggleVoice() {
@@ -759,439 +1266,114 @@ function toggleVoice() {
   recognition.continuous = false;
 
   recognition.addEventListener("result", (event) => {
-    const transcript = [...event.results].map((r) => r[0].transcript).join("");
-    elements.chatInput.value = transcript;
-    resizeTextarea(elements.chatInput);
+    refs.question.value = [...event.results].map((r) => r[0].transcript).join("");
+    resizeComposer();
   });
   recognition.addEventListener("error", (event) => {
-    showToast(
-      event.error === "not-allowed"
-        ? "Akses mikrofon ditolak."
-        : "Input suara gagal. Coba lagi.",
-    );
+    showToast(event.error === "not-allowed" ? "Akses mikrofon ditolak." : "Input suara gagal. Coba lagi.");
     stopVoice();
   });
   recognition.addEventListener("end", stopVoice);
 
   recognition.start();
-  elements.voiceButton.setAttribute("aria-pressed", "true");
+  refs.voiceButton.setAttribute("aria-pressed", "true");
   showToast("Mendengarkan... bicara sekarang.");
-}
-
-/* ============================================================
-   TOPBAR ACTIONS
-============================================================ */
-
-/**
- * The clipboard API is refused without a trusted gesture, in insecure contexts
- * and under some permission settings, so fall back to the old selection trick
- * and, failing that, hand the text over for the reader to copy by hand.
- */
-async function copyText(text, successMessage) {
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast(successMessage);
-    return;
-  } catch {
-    // fall through
-  }
-
-  const scratch = document.createElement("textarea");
-  scratch.value = text;
-  scratch.setAttribute("readonly", "");
-  scratch.style.position = "fixed";
-  scratch.style.opacity = "0";
-  document.body.append(scratch);
-  scratch.select();
-
-  let copied = false;
-  try {
-    copied = document.execCommand("copy");
-  } catch {
-    copied = false;
-  }
-  scratch.remove();
-
-  if (copied) showToast(successMessage);
-  else window.prompt("Salin manual dengan Cmd/Ctrl+C:", text);
-}
-
-function conversationTranscript() {
-  const lines = [];
-  for (const message of elements.chatLog.querySelectorAll(".message")) {
-    const who = message.classList.contains("bot-message") ? "SAPA UPI" : "Mahasiswa";
-    const text = message.innerText.replace(/\s*\n\s*/g, "\n").trim();
-    if (text) lines.push(`${who}:\n${text}`);
-  }
-  return lines.join("\n\n");
-}
-
-function renderModelPopover() {
-  const mode = lastAnswerWasGenerated
-    ? "Jawaban terakhir disusun model, dibatasi rujukan pedoman."
-    : lastAnswerWasGenerated === false
-      ? "Jawaban terakhir dari pencocokan kata kunci lokal (mode offline)."
-      : "Belum ada pertanyaan pada sesi ini.";
-
-  elements.popoverModel.replaceChildren();
-  const head = createElement("div", "popover-head");
-  head.textContent = "Dari mana jawabannya";
-  const body = createElement("div", "popover-body");
-  body.innerHTML = `
-    <p></p>
-    <dl class="popover-facts">
-      <dt>Model</dt><dd>Gemini (gemini-3.5-flash-lite)</dd>
-      <dt>Rujukan</dt><dd>Pedoman tugas akhir prodi, pedoman karya ilmiah UPI, dan pengumuman prodi</dd>
-      <dt>Cadangan</dt><dd>Pencocokan kata kunci di browser bila model tak terjangkau</dd>
-    </dl>
-  `;
-  body.querySelector("p").textContent = mode;
-  elements.popoverModel.append(head, body);
-}
-
-function renderOverflowPopover() {
-  elements.popoverOverflow.replaceChildren();
-  const list = createElement("div", "popover-list");
-
-  const actions = [
-    [
-      "Salin transkrip percakapan",
-      () => {
-        const transcript = conversationTranscript();
-        if (!transcript) {
-          showToast("Belum ada percakapan untuk disalin.");
-          return;
-        }
-        copyText(transcript, "Transkrip disalin.");
-      },
-    ],
-    [
-      "Mulai percakapan baru",
-      () => {
-        if (!chatStarted) {
-          showToast("Percakapan sudah kosong.");
-          return;
-        }
-        resetConversation();
-      },
-    ],
-  ];
-
-  for (const [label, action] of actions) {
-    const button = createElement("button", "popover-row-main");
-    button.type = "button";
-    button.textContent = label;
-    button.addEventListener("click", () => {
-      closeAllPopovers();
-      action();
-    });
-    list.append(button);
-  }
-  elements.popoverOverflow.append(list);
-}
-
-/* ============================================================
-   AKUN & RIWAYAT
-============================================================ */
-
-const TOKEN_KEY = "sapa-upi:session";
-
-function readStoredToken() {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function storeToken(token) {
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* penyimpanan ditolak; sesi hanya bertahan selama halaman terbuka */
-  }
-}
-
-let sessionToken = null;
-
-function authHeaders() {
-  return sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {};
-}
-
-/** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
-function captureTokenFromUrl() {
-  if (!window.location.hash.startsWith("#token=")) return;
-  const token = decodeURIComponent(window.location.hash.slice("#token=".length));
-  if (token) {
-    sessionToken = token;
-    storeToken(token);
-  }
-  history.replaceState(null, "", window.location.pathname + window.location.search);
-}
-
-function renderAccount() {
-  const signedIn = Boolean(account);
-
-  elements.loginButton.hidden = signedIn || !loginEnabled;
-  elements.accountSignedIn.hidden = !signedIn;
-  elements.sidebarHistory.hidden = !signedIn;
-
-  elements.accountNote.textContent = signedIn
-    ? "Riwayat percakapan hanya terlihat oleh kamu."
-    : loginEnabled
-      ? "Masuk untuk menyimpan riwayat percakapan. Jawaban sama saja tanpa masuk."
-      : "Jawaban dirujuk ke pedoman prodi dan UPI; keputusan resmi tetap pada program studi.";
-
-  if (signedIn) {
-    elements.accountName.textContent = account.name || account.email;
-    elements.accountEmail.textContent = account.role
-      ? `${account.email} \u00b7 ${account.role}`
-      : account.email;
-  }
-}
-
-let loginEnabled = Boolean(API_URL);
-
-async function loadAccount() {
-  if (!API_URL) return;
-  try {
-    const response = await fetch(`${API_URL}/auth/me`, { headers: authHeaders() });
-    if (!response.ok) throw new Error(`auth/me ${response.status}`);
-    const data = await response.json();
-    loginEnabled = Boolean(data.loginEnabled);
-    account = data.user ?? null;
-    if (!account) {
-      sessionToken = null;
-      storeToken(null);
-    }
-  } catch (error) {
-    // A failed check must not hide the way in. The button stays, and the
-    // attempt to sign in will surface the real error rather than silence.
-    console.warn("Tidak bisa memeriksa sesi:", error);
-    account = null;
-  }
-  renderAccount();
-  if (account) refreshHistory();
-}
-
-async function refreshHistory() {
-  if (!account) return;
-  try {
-    const response = await fetch(`${API_URL}/conversations`, { headers: authHeaders() });
-    if (!response.ok) return;
-    const { conversations = [] } = await response.json();
-    renderHistory(conversations);
-  } catch (error) {
-    console.warn("Tidak bisa memuat riwayat:", error);
-  }
-}
-
-function renderHistory(conversations) {
-  elements.historyList.replaceChildren();
-
-  if (!conversations.length) {
-    const empty = createElement("li", "history-empty");
-    empty.textContent = "Belum ada percakapan tersimpan.";
-    elements.historyList.append(empty);
-    return;
-  }
-
-  for (const conversation of conversations) {
-    const item = createElement("li", "history-item");
-
-    const open = createElement("button", "history-open");
-    open.type = "button";
-    open.textContent = conversation.title;
-    open.addEventListener("click", () => openConversation(conversation.id));
-
-    const remove = createElement("button", "history-remove");
-    remove.type = "button";
-    remove.setAttribute("aria-label", `Hapus "${conversation.title}"`);
-    remove.textContent = "\u00d7";
-    remove.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      await fetch(`${API_URL}/conversations/${conversation.id}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
-      if (conversationId === conversation.id) conversationId = null;
-      showToast("Percakapan dihapus.");
-      refreshHistory();
-    });
-
-    item.append(open, remove);
-    elements.historyList.append(item);
-  }
-}
-
-async function openConversation(id) {
-  try {
-    const response = await fetch(`${API_URL}/conversations/${id}`, { headers: authHeaders() });
-    if (!response.ok) {
-      showToast("Percakapan tidak ditemukan.");
-      return;
-    }
-    const { conversation } = await response.json();
-
-    latestRequestId += 1; // batalkan jawaban yang masih dalam perjalanan
-    elements.chatLog.replaceChildren();
-    enterChatState();
-    conversationId = conversation.id;
-
-    for (const message of conversation.messages) {
-      if (message.role === "user") {
-        appendUserMessage(message.content);
-      } else {
-        lastQuestion = "";
-        appendBotResponse({
-          type: "answer",
-          generated: message.answer_source === "llm",
-          message: message.content,
-          entry: knowledgeBase.find((entry) => entry.id === message.entry_id) ?? null,
-          followUpQuestions: [],
-        });
-      }
-    }
-    closeSidebar();
-  } catch (error) {
-    console.warn("Tidak bisa membuka percakapan:", error);
-    showToast("Gagal membuka percakapan.");
-  }
-}
-
-function startLogin() {
-  const back = encodeURIComponent(window.location.href.split("#")[0]);
-  window.location.href = `${API_URL}/auth/start?redirect_to=${back}`;
-}
-
-async function logout() {
-  try {
-    await fetch(`${API_URL}/auth/logout`, { method: "POST", headers: authHeaders() });
-  } catch {
-    /* sesi tetap dibuang dari sisi browser */
-  }
-  sessionToken = null;
-  storeToken(null);
-  account = null;
-  conversationId = null;
-  elements.historyList.replaceChildren();
-  renderAccount();
-  showToast("Kamu sudah keluar.");
 }
 
 /* ============================================================
    INIT
 ============================================================ */
 
-function resizeTextarea(textarea) {
-  textarea.style.height = "auto";
-  textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
-}
-
 function initialize() {
-  renderQuickCards();
-
-  elements.chatForm.addEventListener("submit", (event) => {
+  refs.composer.addEventListener("submit", (event) => {
     event.preventDefault();
-    submitQuestion(elements.chatInput.value);
+    submitQuestion(refs.question.value);
   });
-  elements.chatFormBottom.addEventListener("submit", (event) => {
-    event.preventDefault();
-    submitQuestion(elements.chatInputBottom.value);
-  });
-
-  for (const [textarea, form] of [
-    [elements.chatInput, elements.chatForm],
-    [elements.chatInputBottom, elements.chatFormBottom],
-  ]) {
-    textarea.addEventListener("input", () => resizeTextarea(textarea));
-    textarea.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        form.requestSubmit();
-      }
-    });
-  }
-
-  const deepSearchToggles = [elements.deepSearchToggle, elements.deepSearchToggleBottom];
-  for (const toggle of deepSearchToggles) {
-    toggle.addEventListener("click", () => {
-      const pressed = toggle.getAttribute("aria-pressed") === "true";
-      for (const t of deepSearchToggles) t.setAttribute("aria-pressed", String(!pressed));
-    });
-  }
-
-  elements.sidebarOpen.addEventListener("click", openSidebar);
-  elements.sidebarClose.addEventListener("click", closeSidebar);
-  elements.sidebarBackdrop.addEventListener("click", closeSidebar);
-  elements.resetChat.addEventListener("click", resetConversation);
-
-  // Chat Workspace is the only destination, so it just returns you to it.
-  elements.navChat.addEventListener("click", closeSidebar);
-
-  elements.sidebarSearch.addEventListener("input", (event) =>
-    renderSearchResults(event.target.value),
-  );
-  elements.sidebarSearch.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      elements.sidebarSearch.value = "";
-      renderSearchResults("");
+  refs.question.addEventListener("input", resizeComposer);
+  refs.question.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      refs.composer.requestSubmit();
     }
   });
 
-  elements.shareButton.addEventListener("click", () =>
-    copyText(window.location.href, "Tautan disalin."),
+  refs.navNew.addEventListener("click", resetChat);
+  refs.navSearch.addEventListener("click", () => {
+    showView("search");
+    runSearch();
+    refs.searchInput.focus();
+  });
+  refs.navFiles.addEventListener("click", () => {
+    showView("files");
+    renderFiles();
+  });
+  refs.navRecent.addEventListener("click", () =>
+    setRecentOpen(refs.navRecent.getAttribute("aria-expanded") !== "true"),
   );
+  refs.historyButton.addEventListener("click", () => refs.navSearch.click());
 
-  elements.voiceButton.addEventListener("click", toggleVoice);
+  refs.menuButton.addEventListener("click", openSidebar);
+  refs.sidebarClose.addEventListener("click", closeSidebar);
+  refs.scrim.addEventListener("click", closeSidebar);
 
-  elements.modelChip.addEventListener("click", (event) => {
-    event.stopPropagation();
-    togglePopover(elements.popoverModel, elements.modelChip, renderModelPopover);
+  refs.searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 220);
   });
-  elements.overflowButton.addEventListener("click", (event) => {
-    event.stopPropagation();
-    togglePopover(elements.popoverOverflow, elements.overflowButton, renderOverflowPopover);
-  });
-  for (const trigger of [elements.savedButton, elements.savedButtonBottom]) {
-    trigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      togglePopover(elements.popoverSaved, trigger, renderSavedPopover);
-    });
-  }
+  refs.filesSearch.addEventListener("input", renderFiles);
 
-  // Controls the prototype cannot honestly provide say so instead of doing nothing.
-  for (const button of document.querySelectorAll('[data-unavailable="lampiran"]')) {
-    button.addEventListener("click", () =>
-      showToast("Unggah berkas belum tersedia — butuh integrasi SIAKAD."),
-    );
-  }
+  refs.shareButton.addEventListener("click", () =>
+    copyText(window.location.href.split("#")[0], "Tautan disalin."),
+  );
+  refs.moreButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMenu(refs.moreMenu, refs.moreButton, buildMoreMenu);
+  });
+
+  refs.attachButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMenu(refs.attachMenu, refs.attachButton, buildAttachMenu);
+  });
+  refs.attachRemove.addEventListener("click", clearScope);
+  refs.voiceButton.addEventListener("click", toggleVoice);
+
+  refs.profileTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMenu(refs.profileMenu, refs.profileTrigger);
+  });
+  refs.profileMenu.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-profile]");
+    if (!item) return;
+    closeMenus();
+    const action = item.dataset.profile;
+    if (action === "logout") logout();
+    else if (action === "settings") openSettings("security");
+    else if (action === "help") openSettings("help");
+    else openSettings("profile");
+  });
+
+  refs.loginButton.addEventListener("click", startLogin);
+  refs.settingsBack.addEventListener("click", () => showView("home"));
+  NARROW.addEventListener("change", () => (refs.question.placeholder = placeholderText()));
+  refs.question.placeholder = placeholderText();
 
   document.addEventListener("click", (event) => {
-    const insidePopover = event.target.closest(".popover");
-    if (!insidePopover) closeAllPopovers();
-    if (!event.target.closest(".sidebar-search") && !event.target.closest(".search-results")) {
-      elements.searchResults.hidden = true;
-    }
+    if (!event.target.closest(".menu-anchor, .profile")) closeMenus();
   });
-
   window.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    closeMenus();
     closeSidebar();
-    closeAllPopovers();
     stopVoice();
   });
 
-  elements.loginButton.addEventListener("click", startLogin);
-  elements.logoutButton.addEventListener("click", logout);
-
-  refreshSavedCount();
-
   captureTokenFromUrl();
-  sessionToken = sessionToken ?? readStoredToken();
+  state.sessionToken = state.sessionToken ?? readStoredToken();
+
+  setRecentOpen(false);
   renderAccount();
+  showView("home");
   loadAccount();
 }
 
-if (typeof document !== "undefined") initialize();
+initialize();

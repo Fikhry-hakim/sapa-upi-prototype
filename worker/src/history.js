@@ -123,3 +123,75 @@ export async function deleteConversation(db, user, conversationId) {
     .run();
   return (meta?.changes ?? 0) > 0;
 }
+
+/** Karakter khusus LIKE dinetralkan, supaya "%" atau "_" yang diketik dicari apa adanya. */
+export function likePattern(term) {
+  return `%${String(term).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+/** Cari di judul dan isi percakapan milik pengguna. */
+export async function searchConversations(db, user, term) {
+  if (!db || !user) return [];
+  const pattern = likePattern(term);
+  const { results } = await db
+    .prepare(
+      `SELECT c.id, c.title, c.updated_at
+         FROM conversations c
+        WHERE c.user_id = ?
+          AND (c.title LIKE ? ESCAPE '\\'
+               OR EXISTS (SELECT 1 FROM messages m
+                           WHERE m.conversation_id = c.id AND m.content LIKE ? ESCAPE '\\'))
+        ORDER BY c.updated_at DESC
+        LIMIT ?`,
+    )
+    .bind(user.id, pattern, pattern, MAX_CONVERSATIONS)
+    .all();
+  return results ?? [];
+}
+
+/** Seluruh percakapan milik pengguna beserta pesannya, untuk diunduh. */
+export async function exportConversations(db, user) {
+  if (!db || !user) return { conversations: [] };
+
+  const { results: conversations } = await db
+    .prepare("SELECT id, title, created_at, updated_at FROM conversations WHERE user_id = ? ORDER BY created_at")
+    .bind(user.id)
+    .all();
+
+  const { results: messages } = await db
+    .prepare(
+      `SELECT m.conversation_id, m.role, m.content, m.entry_id, m.answer_source, m.created_at
+         FROM messages m
+         JOIN conversations c ON c.id = m.conversation_id
+        WHERE c.user_id = ?
+        ORDER BY m.created_at, m.rowid`,
+    )
+    .bind(user.id)
+    .all();
+
+  const byConversation = new Map();
+  for (const message of messages ?? []) {
+    const list = byConversation.get(message.conversation_id) ?? [];
+    list.push({
+      role: message.role,
+      content: message.content,
+      entry_id: message.entry_id,
+      answer_source: message.answer_source,
+      created_at: message.created_at,
+    });
+    byConversation.set(message.conversation_id, list);
+  }
+
+  return {
+    exported_at: new Date().toISOString(),
+    account: user.email,
+    conversations: (conversations ?? []).map((c) => ({ ...c, messages: byConversation.get(c.id) ?? [] })),
+  };
+}
+
+/** Hapus semua percakapan milik pengguna; mengembalikan jumlah yang dihapus. */
+export async function deleteAllConversations(db, user) {
+  if (!db || !user) return 0;
+  const { meta } = await db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.id).run();
+  return meta?.changes ?? 0;
+}
