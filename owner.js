@@ -6,7 +6,7 @@
  * bukan angka yang terlihat meyakinkan tetapi tidak nyata.
  */
 
-import { bold, buildXlsx } from "./lib/xlsx.js";
+import { buildDashboardWorkbook } from "./lib/report.js";
 import { loadPdfJs } from "./viewer.js";
 
 /* ============================================================
@@ -186,7 +186,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const exportButton = make("button", "btn-primary");
     exportButton.type = "button";
     exportButton.append(icon("export"), "Export Laporan");
-    exportButton.addEventListener("click", () => exportReport(s));
+    exportButton.addEventListener("click", () => exportReport(overview));
 
     controls.append(refresh, segmented, exportButton);
     head.append(controls);
@@ -526,7 +526,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     return rows;
   }
 
-  async function exportReport(s) {
+  async function exportReport(overview) {
     showToast("Menyiapkan laporan Excel...");
     let rows = [];
     try {
@@ -535,37 +535,15 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       showToast("Rincian aktivitas gagal diambil; laporan hanya memuat ringkasan.");
     }
 
-    const summary = [
-      bold(["Laporan SAPA UPI", s.label]),
-      [],
-      bold(["Metrik", "Jumlah", "Persen"]),
-      ["Total interaksi", s.total, ""],
-      ...Object.keys(OUTCOME).map((key) => [OUTCOME[key].label, s.counts[key], `${s.percents[key]}%`]),
-      ["Akurasi grounded retrieval", "", `${s.groundedAccuracy}%`],
-    ];
-    const trend = [bold(["Periode", "Interaksi"]), ...s.series.map((p) => [p.label, p.total])];
-    const activity = [
-      bold(["ID Interaksi", "Waktu (WIB)", "Kategori Pertanyaan", "Hasil Respons", "Dokumen Rujukan", "Halaman", "Durasi (detik)", "Status"]),
-      ...rows.map((row) => {
-        const when = wibParts(row.at);
-        return [
-          row.code,
-          `${when.label} ${when.time}`,
-          row.category ?? "",
-          OUTCOME[row.outcome]?.label ?? row.outcome,
-          row.documentId ? row.documentId.replaceAll("-", " ") : "",
-          row.page ?? "",
-          row.durationMs ? Number((row.durationMs / 1000).toFixed(1)) : "",
-          row.ok ? "Berhasil" : "Gagal RAG",
-        ];
-      }),
-    ];
-
-    const bytes = buildXlsx([
-      { name: "Ringkasan", rows: summary, widths: [34, 14, 12] },
-      { name: "Tren", rows: trend, widths: [24, 12] },
-      { name: "Aktivitas", rows: activity, widths: [16, 22, 26, 24, 40, 10, 14, 12] },
-    ]);
+    const bytes = buildDashboardWorkbook({
+      summary: overview.summary,
+      documents: overview.documents,
+      interactions: rows,
+      outcomes: OUTCOME,
+      sources: SOURCE_STATE,
+      exportedAt: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }),
+      wib: wibParts,
+    });
 
     const link = document.createElement("a");
     link.href = URL.createObjectURL(
