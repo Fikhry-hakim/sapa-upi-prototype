@@ -595,13 +595,13 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
      KNOWLEDGE BASE
   ============================================================ */
 
-  const kb = { search: "", status: "all", page: 1 };
+  const kb = { search: "", status: "all", category: "all", page: 1 };
   const KB_PAGE_SIZE = 8;
 
   const STATUS_META = {
     ready: { label: "Tervalidasi", tone: "ok" },
     validating: { label: "Menunggu Validasi", tone: "wait" },
-    parse_failed: { label: "Gagal Parsing", tone: "bad" },
+    parse_failed: { label: "Perlu Penanganan", tone: "bad" },
     inactive: { label: "Nonaktif", tone: "muted" },
     expired: { label: "Tidak Berlaku", tone: "muted" },
   };
@@ -673,7 +673,16 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       option.selected = value === kb.status;
       select.append(option);
     }
-    tools.append(search, select);
+    const categorySelect = make("select", "select");
+    categorySelect.setAttribute("aria-label", "Filter kategori");
+    const knownCategories = [...new Set(data.documents.map((doc) => doc.category).filter(Boolean))];
+    for (const [value, label] of [["all", "Semua Kategori"], ...knownCategories.map((c) => [c, c])]) {
+      const option = make("option", "", label);
+      option.value = value;
+      option.selected = value === kb.category;
+      categorySelect.append(option);
+    }
+    tools.append(search, select, categorySelect);
     panel.append(tools);
 
     const body = make("div");
@@ -685,6 +694,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       const list = data.documents.filter(
         (doc) =>
           (kb.status === "all" || doc.status === kb.status) &&
+          (kb.category === "all" || doc.category === kb.category) &&
           (!term || `${doc.title} ${doc.reference} ${doc.owner}`.toLowerCase().includes(term)),
       );
       drawDocumentTable(body, root, data, list);
@@ -696,6 +706,11 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     });
     select.addEventListener("change", () => {
       kb.status = select.value;
+      kb.page = 1;
+      redraw();
+    });
+    categorySelect.addEventListener("change", () => {
+      kb.category = categorySelect.value;
       kb.page = 1;
       redraw();
     });
@@ -762,6 +777,13 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       });
       actions.append(view);
 
+      if (doc.status === "parse_failed" && canUpload() && !doc.bundled) {
+        const again = make("button", "link strong", "Proses Ulang");
+        again.type = "button";
+        again.addEventListener("click", () => reprocess(root, doc, again));
+        actions.append(again);
+      }
+
       if (doc.status === "validating" && canReview()) {
         const validate = make("button", "link strong", "Validasi");
         validate.type = "button";
@@ -796,17 +818,42 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const foot = make("div", "table-foot");
     foot.append(make("span", "", `Menampilkan ${visible.length} dari ${list.length} dokumen repositori`));
     const pager = make("div", "pager");
-    for (let p = 1; p <= pages; p += 1) {
-      const button = make("button", p === kb.page ? "is-active" : "", String(p));
+    const goTo = (label, p, disabled, active) => {
+      const button = make("button", active ? "is-active" : "", label);
       button.type = "button";
+      button.disabled = disabled;
       button.addEventListener("click", () => {
         kb.page = p;
         drawDocumentTable(body, root, data, list);
       });
       pager.append(button);
-    }
+    };
+    goTo("Sebelumnya", kb.page - 1, kb.page <= 1);
+    for (let p = 1; p <= pages; p += 1) goTo(String(p), p, false, p === kb.page);
+    goTo("Selanjutnya", kb.page + 1, kb.page >= pages);
     if (pages > 1) foot.append(pager);
     body.append(foot);
+  }
+
+  /** Baca ulang teks dari berkas yang sudah tersimpan, lalu kirim ke Worker. */
+  async function reprocess(root, doc, button) {
+    if (!doc.file) return showToast("Berkas belum diunggah.");
+    button.disabled = true;
+    button.textContent = "Memproses...";
+    try {
+      const url = doc.file.startsWith("/") ? `${apiOrigin()}${doc.file}` : doc.file;
+      const response = await fetch(url, { headers: authHeaders() });
+      if (!response.ok) throw new Error(`berkas ${response.status}`);
+      const passages = await extractPassages(await response.arrayBuffer());
+      const result = await api(`/admin/documents/${doc.id}/reprocess`, { method: "POST", body: JSON.stringify({ passages }) });
+      showToast(result.status === "validating" ? "Teks terbaca. Dokumen menunggu validasi." : "Teks masih tidak terbaca; kemungkinan dokumen hasil pindai.");
+      renderKnowledgeBase(root);
+    } catch (error) {
+      console.warn("Proses ulang gagal:", error);
+      showToast(error.status === 403 ? "Peranmu tidak berwenang memproses ulang." : "Proses ulang gagal. Coba lagi.");
+      button.disabled = false;
+      button.textContent = "Proses Ulang";
+    }
   }
 
   let apiBase = "";
@@ -831,6 +878,8 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     "rag-nonaktif": "mematikan RAG",
     "tidak-berlaku": "menandai tidak berlaku",
     hapus: "menghapus",
+    "proses-ulang": "memproses ulang teks",
+    digantikan: "mencatat dokumen digantikan versi baru",
   };
 
   function auditCard(entries) {
@@ -865,6 +914,20 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
   ============================================================ */
 
   const STEPS = ["Membaca berkas", "Mengekstrak teks per halaman", "Mengunggah dokumen", "Menunggu validasi"];
+
+  /** Teks tiap halaman PDF, dibaca di browser dengan PDF.js. */
+  async function extractPassages(bytes, onProgress) {
+    const pdfjs = await loadPdfJs();
+    const pdf = await pdfjs.getDocument({ data: bytes.slice(0) }).promise;
+    const passages = [];
+    for (let number = 1; number <= pdf.numPages; number += 1) {
+      const page = await pdf.getPage(number);
+      const content = await page.getTextContent();
+      passages.push({ page: number, text: content.items.map((item) => item.str).join(" ") });
+      onProgress?.(number, pdf.numPages);
+    }
+    return passages;
+  }
 
   const METHODS = [
     { id: "baru", icon: "doc", title: "Dokumen Baru", text: "Unggah sebagai dokumen baru yang berdiri sendiri dalam repositori RAG." },
@@ -1119,15 +1182,9 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         const bytes = await chosen.arrayBuffer();
 
         mark(1);
-        const pdfjs = await loadPdfJs();
-        const pdf = await pdfjs.getDocument({ data: bytes.slice(0) }).promise;
-        const passages = [];
-        for (let number = 1; number <= pdf.numPages; number += 1) {
-          const page = await pdf.getPage(number);
-          const content = await page.getTextContent();
-          passages.push({ page: number, text: content.items.map((item) => item.str).join(" ") });
-          progress.children[1].textContent = `Mengekstrak teks per halaman (${number}/${pdf.numPages})`;
-        }
+        const passages = await extractPassages(bytes, (number, total) => {
+          progress.children[1].textContent = `Mengekstrak teks per halaman (${number}/${total})`;
+        });
 
         mark(2);
         const created = await api("/admin/documents", {

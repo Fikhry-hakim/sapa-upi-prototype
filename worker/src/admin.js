@@ -20,6 +20,7 @@ import {
   listAudit,
   listDocuments,
   MAX_FILE_BYTES,
+  replacePassages,
   setFile,
   setRag,
   validateDocument,
@@ -122,7 +123,7 @@ export async function handleAdmin(request, env, cors, path) {
     return json({ ...created, warnings: check.warnings }, { status: 201, headers });
   }
 
-  const match = /^\/admin\/documents\/([\w-]+)(?:\/(file|validate|rag|expire))?$/.exec(path);
+  const match = /^\/admin\/documents\/([\w-]+)(?:\/(file|validate|rag|expire|reprocess))?$/.exec(path);
   if (!match) return json({ error: "Rute tidak dikenal" }, { status: 404, headers });
   const [, id, action] = match;
 
@@ -147,6 +148,23 @@ export async function handleAdmin(request, env, cors, path) {
     await setFile(db, id, `/files/${id}`);
     await audit(db, user.email, "unggah-berkas", id, `${bytes.byteLength} byte`);
     return json({ ok: true, file: `/files/${id}` }, { headers });
+  }
+
+  if (action === "reprocess" && method === "POST") {
+    if (!can(assignment, "upload")) return json({ error: "Tidak berwenang memproses ulang" }, { status: 403, headers });
+    if (doc.bundled) return json({ error: "Dokumen bawaan tidak bisa diproses ulang" }, { status: 400, headers });
+    if (!["parse_failed", "validating"].includes(doc.status)) {
+      return json({ error: "Hanya dokumen yang belum divalidasi yang bisa diproses ulang" }, { status: 409, headers });
+    }
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Body harus JSON" }, { status: 400, headers });
+    }
+    const result = await replacePassages(db, user.email, id, Array.isArray(body?.passages) ? body.passages : []);
+    if (!result.ok) return json({ error: result.errors.join(" ") }, { status: 400, headers });
+    return json(result, { headers });
   }
 
   if (action === "validate" && method === "POST") {

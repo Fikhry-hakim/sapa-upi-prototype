@@ -260,6 +260,31 @@ export async function createDocument(db, actor, value, id = newDocumentId(value.
   return { id, status };
 }
 
+/**
+ * Proses ulang: ganti teks halaman sebuah dokumen unggahan (mis. setelah
+ * ekstraksi pertama gagal). Status kembali ke "menunggu validasi" kalau teks
+ * kini terbaca, dan tidak pernah langsung aktif untuk RAG.
+ */
+export async function replacePassages(db, actor, id, passages) {
+  const check = checkUpload({ title: "proses ulang", category: CATEGORIES[0], owner: "proses ulang", passages });
+  if (!check.ok) return { ok: false, errors: check.errors };
+
+  await db.prepare("DELETE FROM passages WHERE document_id = ?").bind(id).run();
+  const statements = check.value.passages
+    .filter((item) => item.text.length >= 20)
+    .map((item) => db.prepare("INSERT INTO passages (body, document_id, page) VALUES (?, ?, ?)").bind(item.text, id, item.page));
+  for (let i = 0; i < statements.length; i += 40) await db.batch(statements.slice(i, i + 40));
+
+  const status = check.value.parsed ? "validating" : "parse_failed";
+  await db
+    .prepare("UPDATE documents SET status = ?, rag_active = 0, pages = ?, updated_at = datetime('now') WHERE id = ?")
+    .bind(status, check.value.pages, id)
+    .run();
+  await audit(db, actor, "proses-ulang", id, check.value.parsed ? "Teks dibaca ulang" : "Teks masih tidak terbaca");
+  clearDocumentCache();
+  return { ok: true, status, warnings: check.warnings };
+}
+
 export async function setFile(db, id, fileUrl) {
   await db.prepare("UPDATE documents SET file = ?, updated_at = datetime('now') WHERE id = ?").bind(fileUrl, id).run();
 }

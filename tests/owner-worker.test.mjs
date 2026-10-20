@@ -12,6 +12,7 @@ import {
 } from "../worker/src/events.js";
 import {
   checkUpload,
+  replacePassages,
   validateDocument,
   documentStats,
   ftsQuery,
@@ -292,4 +293,28 @@ test("validating a new version retires the old one in the same step", async () =
   assert.ok(expire, "the old version must be expired");
   assert.equal(expire.args[0], "lama");
   assert.ok(statements.some((s) => s.args.includes("digantikan")), "and the audit log says so");
+});
+
+test("reprocessing swaps the page text and never switches RAG on by itself", async () => {
+  const sql = [];
+  const db = {
+    prepare: (text) => ({
+      bind: (...args) => ({
+        run: async () => {
+          sql.push({ text, args });
+          return { meta: { changes: 1 } };
+        },
+      }),
+    }),
+    batch: async (statements) => statements,
+  };
+  const ok = await replacePassages(db, "a@upi.edu", "doc-1", [{ page: 1, text: "Ketentuan yang kini terbaca dengan jelas oleh sistem." }]);
+  assert.equal(ok.status, "validating");
+  assert.ok(sql[0].text.startsWith("DELETE FROM passages"), "old text goes first");
+  const update = sql.find((s) => s.text.startsWith("UPDATE documents SET status"));
+  assert.match(update.text, /rag_active = 0/);
+
+  const scanned = await replacePassages(db, "a@upi.edu", "doc-1", [{ page: 1, text: "  " }]);
+  assert.equal(scanned.status, "parse_failed");
+  assert.equal((await replacePassages(db, "a@upi.edu", "doc-1", [])).ok, false);
 });
