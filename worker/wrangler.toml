@@ -30,3 +30,9 @@ ALLOWED_EMAIL_DOMAINS = "upi.edu"
 binding = "sapa_upi_kb"
 database_name = "sapa-upi-kb"
 database_id = "18387e08-06a8-4015-9c3c-9b1c54baaf8c"
+
+# Berkas PDF yang diunggah pengelola. R2 butuh diaktifkan lewat dashboard,
+# sedangkan KV tersedia di akun gratis dan cukup untuk dokumen sampai 24 MB.
+[[kv_namespaces]]
+binding = "sapa_upi_files"
+id = "f36a335dd00842fbb809ff3875f1e459"

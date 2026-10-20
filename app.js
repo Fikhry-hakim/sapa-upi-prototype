@@ -3,6 +3,7 @@ import { documents, citationFor } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
+import { createOwner } from "./owner.js";
 
 /* ============================================================
    PRIMITIF
@@ -39,6 +40,12 @@ const refs = {
   navNew: $("nav-new"),
   navSearch: $("nav-search"),
   navFiles: $("nav-files"),
+  navDashboard: $("nav-dashboard"),
+  navMetrics: $("nav-metrics"),
+  navKb: $("nav-kb"),
+  dashboardRoot: $("dashboard-root"),
+  metricsRoot: $("metrics-root"),
+  kbRoot: $("kb-root"),
   navRecent: $("nav-recent"),
   recentList: $("recent-list"),
   loginButton: $("login-button"),
@@ -81,7 +88,7 @@ const refs = {
   toast: $("toast"),
 };
 
-const VIEWS = ["home", "chat", "search", "files", "settings"];
+const VIEWS = ["home", "chat", "search", "files", "settings", "dashboard", "metrics", "kb"];
 
 /* ============================================================
    STATE
@@ -206,6 +213,9 @@ function showView(name) {
   refs.navNew.classList.toggle("is-active", name === "home");
   refs.navSearch.classList.toggle("is-active", name === "search");
   refs.navFiles.classList.toggle("is-active", name === "files");
+  refs.navDashboard.classList.toggle("is-active", name === "dashboard");
+  refs.navMetrics.classList.toggle("is-active", name === "metrics");
+  refs.navKb.classList.toggle("is-active", name === "kb");
   highlightRecent();
   closeSidebar();
 
@@ -388,8 +398,9 @@ function renderTable(table, parent) {
   parent.append(wrap);
 }
 
-function renderReferences(entry, parent) {
-  const citation = citationFor(entry);
+function renderReferences(entry, parent, served = null) {
+  // Jawaban dari dokumen unggahan membawa rujukannya sendiri dari Worker.
+  const citation = served ?? citationFor(entry);
   const box = make("div", "refs");
   box.append(make("p", "refs-label", "RUJUKAN DOKUMEN RESMI"));
   const list = make("div", "refs-list");
@@ -462,7 +473,7 @@ function fillCard(card, response) {
     }
 
     if (entry?.table) renderTable(entry.table, body);
-    if (entry) renderReferences(entry, body);
+    if (entry) renderReferences(entry, body, response.citation);
     followUps = renderFollowUps(response.followUpQuestions);
   } else if (response.type === "suggestions") {
     body.append(paragraph(response.message));
@@ -533,6 +544,7 @@ async function askBackend(question) {
     generated: true,
     message: data.answer,
     entry: data.entry,
+    citation: data.citation ?? null,
     followUpQuestions: data.followUps ?? [],
   };
 }
@@ -667,6 +679,8 @@ function clearScope() {
 function buildAttachMenu() {
   refs.attachMenu.replaceChildren(make("p", "pop-menu-label", "Tanya tentang dokumen"));
   for (const [id, doc] of Object.entries(documents)) {
+    // Pembatasan dokumen bekerja pada topik yang sudah dikurasi; dokumen unggahan belum.
+    if (doc.uploaded) continue;
     const button = make("button", "menu-doc");
     button.type = "button";
     button.setAttribute("role", "menuitem");
@@ -1128,6 +1142,60 @@ async function deleteAllHistory() {
 }
 
 /* ============================================================
+   API UNTUK HALAMAN PENGELOLA
+============================================================ */
+
+/** Panggilan terautentikasi; kegagalan dilempar dengan status HTTP-nya. */
+async function api(path, options = {}) {
+  const headers = { ...authHeaders(), ...(options.headers ?? {}) };
+  if (typeof options.body === "string" && !headers["content-type"]) headers["content-type"] = "application/json";
+
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || `API ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+const owner = createOwner({
+  api,
+  getAccount: () => state.account,
+  showToast,
+  openViewer: (doc, options) => viewer.open(doc, options),
+  authHeaders: () => authHeaders(),
+});
+owner.setApiBase(API_URL);
+
+/** Dokumen unggahan yang sudah tervalidasi, supaya tampil di Files dan bisa dibuka. */
+async function loadPublicDocuments() {
+  if (!API_URL) return;
+  try {
+    const response = await fetch(`${API_URL}/documents`);
+    if (!response.ok) return;
+    for (const doc of (await response.json()).documents ?? []) {
+      documents[doc.id] = {
+        file: doc.file,
+        title: doc.title,
+        owner: doc.owner,
+        reference: doc.reference,
+        period: doc.period,
+        kind: doc.kind,
+        pages: doc.pages,
+        sizeLabel: `${(doc.sizeBytes / 1048576).toFixed(1).replace(".", ",")} MB`,
+        dateLabel: formatDate(doc.updatedAt),
+        uploaded: true,
+      };
+    }
+    if (state.view === "files") renderFiles();
+  } catch (error) {
+    console.warn("Tidak bisa memuat dokumen tambahan:", error);
+  }
+}
+
+/* ============================================================
    AKUN
 ============================================================ */
 
@@ -1164,6 +1232,8 @@ function captureTokenFromUrl() {
 function renderAccount() {
   const signedIn = Boolean(state.account);
 
+  const isStaff = signedIn && Boolean(state.account.role);
+  for (const item of document.querySelectorAll("[data-owner]")) item.hidden = !isStaff;
   refs.loginButton.hidden = signedIn || !state.loginEnabled;
   refs.loginNote.hidden = signedIn || !state.loginEnabled;
   refs.profile.hidden = !signedIn;
@@ -1307,6 +1377,18 @@ function initialize() {
     showView("files");
     renderFiles();
   });
+  refs.navDashboard.addEventListener("click", () => {
+    showView("dashboard");
+    owner.renderDashboard(refs.dashboardRoot);
+  });
+  refs.navMetrics.addEventListener("click", () => {
+    showView("metrics");
+    owner.renderMetrics(refs.metricsRoot);
+  });
+  refs.navKb.addEventListener("click", () => {
+    showView("kb");
+    owner.renderKnowledgeBase(refs.kbRoot);
+  });
   refs.navRecent.addEventListener("click", () =>
     setRecentOpen(refs.navRecent.getAttribute("aria-expanded") !== "true"),
   );
@@ -1374,6 +1456,7 @@ function initialize() {
   renderAccount();
   showView("home");
   loadAccount();
+  loadPublicDocuments();
 }
 
 initialize();

@@ -99,6 +99,7 @@ export async function roleOf(db, email) {
 export function can(assignment, action) {
   if (!assignment) return false;
   const allowed = {
+    view: ["upload", "review", "admin"],
     upload: ["upload", "admin"],
     review: ["review", "admin"],
     manage: ["admin"],

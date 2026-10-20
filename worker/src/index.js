@@ -2,6 +2,10 @@ import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base
 import { searchKnowledgeBase } from "../../lib/search.js";
 import { askGemini } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
+import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
+import { classifyOutcome, recordEvent } from "./events.js";
+import { searchPassages, unusableFiles } from "./documents.js";
+import { citationFor } from "../../data/sources.js";
 import {
   authenticate,
   createSession,
@@ -33,7 +37,7 @@ function corsHeaders(request, env) {
     // The session travels in Authorization, so the preflight must allow it or
     // the browser blocks every signed-in request before it is sent.
     "Access-Control-Allow-Headers": "content-type, authorization",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     Vary: "Origin",
   };
 }
@@ -45,19 +49,30 @@ function json(body, { status = 200, headers = {} } = {}) {
   });
 }
 
-/** Top entries the question actually relates to, used as grounding context. */
-function retrieve(question, knowledgeBase, scope = null) {
+/**
+ * Topik yang benar-benar berkaitan dengan pertanyaan, dipakai sebagai konteks.
+ *
+ * Mengembalikan juga status dan skor pencocokan, karena dashboard perlu tahu
+ * apakah rujukannya kuat, tipis, atau berimbang antara beberapa topik.
+ */
+function retrieve(question, knowledgeBase, { scope = null, excluded = new Set() } = {}) {
   // A reader can ask about one document only. The scope narrows what may be
   // retrieved; it never adds to it, and nothing about the reader is involved.
-  const pool = scope ? knowledgeBase.filter((entry) => entry.sourceUrl === scope) : knowledgeBase;
+  // Documents a manager switched off are excluded for everyone, the same way.
+  let pool = knowledgeBase.filter((entry) => !entry.sourceUrl || !excluded.has(entry.sourceUrl));
+  if (scope) pool = pool.filter((entry) => entry.sourceUrl === scope);
+
   const result = searchKnowledgeBase(question, pool);
-  if (result.status === "empty" || result.status === "none") return [];
+  if (result.status === "empty" || result.status === "none") {
+    return { entries: [], status: "none", score: null };
+  }
   const ranked = [result.best, ...result.alternatives].filter(Boolean);
   const seen = new Set();
-  return ranked
+  const entries = ranked
     .filter(({ entry }) => (seen.has(entry.id) ? false : seen.add(entry.id)))
     .slice(0, MAX_CONTEXT_ENTRIES)
     .map(({ entry }) => entry);
+  return { entries, status: result.status, score: result.best?.score ?? null };
 }
 
 /** Apakah login sudah dikonfigurasi pada deployment ini. */
@@ -66,7 +81,7 @@ function loginConfigured(env) {
 }
 
 /** Satu-satunya tempat identitas pengguna diterjemahkan jadi jawaban: tidak ada. */
-async function handleAsk(request, env, cors) {
+async function handleAsk(request, env, cors, ctx) {
   let question = "";
   let conversationId = null;
   let scope = null;
@@ -85,12 +100,54 @@ async function handleAsk(request, env, cors) {
     return json({ error: "GEMINI_API_KEY belum diset" }, { status: 503, headers: cors });
   }
 
-  const user = await authenticate(env.sapa_upi_kb, request);
+  const db = env.sapa_upi_kb;
+  const startedAt = Date.now();
+  const user = await authenticate(db, request);
 
-  const knowledgeBase = await loadKnowledgeBase(env.sapa_upi_kb, bundledKnowledgeBase);
+  const knowledgeBase = await loadKnowledgeBase(db, bundledKnowledgeBase);
+  const excluded = await unusableFiles(db);
+
   // Only the question reaches retrieval. Nothing about the reader does, so two
   // people asking the same thing are answered from the same sources.
-  const entries = retrieve(question, knowledgeBase, typeof scope === "string" ? scope : null);
+  const found = retrieve(question, knowledgeBase, {
+    scope: typeof scope === "string" ? scope : null,
+    excluded,
+  });
+  let { entries } = found;
+
+  // Nothing in the curated topics: look through the pages of documents a
+  // manager uploaded and validated. Curated topics always take precedence.
+  let fromPassage = false;
+  if (!entries.length && !scope) {
+    entries = await searchPassages(db, question, { limit: MAX_CONTEXT_ENTRIES, origin: new URL(request.url).origin });
+    fromPassage = entries.length > 0;
+  }
+
+  const top = entries[0] ?? null;
+  const citation = fromPassage ? top.passage : null;
+
+  /** Catat hasilnya di latar belakang, tanpa menunda jawaban. */
+  const note = (failed) => {
+    const outcome = classifyOutcome({
+      failed,
+      entryCount: entries.length,
+      status: found.status,
+      score: found.score,
+      fromPassage,
+    });
+    const cited = top ? (fromPassage ? { documentId: citation.documentId, page: citation.page } : citationFor(top)) : null;
+    const task = recordEvent(db, {
+      outcome,
+      entryId: top?.id ?? null,
+      category: top ? (fromPassage ? top.title : top.title) : null,
+      documentId: cited?.documentId ?? null,
+      page: cited?.page ?? null,
+      durationMs: Date.now() - startedAt,
+      source: failed ? "gagal" : "llm",
+      signedIn: Boolean(user),
+    }).catch((error) => console.warn("events: gagal mencatat —", error.message));
+    ctx?.waitUntil?.(task);
+  };
 
   try {
     const answer = await askGemini({
@@ -99,9 +156,9 @@ async function handleAsk(request, env, cors) {
       apiKey: env.GEMINI_API_KEY,
       model: env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
     });
+    note(false);
 
-    const top = entries[0] ?? null;
-    const savedTo = await recordExchange(env.sapa_upi_kb, user, {
+    const savedTo = await recordExchange(db, user, {
       conversationId,
       question,
       answer,
@@ -121,10 +178,28 @@ async function handleAsk(request, env, cors) {
         entry: top,
         followUps: top?.followUps ?? [],
         conversationId: savedTo,
+        citation: citation
+          ? {
+              documentId: citation.documentId,
+              page: citation.page,
+              highlight: citation.highlight,
+              document: {
+                id: citation.document.id,
+                title: citation.document.title,
+                owner: citation.document.owner,
+                reference: citation.document.reference,
+                period: citation.document.period,
+                kind: citation.document.kind,
+                pages: citation.document.pages,
+                file: top.sourceUrl,
+              },
+            }
+          : null,
       },
       { headers: cors },
     );
   } catch (error) {
+    note(true);
     // Quota, outage, bad model name — let the browser fall back to local matching.
     return json(
       { error: "LLM tidak tersedia", detail: String(error).slice(0, 200) },
@@ -263,7 +338,7 @@ async function handleConversations(request, env, cors, path) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const cors = corsHeaders(request, env);
     const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
 
@@ -271,10 +346,15 @@ export default {
 
     if (path.startsWith("/auth/")) return handleAuth(request, env, cors, path);
     if (path.startsWith("/conversations")) return handleConversations(request, env, cors, path);
+    if (path.startsWith("/admin/")) return handleAdmin(request, env, cors, path);
+    if (path === "/documents" && request.method === "GET") return handlePublicDocuments(request, env, cors);
+
+    const file = /^\/files\/([\w-]+)$/.exec(path);
+    if (file && request.method === "GET") return handleFile(request, env, cors, file[1]);
 
     if (request.method !== "POST") {
       return json({ error: "Gunakan POST" }, { status: 405, headers: cors });
     }
-    return handleAsk(request, env, cors);
+    return handleAsk(request, env, cors, ctx);
   },
 };

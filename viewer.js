@@ -63,7 +63,7 @@ export function findSpanRange(spanTexts, phrase) {
 
 let pdfjsPromise = null;
 
-function loadPdfJs() {
+export function loadPdfJs() {
   if (pdfjsPromise) return pdfjsPromise;
 
   pdfjsPromise = new Promise((resolve, reject) => {
@@ -275,7 +275,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     ui.stage.scrollTo({ top: Math.max(0, top - ui.stage.clientHeight / 3) });
   }
 
-  async function open(doc, { page = 1, highlight = "" } = {}) {
+  async function open(doc, { page = 1, highlight = "", headers = null } = {}) {
     state.opener = document.activeElement;
     state.doc = doc;
     state.page = page;
@@ -288,6 +288,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     ui.sub.textContent = `${doc.period} • ${doc.owner}`;
     ui.pageTotal.textContent = String(doc.pages);
     ui.download.href = doc.file;
+    ui.download.hidden = Boolean(headers);
     ui.download.setAttribute("download", doc.file.split("/").pop());
     ui.foot.hidden = true;
     setStatus("Memuat dokumen…");
@@ -299,7 +300,8 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
 
     try {
       const pdfjs = await loadPdfJs();
-      state.pdf = await pdfjs.getDocument(doc.file).promise;
+      // Draf yang belum divalidasi hanya terbuka bagi pengelola, lewat header sesi.
+      state.pdf = await pdfjs.getDocument(headers ? { url: doc.file, httpHeaders: headers } : doc.file).promise;
       ui.pageTotal.textContent = String(state.pdf.numPages);
       state.page = Math.min(Math.max(1, page), state.pdf.numPages);
       state.citedPage = state.page;

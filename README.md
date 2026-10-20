@@ -164,7 +164,18 @@ Antarmuka mengikuti section **MVP** pada desain Figma (frame New Chat, Answering
 - **Search Chats** — mencari judul dan isi riwayat milik sendiri (perlu masuk).
 - **Profile / Settings / Help** — profil dari akun Google, keluar dari semua perangkat, unduh dan hapus riwayat, serta kontak program studi.
 
-Halaman owner pada desain (Dashboard, Metrics, Knowledge Base, Upload) belum dibangun.
+### Halaman pengelola
+
+Dashboard, Metrics, Knowledge Base, dan Upload hanya muncul untuk akun yang punya baris di tabel `staff_roles` (peran `upload`, `review`, atau `admin`). Peran dibaca Worker dari D1 pada setiap permintaan, tidak pernah dari browser.
+
+- **Dashboard / Metrics** — dihitung dari tabel `events`, yang hanya menyimpan hasil jawaban (tanpa teks pertanyaan dan tanpa identitas pengguna).
+- **Knowledge Base** — daftar dokumen, sakelar RAG, validasi, tandai tidak berlaku, hapus, dan log audit.
+- **Upload** — hanya TPTA dan TU. PDF dibaca di browser (PDF.js), teks dikirim ke `POST /admin/documents`, berkas ke `PUT /admin/documents/:id/file` (disimpan di KV). Dokumen baru berstatus *Menunggu Validasi* dan belum dipakai menjawab.
+- Skema: `worker/schema-owner.sql`. Memberi peran:
+
+```bash
+cd worker && npx wrangler d1 execute sapa-upi-kb --remote --command "INSERT INTO staff_roles (email, role, unit, assigned_by) VALUES ('<email>', 'admin', 'TPTA', '<pemberi>')"
+```
 
 ## Struktur proyek
 

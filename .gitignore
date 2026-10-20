@@ -5,3 +5,4 @@ worker/.wrangler/
 
 # dihasilkan oleh worker/seed.mjs
 worker/seed.sql
+worker/seed-documents.sql
