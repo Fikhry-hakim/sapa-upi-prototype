@@ -1692,10 +1692,25 @@ function signOutLocally(message) {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 
+/** Alasan yang bisa ditindaklanjuti pengguna, per kode galat Web Speech API. */
+const VOICE_ERRORS = {
+  "not-allowed": "Akses mikrofon ditolak. Izinkan mikrofon untuk situs ini di pengaturan browser.",
+  "service-not-allowed": "Browser menolak dikte suara. Izinkan mikrofon, atau coba Chrome.",
+  "audio-capture": "Mikrofon tidak terdeteksi. Periksa apakah mikrofon terpasang dan tidak dipakai aplikasi lain.",
+  "no-speech": "Suara tidak terdengar. Tekan mikrofon lagi dan bicara lebih dekat.",
+  network: "Dikte suara butuh koneksi internet ke layanan Google. Periksa koneksimu.",
+  "language-not-supported": "Bahasa Indonesia tidak didukung dikte di browser ini.",
+};
+
 function stopVoice() {
-  recognition?.stop();
+  const current = recognition;
   recognition = null;
   refs.voiceButton.setAttribute("aria-pressed", "false");
+  try {
+    current?.stop();
+  } catch {
+    /* sudah berhenti */
+  }
 }
 
 function toggleVoice() {
@@ -1704,26 +1719,49 @@ function toggleVoice() {
     return;
   }
   if (!SpeechRecognition) {
-    showToast("Browser ini tidak mendukung input suara. Coba Chrome.");
+    showToast("Browser ini belum mendukung dikte suara. Pakai Chrome atau Edge (versi desktop).");
+    return;
+  }
+  if (!window.isSecureContext) {
+    showToast("Dikte suara hanya jalan di halaman HTTPS.");
     return;
   }
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "id-ID";
-  recognition.interimResults = true;
-  recognition.continuous = false;
+  const session = new SpeechRecognition();
+  session.lang = "id-ID";
+  session.interimResults = true;
+  session.continuous = false;
+  session.maxAlternatives = 1;
 
-  recognition.addEventListener("result", (event) => {
-    refs.question.value = [...event.results].map((r) => r[0].transcript).join("");
+  // Hasil dikte ditambahkan ke ketikan yang sudah ada, bukan menimpanya.
+  const base = refs.question.value.trim();
+  let heard = false;
+
+  session.addEventListener("result", (event) => {
+    heard = true;
+    const spoken = [...event.results].map((r) => r[0].transcript).join("").trim();
+    refs.question.value = [base, spoken].filter(Boolean).join(" ").slice(0, refs.question.maxLength);
     resizeComposer();
   });
-  recognition.addEventListener("error", (event) => {
-    showToast(event.error === "not-allowed" ? "Akses mikrofon ditolak." : "Input suara gagal. Coba lagi.");
-    stopVoice();
+  session.addEventListener("error", (event) => {
+    if (event.error === "aborted") return;
+    showToast(VOICE_ERRORS[event.error] ?? `Input suara gagal (${event.error}). Coba lagi.`);
+    if (recognition === session) stopVoice();
   });
-  recognition.addEventListener("end", stopVoice);
+  session.addEventListener("end", () => {
+    if (recognition !== session) return;
+    stopVoice();
+    if (heard) refs.question.focus();
+  });
 
-  recognition.start();
+  recognition = session;
+  try {
+    session.start();
+  } catch (error) {
+    recognition = null;
+    showToast("Mikrofon belum bisa dipakai. Coba lagi sebentar.");
+    return;
+  }
   refs.voiceButton.setAttribute("aria-pressed", "true");
   showToast("Mendengarkan... bicara sekarang.");
 }
