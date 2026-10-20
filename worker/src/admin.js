@@ -78,7 +78,9 @@ export async function handleAdmin(request, env, cors, path) {
   if (path === "/admin/interactions" && method === "GET") {
     const page = Number(url.searchParams.get("page")) || 1;
     const outcome = url.searchParams.get("outcome");
-    return json(await listInteractions(db, { outcome, page, size: INTERACTION_PAGE_SIZE }), { headers });
+    // Halaman Dashboard memakai ukuran bawaan; ekspor laporan meminta halaman lebih besar.
+    const size = Number(url.searchParams.get("size")) || INTERACTION_PAGE_SIZE;
+    return json(await listInteractions(db, { outcome, page, size }), { headers });
   }
 
   if (path === "/admin/documents" && method === "GET") {

@@ -6,6 +6,7 @@
  * bukan angka yang terlihat meyakinkan tetapi tidak nyata.
  */
 
+import { bold, buildXlsx } from "./lib/xlsx.js";
 import { loadPdfJs } from "./viewer.js";
 
 /* ============================================================
@@ -507,25 +508,68 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     return wrap;
   }
 
-  function exportReport(s) {
-    const lines = [
-      ["Laporan SAPA UPI", s.label],
+  const EXPORT_PAGE = 50;
+  const EXPORT_MAX_PAGES = 20; // 1.000 interaksi terbaru sudah cukup untuk satu laporan
+
+  async function allInteractions() {
+    const rows = [];
+    for (let page = 1; page <= EXPORT_MAX_PAGES; page += 1) {
+      const chunk = await api(`/admin/interactions?page=${page}&size=${EXPORT_PAGE}`);
+      rows.push(...chunk.rows);
+      if (rows.length >= chunk.total || !chunk.rows.length) break;
+    }
+    return rows;
+  }
+
+  async function exportReport(s) {
+    showToast("Menyiapkan laporan Excel...");
+    let rows = [];
+    try {
+      rows = await allInteractions();
+    } catch (error) {
+      showToast("Rincian aktivitas gagal diambil; laporan hanya memuat ringkasan.");
+    }
+
+    const summary = [
+      bold(["Laporan SAPA UPI", s.label]),
       [],
-      ["Metrik", "Jumlah", "Persen"],
+      bold(["Metrik", "Jumlah", "Persen"]),
       ["Total interaksi", s.total, ""],
       ...Object.keys(OUTCOME).map((key) => [OUTCOME[key].label, s.counts[key], `${s.percents[key]}%`]),
       ["Akurasi grounded retrieval", "", `${s.groundedAccuracy}%`],
-      [],
-      ["Periode", "Interaksi"],
-      ...s.series.map((p) => [p.label, p.total]),
     ];
-    const csv = lines.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const trend = [bold(["Periode", "Interaksi"]), ...s.series.map((p) => [p.label, p.total])];
+    const activity = [
+      bold(["ID Interaksi", "Waktu (WIB)", "Kategori Pertanyaan", "Hasil Respons", "Dokumen Rujukan", "Halaman", "Durasi (detik)", "Status"]),
+      ...rows.map((row) => {
+        const when = wibParts(row.at);
+        return [
+          row.code,
+          `${when.label} ${when.time}`,
+          row.category ?? "",
+          OUTCOME[row.outcome]?.label ?? row.outcome,
+          row.documentId ? row.documentId.replaceAll("-", " ") : "",
+          row.page ?? "",
+          row.durationMs ? Number((row.durationMs / 1000).toFixed(1)) : "",
+          row.ok ? "Berhasil" : "Gagal RAG",
+        ];
+      }),
+    ];
+
+    const bytes = buildXlsx([
+      { name: "Ringkasan", rows: summary, widths: [34, 14, 12] },
+      { name: "Tren", rows: trend, widths: [24, 12] },
+      { name: "Aktivitas", rows: activity, widths: [16, 22, 26, 24, 40, 10, 14, 12] },
+    ]);
+
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }));
-    link.download = `laporan-sapa-upi-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.href = URL.createObjectURL(
+      new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    );
+    link.download = `laporan-sapa-upi-${new Date().toISOString().slice(0, 10)}.xlsx`;
     link.click();
     URL.revokeObjectURL(link.href);
-    showToast("Laporan diunduh.");
+    showToast("Laporan Excel diunduh.");
   }
 
   /* ============================================================
