@@ -8,6 +8,10 @@
       content="SAPA UPI: asisten akademik Program Studi Bisnis Digital UPI. Tanyakan pedoman tugas akhir, dapatkan jawaban beserta dokumen sumbernya."
     />
     <title>SAPA UPI | AI Academic Hub</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <meta name="theme-color" content="#b91c2c" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -124,7 +128,7 @@
         <!-- Home -->
         <section class="view view-home" id="view-home" aria-labelledby="home-title">
           <div class="home-stage">
-            <h1 id="home-title">Halo<span id="home-comma">, </span><span class="accent" id="home-name"></span></h1>
+            <h1 id="home-title">Halo<span id="home-comma">!</span><span class="accent" id="home-name"></span></h1>
             <p class="home-sub">Ada yang bisa saya bantu terkait perkuliahan dan administrasi akademik hari ini?</p>
             <div class="composer-slot" id="home-slot"></div>
           </div>
@@ -212,7 +216,7 @@
         </section>
 
         <!-- Composer: satu elemen, dipindah antara beranda dan percakapan -->
-        <form class="composer" id="composer" autocomplete="off">
+        <form class="composer" id="composer" autocomplete="off" hidden>
           <div class="attach-chip" id="attach-chip" hidden>
             <span class="attach-icon" aria-hidden="true">PDF</span>
             <span class="attach-text"><strong id="attach-title"></strong><small>Pertanyaan dibatasi pada dokumen ini</small></span>

@@ -1481,6 +1481,30 @@ async function loadPublicDocuments() {
 ============================================================ */
 
 const TOKEN_KEY = "sapa-upi:session";
+const HINT_KEY = "sapa-upi:account-hint";
+
+/**
+ * Salinan terakhir profil, hanya untuk menggambar sidebar seketika saat halaman
+ * dibuka. Bukan sumber wewenang: /auth/me tetap menentukan, dan Worker yang
+ * menjaga setiap rute pengelola.
+ */
+function readAccountHint() {
+  try {
+    const hint = JSON.parse(localStorage.getItem(HINT_KEY) ?? "null");
+    return hint && typeof hint.email === "string" ? hint : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAccountHint(account) {
+  try {
+    if (account) localStorage.setItem(HINT_KEY, JSON.stringify(account));
+    else localStorage.removeItem(HINT_KEY);
+  } catch {
+    /* tanpa salinan, sidebar hanya muncul setelah /auth/me */
+  }
+}
 
 function readStoredToken() {
   try {
@@ -1634,6 +1658,7 @@ async function loadAccount() {
     const data = await response.json();
     state.loginEnabled = Boolean(data.loginEnabled);
     state.account = data.user ?? null;
+    writeAccountHint(state.account);
     if (!state.account) {
       state.sessionToken = null;
       storeToken(null);
@@ -1676,6 +1701,7 @@ async function logoutEverywhere() {
 function signOutLocally(message) {
   state.sessionToken = null;
   storeToken(null);
+  writeAccountHint(null);
   state.account = null;
   state.conversations = [];
   state.conversationId = null;
@@ -1901,6 +1927,7 @@ function initialize() {
   captureTokenFromUrl();
   captureLoginErrorFromUrl();
   state.sessionToken = state.sessionToken ?? readStoredToken();
+  if (state.sessionToken) state.account = readAccountHint();
 
   setRecentOpen(false);
   renderAccount();

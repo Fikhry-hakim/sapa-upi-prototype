@@ -77,6 +77,10 @@ svg {
   stroke-linejoin: round;
 }
 
+svg text {
+  stroke: none;
+}
+
 [hidden] {
   display: none !important;
 }
