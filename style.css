@@ -1213,6 +1213,37 @@ button.ref-chip:hover {
   border-color: var(--red-line);
 }
 
+.result {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.result > svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+}
+
+.result-text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.result-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-date {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .result strong {
   font-size: 13px;
   font-weight: 600;
@@ -1228,6 +1259,14 @@ button.ref-chip:hover {
   color: var(--muted);
   text-align: center;
   font-size: 12.5px;
+}
+
+#search-tabs {
+  margin: 14px 0 0;
+}
+
+.empty-inline {
+  margin-top: 16px;
 }
 
 .empty .login-btn {

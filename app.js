@@ -20,6 +20,7 @@ function make(tag, className, text) {
 
 /** Ikon sebagai string SVG; dipakai di tempat yang dibangun dari JS. */
 const ICON = {
+  chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z"/><path d="M9 11.5h.01M12 11.5h.01M15 11.5h.01"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
   file: '<svg class="file-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5M10 12.5h6M10 16h4"/></svg>',
@@ -76,6 +77,7 @@ const refs = {
   moreMenu: $("more-menu"),
   searchInput: $("search-input"),
   searchResults: $("search-results"),
+  searchTabs: $("search-tabs"),
   searchEmpty: $("search-empty"),
   filesSearch: $("files-search"),
   filesTabs: $("files-tabs"),
@@ -109,6 +111,7 @@ const state = {
   latestRequestId: 0,
   settingsSection: "profile",
   filesTab: "suggested",
+  searchTab: "all",
 };
 
 const viewer = createViewer({ onCopy: (message) => showToast(message) });
@@ -825,8 +828,28 @@ function buildMoreMenu() {
 
 let searchTimer;
 
+const SEARCH_TABS = [
+  ["all", "All"],
+  ["chats", "Chats"],
+  ["documents", "Documents"],
+];
+
+function renderSearchTabs() {
+  refs.searchTabs.replaceChildren();
+  for (const [id, label] of SEARCH_TABS) {
+    const tab = make("button", "tab", label);
+    tab.type = "button";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(state.searchTab === id));
+    tab.addEventListener("click", () => {
+      state.searchTab = id;
+      runSearch();
+    });
+    refs.searchTabs.append(tab);
+  }
+}
+
 function loginPrompt(message) {
-  refs.searchResults.replaceChildren();
   refs.searchEmpty.hidden = false;
   refs.searchEmpty.replaceChildren(message);
   if (state.loginEnabled) {
@@ -839,39 +862,86 @@ function loginPrompt(message) {
   }
 }
 
+function searchResult({ icon, title, snippet, date, onOpen }) {
+  const item = make("li");
+  const button = make("button", "result");
+  button.type = "button";
+  const text = make("span", "result-text");
+  text.append(make("strong", "", title));
+  if (snippet) text.append(make("small", "", snippet));
+  button.insertAdjacentHTML("afterbegin", icon);
+  button.append(text, make("time", "result-date", date));
+  button.addEventListener("click", onOpen);
+  item.append(button);
+  return item;
+}
+
 async function runSearch() {
+  renderSearchTabs();
   const term = refs.searchInput.value.trim();
+  const tab = state.searchTab;
+  const wantChats = tab !== "documents";
+  const wantDocs = tab !== "chats";
 
-  if (!state.account) {
-    loginPrompt("Masuk untuk mencari di riwayat percakapanmu. Percakapan sebelum masuk tidak disimpan.");
-    return;
-  }
-
-  let results = state.conversations;
-  if (term) {
-    try {
-      const response = await fetch(`${API_URL}/conversations?q=${encodeURIComponent(term)}`, {
-        headers: authHeaders(),
-      });
-      if (response.ok) results = (await response.json()).conversations ?? [];
-    } catch (error) {
-      console.warn("Pencarian gagal:", error);
+  let chats = [];
+  if (wantChats && state.account) {
+    chats = state.conversations;
+    if (term) {
+      try {
+        const response = await fetch(`${API_URL}/conversations?q=${encodeURIComponent(term)}`, {
+          headers: authHeaders(),
+        });
+        if (response.ok) chats = (await response.json()).conversations ?? [];
+      } catch (error) {
+        console.warn("Pencarian gagal:", error);
+      }
     }
   }
 
-  refs.searchResults.replaceChildren();
-  refs.searchEmpty.hidden = results.length > 0;
-  refs.searchEmpty.textContent = term ? "Tidak ada percakapan yang cocok." : "Belum ada percakapan tersimpan.";
+  const needle = term.toLowerCase();
+  const docs = wantDocs
+    ? Object.entries(documents).filter(
+        ([, doc]) => !needle || `${doc.title} ${doc.owner} ${doc.reference}`.toLowerCase().includes(needle),
+      )
+    : [];
 
-  for (const conversation of results) {
-    const item = make("li");
-    const button = make("button", "result");
-    button.type = "button";
-    button.append(make("strong", "", conversation.title), make("small", "", formatDate(conversation.updated_at)));
-    button.addEventListener("click", () => openConversation(conversation.id));
-    item.append(button);
-    refs.searchResults.append(item);
+  refs.searchResults.replaceChildren();
+  for (const conversation of chats) {
+    refs.searchResults.append(
+      searchResult({
+        icon: ICON.chat,
+        title: conversation.title,
+        snippet: "",
+        date: formatDate(conversation.updated_at),
+        onOpen: () => openConversation(conversation.id),
+      }),
+    );
   }
+  for (const [, doc] of docs) {
+    refs.searchResults.append(
+      searchResult({
+        icon: ICON.file,
+        title: doc.title,
+        snippet: `${doc.reference} • ${doc.pages} halaman`,
+        date: doc.dateLabel ?? "",
+        onOpen: () => viewer.open(doc, { page: 1 }),
+      }),
+    );
+  }
+
+  const shown = chats.length + docs.length;
+  if (wantChats && !state.account) {
+    loginPrompt("Masuk untuk mencari di riwayat percakapanmu. Percakapan sebelum masuk tidak disimpan.");
+    if (shown) refs.searchEmpty.classList.add("empty-inline");
+    return;
+  }
+  refs.searchEmpty.classList.remove("empty-inline");
+  refs.searchEmpty.hidden = shown > 0;
+  refs.searchEmpty.textContent = term
+    ? "Tidak ada hasil yang cocok."
+    : tab === "documents"
+      ? "Belum ada dokumen."
+      : "Belum ada percakapan tersimpan.";
 }
 
 function formatDate(value) {

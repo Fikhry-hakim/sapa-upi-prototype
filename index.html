@@ -144,11 +144,12 @@
         <!-- Search Chats -->
         <section class="view view-panel" id="view-search" hidden aria-labelledby="search-title">
           <div class="panel">
-            <h1 id="search-title">Search Chats</h1>
+            <h1 id="search-title" class="sr-only">Search Chats</h1>
             <label class="field field-search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-              <input id="search-input" type="search" placeholder="Cari percakapan..." autocomplete="off" />
+              <input id="search-input" type="search" placeholder="Cari percakapan atau dokumen..." autocomplete="off" />
             </label>
+            <div class="tabs" role="tablist" aria-label="Filter hasil" id="search-tabs"></div>
             <ul class="result-list" id="search-results"></ul>
             <p class="empty" id="search-empty" hidden></p>
           </div>
