@@ -257,7 +257,11 @@ async function handleAuth(request, env, cors, path) {
     }
 
     if (!isAllowedEmail(identity.email, allowedDomains(env))) {
-      return json({ error: "Gunakan akun email UPI untuk masuk" }, { status: 403, headers: cors });
+      // Kembali ke aplikasi supaya pengguna melihat halaman galat, bukan JSON mentah.
+      // Tidak ada email atau nama yang ikut di URL.
+      const back = new URL(stored.redirectTo || env.APP_URL || "/");
+      back.hash = "login_error=domain";
+      return Response.redirect(back.toString(), 302);
     }
 
     await upsertUser(db, identity);

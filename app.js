@@ -20,6 +20,7 @@ function make(tag, className, text) {
 
 /** Ikon sebagai string SVG; dipakai di tempat yang dibangun dari JS. */
 const ICON = {
+  more: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="12" cy="18.5" r="1.4" /></svg>',
   chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z"/><path d="M9 11.5h.01M12 11.5h.01M15 11.5h.01"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
@@ -78,11 +79,14 @@ const refs = {
   searchInput: $("search-input"),
   searchResults: $("search-results"),
   searchTabs: $("search-tabs"),
+  signinPage: $("signin-page"),
   searchClear: $("search-clear"),
   searchEsc: $("search-esc"),
   searchEmpty: $("search-empty"),
   filesSearch: $("files-search"),
   filesTabs: $("files-tabs"),
+  filesGridView: $("files-grid-view"),
+  filesListView: $("files-list-view"),
   fileGrid: $("file-grid"),
   filesEmpty: $("files-empty"),
   settingsBack: $("settings-back"),
@@ -113,6 +117,7 @@ const state = {
   latestRequestId: 0,
   settingsSection: "profile",
   filesTab: "suggested",
+  filesLayout: readLayout(),
   searchTab: "all",
 };
 
@@ -211,6 +216,7 @@ function showView(name) {
   if (composerHost) {
     composerHost.append(refs.composer);
     refs.composer.hidden = false;
+    resizeComposer();
   } else {
     refs.composer.hidden = true;
   }
@@ -653,7 +659,9 @@ function resetChat() {
 
 function resizeComposer() {
   refs.question.style.height = "auto";
-  refs.question.style.height = `${Math.min(refs.question.scrollHeight, 120)}px`;
+  // Saat composer tersembunyi scrollHeight 0; jangan biarkan kotaknya mengempis.
+  const height = refs.question.scrollHeight;
+  refs.question.style.height = height > 0 ? `${Math.min(height, 120)}px` : "";
 }
 
 /* ------------------------------------------------------------ dokumen terlampir */
@@ -859,7 +867,7 @@ function loginPrompt(message) {
     button.type = "button";
     button.innerHTML = ICON.user;
     button.append(make("span", "", "Masuk dengan akun UPI"));
-    button.addEventListener("click", startLogin);
+    button.addEventListener("click", () => showAuthScreen("login"));
     refs.searchEmpty.append(document.createElement("br"), button);
   }
 }
@@ -984,6 +992,26 @@ function formatDate(value) {
    FILES
 ============================================================ */
 
+const LAYOUT_KEY = "sapa-upi:files-layout";
+
+function readLayout() {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === "list" ? "list" : "grid";
+  } catch {
+    return "grid";
+  }
+}
+
+function setLayout(layout) {
+  state.filesLayout = layout;
+  try {
+    localStorage.setItem(LAYOUT_KEY, layout);
+  } catch {
+    /* tampilan tetap berganti untuk sesi ini */
+  }
+  renderFiles();
+}
+
 const FAV_KEY = "sapa-upi:favorite-documents";
 
 function readFavorites() {
@@ -1024,6 +1052,48 @@ function renderFilesTabs() {
   }
 }
 
+function closeFileMenu() {
+  document.querySelector(".file-menu")?.remove();
+}
+
+function openFileMenu(anchor, id, doc) {
+  const existing = document.querySelector(".file-menu");
+  closeFileMenu();
+  if (existing?.dataset.for === id) return;
+
+  const menu = make("div", "file-menu");
+  menu.setAttribute("role", "menu");
+  menu.dataset.for = id;
+
+  const entries = [
+    ["Buka dokumen", () => viewer.open(doc, { page: 1 })],
+    [
+      "Salin tautan",
+      async () => {
+        const link = new URL(doc.file, location.href).href;
+        try {
+          await navigator.clipboard.writeText(link);
+          showToast("Tautan disalin.");
+        } catch {
+          showToast("Browser menolak menyalin tautan.");
+        }
+      },
+    ],
+  ];
+  for (const [label, action] of entries) {
+    const item = make("button", "", label);
+    item.type = "button";
+    item.setAttribute("role", "menuitem");
+    item.addEventListener("click", () => {
+      closeFileMenu();
+      action();
+    });
+    menu.append(item);
+  }
+
+  anchor.closest(".file-card").append(menu);
+}
+
 function renderFiles() {
   renderFilesTabs();
   const term = refs.filesSearch.value.trim().toLowerCase();
@@ -1038,6 +1108,9 @@ function renderFiles() {
   }
 
   refs.fileGrid.replaceChildren();
+  refs.fileGrid.classList.toggle("is-list", state.filesLayout === "list");
+  refs.filesGridView.setAttribute("aria-pressed", String(state.filesLayout === "grid"));
+  refs.filesListView.setAttribute("aria-pressed", String(state.filesLayout === "list"));
   refs.filesEmpty.hidden = list.length > 0;
   refs.filesEmpty.textContent =
     state.filesTab === "favorites" && !term
@@ -1081,7 +1154,17 @@ function renderFiles() {
       renderFiles();
     });
 
-    card.append(open, star);
+    const more = make("button", "file-more");
+    more.type = "button";
+    more.innerHTML = ICON.more;
+    more.setAttribute("aria-label", `Menu ${doc.title}`);
+    more.setAttribute("aria-haspopup", "menu");
+    more.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openFileMenu(more, id, doc);
+    });
+
+    card.append(open, star, more);
     refs.fileGrid.append(card);
   }
 }
@@ -1319,6 +1402,61 @@ function storeToken(token) {
 }
 
 /** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
+const AUTH_COPY = {
+  login: {
+    title: "Selamat Datang Kembali!",
+    sub: "Masuk menggunakan akun Google UPI Anda untuk menyimpan riwayat percakapan.",
+    hint: "",
+    google: "Continue with Google",
+    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
+    alert: false,
+  },
+  domain: {
+    title: "Akun Tidak Diizinkan",
+    sub: "SAPA UPI hanya bisa dimasuki dengan akun Google UPI (@upi.edu atau subdomainnya).",
+    hint: "Akun yang kamu pilih bukan akun UPI, jadi tidak dibuatkan sesi masuk.",
+    google: "Coba dengan akun upi.edu",
+    note: "Kamu tetap bisa bertanya dan membuka dokumen tanpa masuk. Masuk hanya diperlukan untuk menyimpan riwayat.",
+    alert: true,
+  },
+  failed: {
+    title: "Gagal Masuk",
+    sub: "Proses masuk dengan Google tidak selesai.",
+    hint: "Coba lagi sebentar lagi. Kalau terus gagal, kamu tetap bisa memakai SAPA tanpa masuk.",
+    google: "Coba lagi",
+    note: "",
+    alert: true,
+  },
+};
+
+function showAuthScreen(mode) {
+  const copy = AUTH_COPY[mode] ?? AUTH_COPY.login;
+  $("auth-title").textContent = copy.title;
+  $("auth-sub").textContent = copy.sub;
+  $("auth-hint").textContent = copy.hint;
+  $("auth-hint").hidden = !copy.hint;
+  $("auth-google-label").textContent = copy.google;
+  $("auth-note").textContent = copy.note;
+  $("auth-icon").hidden = !copy.alert;
+  refs.signinPage.dataset.mode = mode;
+  refs.signinPage.hidden = false;
+  document.body.classList.add("auth-open");
+  $("auth-google").focus();
+}
+
+function hideAuthScreen() {
+  refs.signinPage.hidden = true;
+  document.body.classList.remove("auth-open");
+}
+
+/** Worker mengembalikan alasan penolakan lewat fragment (tanpa data pribadi). */
+function captureLoginErrorFromUrl() {
+  const match = /^#login_error=(\w+)/.exec(window.location.hash);
+  if (!match) return;
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  showAuthScreen(match[1] === "domain" ? "domain" : "failed");
+}
+
 function captureTokenFromUrl() {
   if (!window.location.hash.startsWith("#token=")) return;
   const token = decodeURIComponent(window.location.hash.slice("#token=".length));
@@ -1515,6 +1653,11 @@ function initialize() {
     searchTimer = setTimeout(runSearch, 220);
   });
   refs.filesSearch.addEventListener("input", renderFiles);
+  refs.filesGridView.addEventListener("click", () => setLayout("grid"));
+  refs.filesListView.addEventListener("click", () => setLayout("list"));
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".file-menu")) closeFileMenu();
+  });
 
   refs.shareButton.addEventListener("click", () =>
     copyText(window.location.href.split("#")[0], "Tautan disalin."),
@@ -1546,7 +1689,12 @@ function initialize() {
     else openSettings("profile");
   });
 
-  refs.loginButton.addEventListener("click", startLogin);
+  refs.loginButton.addEventListener("click", () => showAuthScreen("login"));
+  $("auth-google").addEventListener("click", startLogin);
+  $("auth-skip").addEventListener("click", hideAuthScreen);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !refs.signinPage.hidden) hideAuthScreen();
+  });
   refs.settingsBack.addEventListener("click", () => showView("home"));
   NARROW.addEventListener("change", () => (refs.question.placeholder = placeholderText()));
   refs.question.placeholder = placeholderText();
@@ -1562,6 +1710,7 @@ function initialize() {
   });
 
   captureTokenFromUrl();
+  captureLoginErrorFromUrl();
   state.sessionToken = state.sessionToken ?? readStoredToken();
 
   setRecentOpen(false);
