@@ -6,6 +6,13 @@ compatibility_date = "2026-09-01"
 # Model bisa diganti tanpa ubah kode. Lihat https://ai.google.dev/gemini-api/docs/models
 # gemini-3.5-flash-lite = paling hemat kuota, gemini-3.8-flash = jawaban lebih bagus.
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+# Model Gemini kedua, opsional (kosong = tidak dipakai). Cadangan utama adalah Workers AI di bawah,
+# yang tidak bergantung pada Google. Nama model harus yang masih tersedia untuk kuncimu.
+GEMINI_FALLBACK_MODEL = ""
+# Model Workers AI untuk cadangan. Cloudflare menghentikan model lama secara berkala;
+# lihat daftar terbaru dengan: npx wrangler ai models
+AI_FALLBACK_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+
 
 # Origin yang boleh memanggil API ini (dipisah koma).
 ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
@@ -36,3 +43,8 @@ database_id = "18387e08-06a8-4015-9c3c-9b1c54baaf8c"
 [[kv_namespaces]]
 binding = "sapa_upi_files"
 id = "f36a335dd00842fbb809ff3875f1e459"
+
+# Cadangan kalau Gemini timeout, kena kuota, atau diblokir per wilayah (Cloudflare Workers AI).
+# Dipakai otomatis; hapus blok ini untuk mematikannya.
+[ai]
+binding = "AI"

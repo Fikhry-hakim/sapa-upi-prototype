@@ -1,6 +1,6 @@
 import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base.js";
 import { searchKnowledgeBase } from "../../lib/search.js";
-import { askGemini } from "./gemini.js";
+import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
 import { classifyOutcome, recordEvent } from "./events.js";
@@ -178,12 +178,25 @@ async function handleAsk(request, env, cors, ctx) {
   };
 
   try {
-    const answer = await askGemini({
-      question,
-      entries,
-      apiKey: env.GEMINI_API_KEY,
-      model: env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
-    });
+    let answer;
+    try {
+      // Gemini diberi sebagian anggaran waktu; sisanya untuk cadangan di Workers AI.
+      const geminiResult = await askWithFallback({
+        question,
+        entries,
+        apiKey: env.GEMINI_API_KEY,
+        models: [env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", env.GEMINI_FALLBACK_MODEL],
+        totalMs: env.AI ? PRIMARY_BUDGET_MS : undefined,
+      });
+      answer = geminiResult.text;
+      if (geminiResult.fellBack) console.warn(`gemini: model utama gagal, dijawab oleh ${geminiResult.model}`);
+    } catch (geminiError) {
+      if (!env.AI) throw geminiError;
+      console.warn("gemini gagal, beralih ke Workers AI:", String(geminiError).slice(0, 200));
+      const backupModel = env.AI_FALLBACK_MODEL || WORKERS_AI_MODEL;
+      answer = await askWorkersAI({ question, entries, ai: env.AI, model: backupModel });
+      console.warn(`dijawab oleh cadangan ${backupModel}`);
+    }
     note(false);
 
     const savedTo = await recordExchange(db, user, {

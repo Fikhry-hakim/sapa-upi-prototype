@@ -8,6 +8,9 @@ import {
   buildInput,
   extractText,
   askGemini,
+  askWithFallback,
+  askWorkersAI,
+  generationConfigFor,
   isRetryable,
   MAX_ATTEMPTS,
   TOTAL_BUDGET_MS,
@@ -268,4 +271,115 @@ test("timed-out attempts can never add up to more than the total budget", async 
 
   assert.equal(calls, 2, "a third attempt must not start once the budget is gone");
   assert.ok(clock <= TOTAL_BUDGET_MS + 12_000, "at most one attempt past the budget line, never two");
+});
+
+/** fetch palsu yang menjawab per model, sambil memajukan jam. */
+function modelRouter(behaviours, clock) {
+  const seen = [];
+  return {
+    seen,
+    fetchImpl: async (_url, options) => {
+      const { model, generation_config: config } = JSON.parse(options.body);
+      seen.push({ model, config });
+      const act = behaviours[model];
+      clock.t += act.cost ?? 0;
+      if (act.throws) throw new Error(act.throws);
+      if (act.status) return new Response(act.body ?? "", { status: act.status });
+      return new Response(JSON.stringify({ steps: [{ type: "model_output", content: [{ type: "text", text: act.text }] }] }), { status: 200 });
+    },
+  };
+}
+
+const ask = (extra) => ({ question: "x", entries: [], apiKey: "k", sleep: async () => {}, ...extra });
+
+test("when the main model times out, the backup answers and the swap is reported", async () => {
+  const clock = { t: 0 };
+  const { fetchImpl, seen } = modelRouter(
+    {
+      utama: { throws: "The operation was aborted due to timeout", cost: 9_000 },
+      cadangan: { text: "Jawaban dari cadangan." },
+    },
+    clock,
+  );
+  const result = await askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t }));
+
+  assert.equal(result.text, "Jawaban dari cadangan.");
+  assert.equal(result.model, "cadangan");
+  assert.equal(result.fellBack, true);
+  assert.equal(seen.at(-1).model, "cadangan");
+});
+
+test("the main model answering means the backup is never called", async () => {
+  const clock = { t: 0 };
+  const { fetchImpl, seen } = modelRouter({ utama: { text: "Utama." }, cadangan: { text: "Cadangan." } }, clock);
+  const result = await askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t }));
+  assert.equal(result.fellBack, false);
+  assert.deepEqual(seen.map((s) => s.model), ["utama"]);
+});
+
+test("a quota error moves to the backup, but a malformed request does not", async () => {
+  const clock = { t: 0 };
+  const quota = modelRouter({ utama: { status: 429, body: "quota" }, cadangan: { text: "Ok." } }, clock);
+  assert.equal((await askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl: quota.fetchImpl, now: () => clock.t }))).model, "cadangan");
+
+  const bad = modelRouter({ utama: { status: 400, body: "invalid argument" }, cadangan: { text: "Ok." } }, { t: 0 });
+  await assert.rejects(askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl: bad.fetchImpl, now: () => 0 })), /Gemini 400/);
+  assert.deepEqual(bad.seen.map((s) => s.model), ["utama"], "our own bad request is not blamed on the model");
+});
+
+test("both models failing surfaces the last error, within the total budget", async () => {
+  const clock = { t: 0 };
+  const { fetchImpl } = modelRouter(
+    { utama: { throws: "timeout utama", cost: 9_000 }, cadangan: { throws: "timeout cadangan", cost: 6_000 } },
+    clock,
+  );
+  await assert.rejects(askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t })), /cadangan/);
+  assert.ok(clock.t <= TOTAL_BUDGET_MS + 3_000, `spent ${clock.t}ms`);
+});
+
+test("the backup is skipped when the main model already used up the whole budget", async () => {
+  const clock = { t: 0 };
+  const { fetchImpl, seen } = modelRouter({ utama: { throws: "timeout", cost: 14_500 }, cadangan: { text: "x" } }, clock);
+  await assert.rejects(askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t })));
+  assert.deepEqual(seen.map((s) => s.model), ["utama"]);
+});
+
+test("the same model listed twice, or no backup at all, still works", async () => {
+  const clock = { t: 0 };
+  const { fetchImpl, seen } = modelRouter({ utama: { text: "Ok." } }, clock);
+  await askWithFallback(ask({ models: ["utama", "utama", undefined], fetchImpl, now: () => clock.t }));
+  assert.equal(seen.length, 1);
+});
+
+test("only Gemini 3 models are sent the thinking level", () => {
+  assert.equal(generationConfigFor("gemini-3.5-flash-lite").thinking_level, "low");
+  assert.equal("thinking_level" in generationConfigFor("gemini-2.5-flash-lite"), false);
+  assert.equal(generationConfigFor("gemini-2.5-flash-lite").seed, generationConfigFor("gemini-3.5-flash-lite").seed, "the seed stays fixed for everyone");
+});
+
+test("the Workers AI backup gets the same rules and context as Gemini, and returns plain text", async () => {
+  let received;
+  const ai = {
+    run: async (model, input) => {
+      received = { model, input };
+      return { response: "  Jawaban dari cadangan.  " };
+    },
+  };
+  const text = await askWorkersAI({ question: "syarat sidang", entries: [sidang], ai });
+
+  assert.equal(text, "Jawaban dari cadangan.");
+  assert.equal(received.input.messages[0].role, "system");
+  assert.equal(received.input.messages[0].content, SYSTEM_INSTRUCTION, "same system rules as Gemini");
+  assert.match(received.input.messages[1].content, /KONTEKS PEDOMAN/);
+  assert.match(received.input.messages[1].content, /syarat sidang/);
+  assert.equal(received.input.temperature, 0, "deterministic, so two readers get the same answer");
+});
+
+test("the Workers AI backup refuses to invent an answer when it returns nothing, or hangs", async () => {
+  await assert.rejects(askWorkersAI({ question: "x", entries: [], ai: { run: async () => ({ response: "   " }) } }), /tidak mengembalikan teks/);
+  await assert.rejects(askWorkersAI({ question: "x", entries: [], ai: null }), /tidak tersedia/);
+  await assert.rejects(
+    askWorkersAI({ question: "x", entries: [], ai: { run: () => new Promise(() => {}) }, timeoutMs: 30 }),
+    /timeout/,
+  );
 });

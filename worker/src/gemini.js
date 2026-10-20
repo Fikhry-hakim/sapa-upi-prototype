@@ -78,6 +78,16 @@ export function isRetryable(status, detail = "") {
   return false;
 }
 
+/**
+ * Pengaturan decoding per model. Tingkat berpikir hanya dikenal model keluarga 3;
+ * model lain bisa menolaknya, jadi tidak dikirimkan ke mereka.
+ */
+export function generationConfigFor(model) {
+  const config = { seed: ANSWER_SEED };
+  if (/^gemini-3/i.test(String(model))) config.thinking_level = "low";
+  return config;
+}
+
 export async function askGemini({
   question,
   entries,
@@ -86,6 +96,7 @@ export async function askGemini({
   fetchImpl = fetch,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = Date.now,
+  budgetMs = TOTAL_BUDGET_MS,
 }) {
   const startedAt = now();
   const body = JSON.stringify({
@@ -98,7 +109,7 @@ export async function askGemini({
     // this across model updates, so treat it as stability, not a guarantee.
     // Jawaban disusun dari kutipan yang sudah diberikan, jadi tidak perlu berpikir
     // panjang; thinking rendah memangkas waktu tunggu dari belasan detik.
-    generation_config: { seed: ANSWER_SEED, thinking_level: "low" },
+    generation_config: generationConfigFor(model),
   });
 
   let lastError;
@@ -106,7 +117,7 @@ export async function askGemini({
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     // Anggaran total adalah batas keras: percobaan terakhir dipotong ke sisa
     // waktu, dan tidak dimulai sama sekali kalau sisanya terlalu sedikit.
-    const remaining = TOTAL_BUDGET_MS - (now() - startedAt);
+    const remaining = budgetMs - (now() - startedAt);
     if (attempt > 1 && remaining < MIN_ATTEMPT_MS) throw lastError;
     const attemptTimeout = Math.min(ATTEMPT_TIMEOUT_MS, Math.max(remaining, MIN_ATTEMPT_MS));
 
@@ -124,7 +135,7 @@ export async function askGemini({
     } catch (error) {
       // A timed-out or aborted attempt is worth another go, within the budget.
       lastError = new Error(`Gemini request failed: ${error.message}`);
-      if (attempt === MAX_ATTEMPTS || now() - startedAt >= TOTAL_BUDGET_MS) throw lastError;
+      if (attempt === MAX_ATTEMPTS || now() - startedAt >= budgetMs) throw lastError;
       await sleep(RETRY_DELAY_MS * attempt);
       continue;
     }
@@ -142,7 +153,7 @@ export async function askGemini({
     if (
       attempt === MAX_ATTEMPTS ||
       !isRetryable(response.status, detail) ||
-      now() - startedAt >= TOTAL_BUDGET_MS
+      now() - startedAt >= budgetMs
     ) {
       throw lastError;
     }
@@ -150,4 +161,89 @@ export async function askGemini({
   }
 
   throw lastError;
+}
+
+/** Bagian anggaran waktu untuk model utama; sisanya untuk model cadangan. */
+export const PRIMARY_BUDGET_MS = 9_000;
+
+/**
+ * Tanya model utama, dan kalau gagal (timeout, kuota, gangguan), model cadangan.
+ *
+ * Seluruhnya tetap berada di bawah TOTAL_BUDGET_MS: model utama tidak boleh
+ * menghabiskan waktu yang dibutuhkan cadangannya. Mengembalikan teks jawaban
+ * beserta model yang menjawab, supaya pergantian model bisa dicatat.
+ * Galat 400 selain pembatasan lokasi tidak berpindah model, karena itu berarti
+ * permintaannya sendiri yang salah, bukan modelnya yang sedang bermasalah.
+ */
+export async function askWithFallback({ models, now = Date.now, totalMs = TOTAL_BUDGET_MS, ...options }) {
+  const list = [...new Set(models.filter(Boolean))];
+  const startedAt = now();
+  let lastError;
+
+  for (let i = 0; i < list.length; i += 1) {
+    const isLast = i === list.length - 1;
+    const elapsed = now() - startedAt;
+    const remaining = totalMs - elapsed;
+    if (i > 0 && remaining < MIN_ATTEMPT_MS) break;
+
+    // Model utama dibatasi supaya cadangan masih kebagian waktu.
+    const budgetMs = isLast ? remaining : Math.min(PRIMARY_BUDGET_MS, remaining);
+    try {
+      const text = await askGemini({ ...options, model: list[i], now, budgetMs });
+      return { text, model: list[i], fellBack: i > 0 };
+    } catch (error) {
+      lastError = error;
+      if (/^Gemini 400:/.test(error.message) && !/location is not supported/i.test(error.message)) throw error;
+    }
+  }
+  throw lastError;
+}
+
+/* ------------------------------------------------------------ cadangan: Workers AI */
+
+/** Model cadangan di Workers AI; ringan supaya tetap muat di kuota harian gratis. */
+export const WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
+
+/** Waktu untuk cadangan Workers AI setelah Gemini gagal (total tetap 15 detik). */
+export const WORKERS_AI_BUDGET_MS = TOTAL_BUDGET_MS - PRIMARY_BUDGET_MS;
+
+/**
+ * Jawab lewat Cloudflare Workers AI, yang tidak bergantung pada Google sama
+ * sekali: kalau Gemini lambat, kehabisan kuota, atau diblokir per wilayah,
+ * cadangan ini tetap bisa menjawab. Instruksi dan konteks yang diberikan sama,
+ * jadi aturan "hanya dari kutipan pedoman" berlaku persis seperti pada Gemini.
+ */
+export async function askWorkersAI({
+  question,
+  entries,
+  ai,
+  model = WORKERS_AI_MODEL,
+  timeoutMs = WORKERS_AI_BUDGET_MS,
+}) {
+  if (!ai?.run) throw new Error("Workers AI tidak tersedia");
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Workers AI timeout")), timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([
+      ai.run(model, {
+        messages: [
+          { role: "system", content: SYSTEM_INSTRUCTION },
+          { role: "user", content: buildInput(question, entries) },
+        ],
+        max_tokens: 700,
+        temperature: 0,
+        seed: ANSWER_SEED % 1_000_000, // rentang seed Workers AI lebih sempit dari Gemini
+      }),
+      timeout,
+    ]);
+    const text = String(result?.response ?? "").trim();
+    if (!text) throw new Error("Workers AI tidak mengembalikan teks");
+    return text;
+  } finally {
+    clearTimeout(timer);
+  }
 }
