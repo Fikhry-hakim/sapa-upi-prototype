@@ -38,13 +38,32 @@ export function bearerToken(request) {
 
 const iso = (ms) => new Date(ms).toISOString();
 
-export async function createSession(db, userId, now = Date.now) {
+export const FRESH_LOGIN_MS = 10 * 60 * 1000;
+
+/** method: "google" atau "password"; dipakai untuk menilai seberapa baru identitas terbukti. */
+export async function createSession(db, userId, method = "google", now = Date.now) {
   const token = createToken();
   await db
-    .prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")
-    .bind(await hashToken(token), userId, iso(now() + SESSION_TTL_MS))
+    .prepare("INSERT INTO sessions (token_hash, user_id, expires_at, method) VALUES (?, ?, ?, ?)")
+    .bind(await hashToken(token), userId, iso(now() + SESSION_TTL_MS), method)
     .run();
   return token;
+}
+
+/**
+ * Apakah sesi ini baru saja dibuka lewat Google. Hanya sesi seperti itu boleh
+ * mengatur ulang kata sandi tanpa menyebut yang lama.
+ */
+export async function isFreshGoogleSession(db, request, now = Date.now) {
+  const token = bearerToken(request);
+  if (!token || !db) return false;
+  const row = await db
+    .prepare("SELECT method, created_at FROM sessions WHERE token_hash = ?")
+    .bind(await hashToken(token))
+    .first();
+  if (!row || row.method !== "google") return false;
+  const created = Date.parse(`${String(row.created_at).replace(" ", "T")}Z`);
+  return Number.isFinite(created) && now() - created <= FRESH_LOGIN_MS;
 }
 
 /**

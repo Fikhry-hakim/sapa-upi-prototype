@@ -11,9 +11,21 @@ import {
   createSession,
   destroyAllSessions,
   destroySession,
+  isFreshGoogleSession,
   roleOf,
   upsertUser,
 } from "./auth.js";
+import {
+  attemptLogin,
+  clearFailures,
+  hasPassword,
+  isLockedOut,
+  passwordProblem,
+  recordFailure,
+  setPassword,
+  storedHashFor,
+  verifyPassword,
+} from "./password.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
   deleteAllConversations,
@@ -215,7 +227,59 @@ async function handleAuth(request, env, cors, path) {
     const user = await authenticate(db, request);
     if (!user) return json({ user: null, loginEnabled: loginConfigured(env) }, { headers: cors });
     const assignment = await roleOf(db, user.email);
-    return json({ user: { ...user, ...(assignment ?? {}) }, loginEnabled: true }, { headers: cors });
+    return json(
+      { user: { ...user, ...(assignment ?? {}), hasPassword: await hasPassword(db, user.id) }, loginEnabled: true },
+      { headers: cors },
+    );
+  }
+
+  if (path === "/auth/password/login" && request.method === "POST") {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
+    }
+    const result = await attemptLogin(db, body ?? {}, { domainOk: (email) => isAllowedEmail(email, allowedDomains(env)) });
+    if (!result.user) return json({ error: result.error }, { status: result.status, headers: cors });
+
+    await upsertUser(db, result.user);
+    const token = await createSession(db, result.user.id, "password");
+    return json({ token }, { headers: cors });
+  }
+
+  if (path === "/auth/password/set" && request.method === "POST") {
+    const user = await authenticate(db, request);
+    if (!user) return json({ error: "Perlu masuk" }, { status: 401, headers: cors });
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
+    }
+
+    const problem = passwordProblem(body?.password, user.email);
+    if (problem) return json({ error: problem }, { status: 400, headers: cors });
+
+    // Mengganti kata sandi yang sudah ada menuntut kata sandi lama, kecuali sesi
+    // ini baru saja dibuka lewat Google (jalan keluar kalau kata sandi lupa).
+    // Sesi yang tertinggal di perangkat lain tidak cukup untuk mengambil alih.
+    const existing = await storedHashFor(db, user.id);
+    const fresh = await isFreshGoogleSession(db, request);
+    if (existing && !fresh) {
+      if (await isLockedOut(db, user.email)) {
+        return json({ error: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." }, { status: 429, headers: cors });
+      }
+      if (typeof body.current !== "string" || !(await verifyPassword(body.current, existing))) {
+        await recordFailure(db, user.email);
+        return json({ error: "Kata sandi saat ini salah." }, { status: 403, headers: cors });
+      }
+      await clearFailures(db, user.email);
+    }
+
+    await setPassword(db, user.id, body.password);
+    return json({ ok: true }, { headers: cors });
   }
 
   if (path === "/auth/logout") {

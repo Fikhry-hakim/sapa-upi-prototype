@@ -126,10 +126,13 @@ test("startup wiring lives in initialize, not in whatever function matched a pat
   for (const call of ["renderAccount()", "loadAccount()", "captureTokenFromUrl()", "showView(\"home\")"]) {
     assert.ok(init.includes(call), `initialize() must perform startup step: ${call}`);
   }
-  for (const call of ["loadAccount();", "captureTokenFromUrl();"]) {
+  // loadAccount runs at startup and once more right after a password login.
+  const expected = { "loadAccount();": 2, "captureTokenFromUrl();": 1 };
+  for (const [call, times] of Object.entries(expected)) {
     const occurrences = app.split(call).length - 1;
-    assert.equal(occurrences, 1, `${call} should be called once, found ${occurrences}`);
+    assert.equal(occurrences, times, `${call} should be called ${times}x, found ${occurrences}`);
   }
+  assert.ok(app.includes("await loadAccount();"), "the second call must be the post-login refresh");
 });
 
 /* ---------- answers ---------- */

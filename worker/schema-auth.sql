@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   token_hash  TEXT PRIMARY KEY,
   user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  expires_at  TEXT NOT NULL
+  expires_at  TEXT NOT NULL,
+  method      TEXT NOT NULL DEFAULT 'google'   -- 'google' atau 'password'
 );
 
 -- State OAuth berumur pendek, dipakai sekali untuk menolak callback palsu.
@@ -64,3 +65,18 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS conversations_user ON conversations(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS messages_conversation ON messages(conversation_id, created_at);
+
+-- Masuk dengan kata sandi. Hanya akun yang sudah masuk lewat Google yang bisa
+-- memasang kata sandi, jadi tidak ada pendaftaran atas nama email orang lain.
+CREATE TABLE IF NOT EXISTS credentials (
+  user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  hash        TEXT NOT NULL,   -- pbkdf2$iterasi$garam$hash; bukan kata sandinya
+  updated_at  TEXT NOT NULL
+);
+
+-- Percobaan masuk yang gagal, per email, untuk pembatasan.
+CREATE TABLE IF NOT EXISTS login_failures (
+  email  TEXT NOT NULL,
+  at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS login_failures_email ON login_failures (email, at);

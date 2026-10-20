@@ -3581,3 +3581,144 @@ button.ref-chip:hover {
     padding: 28px 20px;
   }
 }
+
+/* ------------------------------------------------------------ masuk dengan email */
+
+.auth-form {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.auth-input:focus {
+  border-color: var(--red-line);
+  outline: 0;
+}
+
+.auth-password {
+  position: relative;
+}
+
+.auth-password .auth-input {
+  padding-right: 40px;
+}
+
+.auth-eye {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  color: var(--faint);
+}
+
+.auth-eye[aria-pressed="true"] {
+  color: var(--red);
+}
+
+.auth-eye svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.auth-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+}
+
+.auth-forgot {
+  background: none;
+  border: 0;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 9px 12px;
+  background: var(--red-soft);
+  border: 1px solid var(--red-line);
+  border-radius: 10px;
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.auth-submit {
+  height: 44px;
+  background: var(--red);
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+}
+
+.auth-divider {
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+.auth-form[hidden],
+.auth-divider[hidden],
+.auth-error[hidden] {
+  display: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

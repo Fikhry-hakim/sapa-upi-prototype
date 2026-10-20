@@ -1239,7 +1239,14 @@ function renderSettings() {
     );
   } else if (section.id === "security") {
     refs.settingsCard.append(
-      row("Akun masuk", "SAPA UPI tidak menyimpan kata sandi", "Google • upi.edu"),
+      row("Akun masuk", "Email UPI terbukti lewat Google", "Google • upi.edu"),
+      row(
+        "Kata sandi",
+        account.hasPassword
+          ? "Dipakai untuk masuk dengan email. Mengganti menuntut kata sandi saat ini"
+          : "Pasang kata sandi untuk masuk dengan email, tanpa Google",
+        actionButton(account.hasPassword ? "Ganti" : "Atur", openPasswordDialog),
+      ),
       row(
         "Keluar dari semua perangkat",
         "Mengakhiri setiap sesi yang sedang aktif, termasuk yang ini",
@@ -1280,6 +1287,97 @@ function renderSettings() {
       ),
     );
   }
+}
+
+function openPasswordDialog() {
+  const account = state.account;
+  const dialog = make("div", "modal");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "password-title");
+  const scrim = make("div", "modal-scrim");
+  const box = make("form", "modal-box");
+  box.noValidate = true;
+  dialog.append(scrim, box);
+
+  const close = () => {
+    dialog.remove();
+    document.removeEventListener("keydown", onKey);
+  };
+  function onKey(event) {
+    if (event.key === "Escape") close();
+  }
+  document.addEventListener("keydown", onKey);
+  scrim.addEventListener("click", close);
+
+  const head = make("div", "modal-head");
+  const title = make("h2", "", account.hasPassword ? "Ganti kata sandi" : "Atur kata sandi");
+  title.id = "password-title";
+  head.append(title);
+
+  const field = (label, id, autocomplete) => {
+    const wrap = make("div", "auth-field");
+    const labelEl = make("label", "auth-label", label);
+    labelEl.htmlFor = id;
+    const input = make("input", "auth-input");
+    input.id = id;
+    input.type = "password";
+    input.autocomplete = autocomplete;
+    wrap.append(labelEl, input);
+    return { wrap, input };
+  };
+
+  const current = field("Kata sandi saat ini", "pw-current", "current-password");
+  const next = field("Kata sandi baru", "pw-new", "new-password");
+  const again = field("Ulangi kata sandi baru", "pw-again", "new-password");
+
+  const intro = make(
+    "p",
+    "modal-intro",
+    account.hasPassword
+      ? "Kosongkan kata sandi saat ini hanya jika kamu baru saja masuk dengan Google (dalam 10 menit terakhir)."
+      : "Dengan kata sandi, kamu bisa masuk memakai email UPI tanpa Google. Minimal 10 karakter.",
+  );
+  const message = make("p", "modal-message");
+  message.hidden = true;
+  const submit = make("button", "btn btn-primary", "Simpan");
+  submit.type = "submit";
+  const cancel = make("button", "btn", "Batal");
+  cancel.type = "button";
+  cancel.addEventListener("click", close);
+  const actions = make("div", "modal-actions");
+  actions.append(cancel, submit);
+
+  box.append(head, intro);
+  if (account.hasPassword) box.append(current.wrap);
+  box.append(next.wrap, again.wrap, message, actions);
+
+  box.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    message.hidden = false;
+    if (next.input.value !== again.input.value) {
+      message.textContent = "Kata sandi baru dan pengulangannya tidak sama.";
+      return;
+    }
+    submit.disabled = true;
+    try {
+      await api("/auth/password/set", {
+        method: "POST",
+        body: JSON.stringify({ password: next.input.value, current: current.input.value || undefined }),
+      });
+      state.account.hasPassword = true;
+      close();
+      renderSettings();
+      showToast("Kata sandi disimpan.");
+    } catch (error) {
+      message.textContent = error.status ? error.message : "Gagal menyimpan kata sandi.";
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.body.append(dialog);
+  (account.hasPassword ? current : next).input.focus();
 }
 
 function roleLabel(account) {
@@ -1386,29 +1484,29 @@ const TOKEN_KEY = "sapa-upi:session";
 
 function readStoredToken() {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
-function storeToken(token) {
+function storeToken(token, remember = true) {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    if (token) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
   } catch {
     /* sesi hanya bertahan selama halaman terbuka */
   }
 }
 
-/** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
 const AUTH_COPY = {
   login: {
     title: "Selamat Datang Kembali!",
-    sub: "Masuk menggunakan akun Google UPI Anda untuk menyimpan riwayat percakapan.",
+    sub: "Masuk dengan akun UPI Anda untuk menyimpan riwayat percakapan.",
     hint: "",
     google: "Continue with Google",
-    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
+    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Kata sandi dipasang dari Settings setelah masuk dengan Google. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
     alert: false,
   },
   domain: {
@@ -1438,10 +1536,51 @@ function showAuthScreen(mode) {
   $("auth-google-label").textContent = copy.google;
   $("auth-note").textContent = copy.note;
   $("auth-icon").hidden = !copy.alert;
+  const isLogin = mode === "login";
+  $("auth-form").hidden = !isLogin;
+  $("auth-divider").hidden = !isLogin;
+  $("auth-error").hidden = true;
+  $("auth-password").value = "";
   refs.signinPage.dataset.mode = mode;
   refs.signinPage.hidden = false;
   document.body.classList.add("auth-open");
-  $("auth-google").focus();
+  (isLogin ? $("auth-email") : $("auth-google")).focus();
+}
+
+function authError(message) {
+  $("auth-error").textContent = message;
+  $("auth-error").hidden = !message;
+}
+
+async function submitPasswordLogin(event) {
+  event.preventDefault();
+  const email = $("auth-email").value.trim();
+  const password = $("auth-password").value;
+  if (!email || !password) return authError("Isi email dan kata sandi.");
+
+  const button = $("auth-submit");
+  button.disabled = true;
+  authError("");
+  try {
+    const response = await fetch(`${API_URL}/auth/password/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return authError(data.error || "Tidak bisa masuk sekarang. Coba lagi.");
+
+    state.sessionToken = data.token;
+    storeToken(data.token, $("auth-remember").checked);
+    $("auth-password").value = "";
+    hideAuthScreen();
+    await loadAccount();
+    showToast("Berhasil masuk.");
+  } catch {
+    authError("Tidak bisa terhubung ke server. Coba lagi.");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function hideAuthScreen() {
@@ -1457,6 +1596,7 @@ function captureLoginErrorFromUrl() {
   showAuthScreen(match[1] === "domain" ? "domain" : "failed");
 }
 
+/** Token datang dari Worker lewat fragment URL, supaya tidak masuk log server. */
 function captureTokenFromUrl() {
   if (!window.location.hash.startsWith("#token=")) return;
   const token = decodeURIComponent(window.location.hash.slice("#token=".length));
@@ -1691,6 +1831,17 @@ function initialize() {
 
   refs.loginButton.addEventListener("click", () => showAuthScreen("login"));
   $("auth-google").addEventListener("click", startLogin);
+  $("auth-form").addEventListener("submit", submitPasswordLogin);
+  $("auth-eye").addEventListener("click", () => {
+    const input = $("auth-password");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    $("auth-eye").setAttribute("aria-pressed", String(show));
+    $("auth-eye").setAttribute("aria-label", show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi");
+  });
+  $("auth-forgot").addEventListener("click", () => {
+    authError("Masuk dengan Google di bawah, lalu atur ulang kata sandi di Settings > Security and login (dalam 10 menit setelah masuk).");
+  });
   $("auth-skip").addEventListener("click", hideAuthScreen);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !refs.signinPage.hidden) hideAuthScreen();
