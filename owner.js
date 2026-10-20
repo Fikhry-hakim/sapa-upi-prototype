@@ -565,29 +565,133 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       const overview = await api("/admin/overview?range=bulanan");
       const s = overview.summary;
       pageHeader(root, "Metrics", "metrics-title");
-      root.append(make("p", "owner-lede", `Definisi setiap angka di Dashboard beserta rumusnya, dihitung dari ${nf.format(s.total)} interaksi pada ${s.label.toLowerCase()}.`));
+      root.append(
+        make(
+          "p",
+          "owner-lede",
+          `Rancangan KPI Dashboard Admin beserta definisi dan rumusnya (Lampiran A, Tabel A.6). Nilai dihitung dari ${nf.format(s.total)} interaksi pada ${s.label.toLowerCase()}.`,
+        ),
+      );
 
-      const seconds = (ms) => (ms === null ? "—" : `${(ms / 1000).toFixed(1)} detik`);
-      const rows = [
-        ["Tingkat Jawaban Berbasis Sumber", formatPercent(s.percents.berbasis_sumber), "Rasio = (Interaksi berbasis sumber) / (Total interaksi) × 100%", "Seberapa sering jawaban punya rujukan dokumen yang kuat."],
-        ["Tingkat Klarifikasi", formatPercent(s.percents.klarifikasi), "Rasio = (Interaksi dengan beberapa topik sama kuat) / (Total interaksi) × 100%", "Pertanyaan terlalu umum; sistem menyodorkan topik untuk dipilih."],
-        ["Ketercukupan Bukti", formatPercent(s.percents.bukti_terbatas), "Rasio = (Interaksi dengan skor rujukan < 45) / (Total interaksi) × 100%", "Rujukan ada tetapi tipis. Angka tinggi menandakan topik yang perlu dilengkapi."],
-        ["Di Luar Cakupan", formatPercent(s.percents.di_luar_cakupan), "Rasio = (Interaksi tanpa rujukan sama sekali) / (Total interaksi) × 100%", "Sistem menolak menjawab. Angka tinggi menandakan dokumen yang belum ada."],
-        ["Kegagalan Teknis", formatPercent(s.percents.gangguan_teknis), "Rasio = (Interaksi saat model tidak terjangkau) / (Total interaksi) × 100%", "Pembaca tetap dilayani lewat mode offline."],
-        ["Akurasi Grounded Retrieval", formatPercent(s.groundedAccuracy), "Akurasi = (Berbasis sumber + Klarifikasi) / (Total interaksi) × 100%", "Bagian jawaban yang tidak mengarang di luar dokumen."],
-        ["Kesiapan Sumber", formatPercent(overview.documents.readiness), "Kesiapan = (Dokumen tervalidasi dan aktif) / (Total dokumen) × 100%", `${overview.documents.ready} dari ${overview.documents.total} dokumen siap dipakai menjawab.`],
-        ["Durasi Respons (median)", seconds(s.durationMs.median), "Median dari lama pemrosesan tiap pertanyaan", `Rata-rata ${seconds(s.durationMs.average)}; persentil ke-95 ${seconds(s.durationMs.p95)}.`],
+      const seconds = (ms) => (ms === null || ms === undefined ? null : (ms / 1000).toFixed(1).replace(".", ","));
+      const average = seconds(s.durationMs.average);
+      const NOT_EVALUATED = "Belum dievaluasi";
+
+      // [KPI, definisi operasional, rumus, satuan, nilai, catatan]
+      const kpis = [
+        ["Total Interaksi", "Jumlah permintaan yang diterima dalam periode tertentu", "Jumlah ID interaksi unik", "Interaksi", nf.format(s.total)],
+        [
+          "Proporsi Jawaban Berbasis Sumber",
+          "Persentase interaksi dengan jawaban substantif dan referensi tercatat",
+          "(Jawaban berbasis sumber ÷ Total interaksi) × 100%",
+          "%",
+          formatPercent(s.percents.berbasis_sumber),
+        ],
+        [
+          "Tingkat Keterbatasan Bukti",
+          "Persentase interaksi tanpa bukti memadai",
+          "(Interaksi tanpa bukti memadai ÷ Total interaksi) × 100%",
+          "%",
+          formatPercent(s.percents.bukti_terbatas),
+        ],
+        [
+          "Tingkat Klarifikasi",
+          "Persentase interaksi yang memerlukan klarifikasi",
+          "(Interaksi klarifikasi ÷ Total interaksi) × 100%",
+          "%",
+          formatPercent(s.percents.klarifikasi),
+        ],
+        [
+          "Rata-Rata Waktu Respons Pertama",
+          "Rata-rata waktu sejak permintaan hingga respons pertama",
+          "Total durasi respons pertama ÷ Interaksi dengan data waktu valid",
+          "Detik",
+          null,
+          "Jawaban dikirim utuh, bukan bertahap, jadi respons pertama sama dengan penyelesaian.",
+          "Belum diukur",
+        ],
+        [
+          "Rata-Rata Waktu Penyelesaian",
+          "Rata-rata waktu sejak permintaan hingga respons selesai",
+          "Total durasi penyelesaian ÷ Interaksi selesai dengan data waktu valid",
+          "Detik",
+          average,
+          average ? `Median ${seconds(s.durationMs.median)} detik; persentil ke-95 ${seconds(s.durationMs.p95)} detik.` : "Belum ada interaksi dengan data waktu.",
+        ],
+        [
+          "Tingkat Kegagalan Teknis",
+          "Persentase interaksi yang mengalami gangguan teknis",
+          "(Interaksi gagal teknis ÷ Total interaksi) × 100%",
+          "%",
+          formatPercent(s.percents.gangguan_teknis),
+        ],
+        [
+          "Tingkat Kesiapan Sumber",
+          "Persentase versi dokumen yang memenuhi kriteria penggunaan",
+          "(Versi siap digunakan ÷ Total versi dalam cakupan) × 100%",
+          "%",
+          formatPercent(overview.documents.readiness),
+          `${overview.documents.ready} dari ${overview.documents.total} versi dokumen siap dipakai menjawab.`,
+        ],
+        [
+          "Kesesuaian Jawaban dengan Sumber",
+          "Persentase jawaban yang dinilai sesuai dengan sumber",
+          "(Jawaban sesuai ÷ Jawaban yang dievaluasi) × 100%",
+          "%",
+          null,
+          "Butuh penilaian manusia atas sampel pengujian; belum ditampilkan sebagai hasil aktual.",
+        ],
+        [
+          "Ketepatan Referensi",
+          "Persentase referensi yang mendukung klaim jawaban",
+          "(Referensi tepat ÷ Referensi yang dievaluasi) × 100%",
+          "%",
+          null,
+          "Butuh penilaian manusia atas sampel pengujian; belum ditampilkan sebagai hasil aktual.",
+        ],
       ];
 
-      const grid = make("div", "metric-grid");
-      for (const [title, value, formula, note] of rows) {
-        const card = make("article", "metric-card");
-        const top = make("div", "metric-top");
-        top.append(make("h2", "", title), make("strong", "", value));
-        card.append(top, make("pre", "formula", formula), make("p", "", note));
-        grid.append(card);
-      }
-      root.append(grid);
+      const table = make("table", "owner-table metric-table");
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      for (const column of ["NO", "KPI", "DEFINISI OPERASIONAL", "RUMUS", "SATUAN", "NILAI SAAT INI"]) headRow.append(make("th", "", column));
+      thead.append(headRow);
+
+      const tbody = document.createElement("tbody");
+      kpis.forEach(([name, definition, formula, unit, value, note, pendingLabel], index) => {
+        const tr = document.createElement("tr");
+        const valueCell = make("td", "metric-value");
+        if (value === null || value === undefined) {
+          valueCell.append(make("span", "metric-pending", pendingLabel ?? NOT_EVALUATED));
+        } else {
+          valueCell.append(make("strong", "", value));
+        }
+        if (note) valueCell.append(make("small", "", note));
+        tr.append(
+          make("td", "metric-no", String(index + 1)),
+          make("td", "metric-name", name),
+          make("td", "", definition),
+          make("td", "metric-formula", formula),
+          make("td", "", unit),
+          valueCell,
+        );
+        tbody.append(tr);
+      });
+      table.append(thead, tbody);
+
+      const card = make("section", "panel-card table-card");
+      const scroll = make("div", "table-scroll");
+      scroll.append(table);
+      card.append(scroll);
+      root.append(card);
+
+      root.append(
+        make(
+          "p",
+          "owner-note",
+          "Setiap interaksi dihitung pada satu jenis hasil akhir, sehingga jumlah kategori sama dengan total interaksi. Indikator kualitas (kesesuaian jawaban dan ketepatan referensi) baru tampil sebagai angka setelah pengujian dilaksanakan.",
+        ),
+      );
     });
   }
 

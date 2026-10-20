@@ -4074,3 +4074,63 @@ button.ref-chip:hover {
     flex-basis: 100%;
   }
 }
+
+/* ------------------------------------------------------------ Metrics: tabel KPI (Lampiran A, Tabel A.6) */
+
+.metric-table td {
+  vertical-align: top;
+}
+
+.metric-no {
+  width: 36px;
+  color: var(--muted);
+}
+
+.metric-name {
+  min-width: 170px;
+  font-weight: 700;
+}
+
+.metric-formula {
+  min-width: 220px;
+  color: var(--ink-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.metric-value {
+  min-width: 150px;
+}
+
+.metric-value strong {
+  display: block;
+  color: var(--red);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.metric-value small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.metric-pending {
+  padding: 2px 8px;
+  display: inline-block;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.owner-note {
+  margin: 14px 2px 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
