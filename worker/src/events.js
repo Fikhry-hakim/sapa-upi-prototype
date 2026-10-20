@@ -161,7 +161,7 @@ function percentile(sorted, p) {
 
 export async function summarize(db, window) {
   const { results } = await db
-    .prepare("SELECT at, outcome, duration_ms FROM events WHERE at >= ? AND at < ? ORDER BY at LIMIT 20000")
+    .prepare("SELECT at, outcome, duration_ms, category FROM events WHERE at >= ? AND at < ? ORDER BY at LIMIT 20000")
     .bind(sqlTime(window.start), sqlTime(window.end))
     .all();
   const rows = results ?? [];
@@ -173,6 +173,10 @@ export async function summarize(db, window) {
 
   const counts = Object.fromEntries(OUTCOMES.map((o) => [o, 0]));
   const series = window.buckets.map((bucket) => ({ label: bucket.label, total: 0 }));
+  // Per periode: rincian jenis hasil dan jumlah+total durasi, untuk grafik tambahan.
+  const byOutcome = window.buckets.map(() => Object.fromEntries(OUTCOMES.map((o) => [o, 0])));
+  const timing = window.buckets.map(() => ({ sum: 0, n: 0 }));
+  const topics = new Map();
   const durations = [];
 
   for (const row of rows) {
@@ -180,7 +184,15 @@ export async function summarize(db, window) {
     if (typeof row.duration_ms === "number") durations.push(row.duration_ms);
     const at = parseSqlTime(row.at);
     const index = window.buckets.findIndex((bucket) => at >= bucket.start && at < bucket.end);
-    if (index >= 0) series[index].total += 1;
+    if (index >= 0) {
+      series[index].total += 1;
+      if (row.outcome in byOutcome[index]) byOutcome[index][row.outcome] += 1;
+      if (typeof row.duration_ms === "number") {
+        timing[index].sum += row.duration_ms;
+        timing[index].n += 1;
+      }
+    }
+    if (row.category) topics.set(row.category, (topics.get(row.category) ?? 0) + 1);
   }
 
   const total = rows.length;
@@ -197,6 +209,15 @@ export async function summarize(db, window) {
     percents: Object.fromEntries(OUTCOMES.map((o) => [o, pct(counts[o], total)])),
     groundedAccuracy: pct(counts.berbasis_sumber + counts.klarifikasi, total),
     series,
+    seriesByOutcome: series.map((item, i) => ({ label: item.label, counts: byOutcome[i] })),
+    durationSeries: series.map((item, i) => ({
+      label: item.label,
+      averageMs: timing[i].n ? Math.round(timing[i].sum / timing[i].n) : null,
+    })),
+    topics: [...topics.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 8)
+      .map(([category, count]) => ({ category, count })),
     peak: series.reduce((best, item) => (item.total > (best?.total ?? -1) ? item : best), null),
     averagePerBucket: Math.round((total / window.buckets.length) * 10) / 10,
     durationMs: {
@@ -215,13 +236,22 @@ export function interactionCode(row) {
 
 export const INTERACTION_PAGE_SIZE = 5;
 
-export async function listInteractions(db, { outcome = null, page = 1, size = INTERACTION_PAGE_SIZE } = {}) {
+export async function listInteractions(db, { outcome = null, category = null, page = 1, size = INTERACTION_PAGE_SIZE } = {}) {
   const limit = Math.min(Math.max(1, size), 50);
   const offset = (Math.max(1, page) - 1) * limit;
   const filter = outcome && OUTCOMES.includes(outcome) ? outcome : null;
 
-  const where = filter ? "WHERE outcome = ?" : "";
-  const bindings = filter ? [filter] : [];
+  const clauses = [];
+  const bindings = [];
+  if (filter) {
+    clauses.push("outcome = ?");
+    bindings.push(filter);
+  }
+  if (category) {
+    clauses.push("category = ?");
+    bindings.push(String(category).slice(0, 160));
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
 
   const totalRow = await db.prepare(`SELECT COUNT(*) AS n FROM events ${where}`).bind(...bindings).first();
   const { results } = await db

@@ -115,6 +115,24 @@ test("the summary counts outcomes, percentages, the trend and the change against
   assert.equal(s.durationMs.average, 2000);
 });
 
+test("the summary also breaks each period down by outcome, by timing, and by topic", async () => {
+  const w = windowFor("harian", NOW);
+  const day = (offset, hour = 3) => sqlTime(w.buckets[offset].start + hour * 3_600_000);
+  const rows = [
+    { at: day(6), outcome: "berbasis_sumber", duration_ms: 1000, category: "Sidang" },
+    { at: day(6, 4), outcome: "klarifikasi", duration_ms: 3000, category: "Sidang" },
+    { at: day(5), outcome: "gangguan_teknis", duration_ms: null, category: "Skripsi" },
+  ];
+  const s = await summarize(fakeEventsDb(rows, 0), w);
+
+  assert.equal(s.seriesByOutcome[6].counts.berbasis_sumber, 1);
+  assert.equal(s.seriesByOutcome[6].counts.klarifikasi, 1);
+  assert.equal(s.seriesByOutcome[5].counts.gangguan_teknis, 1);
+  assert.equal(s.durationSeries[6].averageMs, 2000);
+  assert.equal(s.durationSeries[5].averageMs, null, "no timing, no average");
+  assert.deepEqual(s.topics, [{ category: "Sidang", count: 2 }, { category: "Skripsi", count: 1 }]);
+});
+
 test("an empty window does not divide by zero and has no change to report", async () => {
   const s = await summarize(fakeEventsDb([], 0), windowFor("mingguan", NOW));
   assert.equal(s.total, 0);

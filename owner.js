@@ -6,7 +6,8 @@
  * bukan angka yang terlihat meyakinkan tetapi tidak nyata.
  */
 
-import { buildDashboardWorkbook } from "./lib/report.js";
+import { documentStatusCard, evaluationCard, failureStageCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
+import { buildDashboardWorkbook, buildRecapCsv } from "./lib/report.js";
 import { loadPdfJs } from "./viewer.js";
 
 /* ============================================================
@@ -136,7 +137,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
      DASHBOARD
   ============================================================ */
 
-  const dashboard = { range: "mingguan", from: "", to: "", outcome: null, page: 1, data: null };
+  const dashboard = { range: "mingguan", from: "", to: "", outcome: null, category: "", page: 1, data: null };
 
   async function renderDashboard(root) {
     root.replaceChildren();
@@ -148,7 +149,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       }
       const [overview, interactions] = await Promise.all([
         api(`/admin/overview?${query}`),
-        api(`/admin/interactions?${new URLSearchParams({ page: dashboard.page, ...(dashboard.outcome ? { outcome: dashboard.outcome } : {}) })}`),
+        api(`/admin/interactions?${new URLSearchParams({ page: dashboard.page, ...(dashboard.outcome ? { outcome: dashboard.outcome } : {}), ...(dashboard.category ? { category: dashboard.category } : {}) })}`),
       ]);
       dashboard.data = overview;
       draw(root, overview, interactions);
@@ -183,12 +184,47 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       segmented.append(button);
     }
 
+    const exportWrap = make("div", "menu-anchor export-anchor");
     const exportButton = make("button", "btn-primary");
     exportButton.type = "button";
+    exportButton.setAttribute("aria-haspopup", "menu");
+    exportButton.setAttribute("aria-expanded", "false");
     exportButton.append(icon("export"), "Export Laporan");
-    exportButton.addEventListener("click", () => exportReport(overview));
+    const exportMenu = make("div", "pop-menu export-menu");
+    exportMenu.setAttribute("role", "menu");
+    exportMenu.hidden = true;
+    for (const [label, hint, run] of [
+      ["Excel (.xlsx)", "Dashboard, grafik, dan seluruh aktivitas", () => exportReport(overview)],
+      ["CSV", "Data rekapitulasi agregat per periode", () => exportCsv(overview)],
+      ["PDF", "Ringkasan kinerja layanan (dialog cetak)", () => exportPdf(overview)],
+    ]) {
+      const item = make("button", "export-item");
+      item.type = "button";
+      item.setAttribute("role", "menuitem");
+      item.append(make("strong", "", label), make("small", "", hint));
+      item.addEventListener("click", () => {
+        exportMenu.hidden = true;
+        exportButton.setAttribute("aria-expanded", "false");
+        run();
+      });
+      exportMenu.append(item);
+    }
+    exportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      exportMenu.hidden = !exportMenu.hidden;
+      exportButton.setAttribute("aria-expanded", String(!exportMenu.hidden));
+    });
+    document.addEventListener(
+      "click",
+      () => {
+        exportMenu.hidden = true;
+        exportButton.setAttribute("aria-expanded", "false");
+      },
+      { once: true },
+    );
+    exportWrap.append(exportButton, exportMenu);
 
-    controls.append(refresh, segmented, exportButton);
+    controls.append(refresh, segmented, exportWrap);
     head.append(controls);
 
     if (dashboard.range === "rentang") {
@@ -253,6 +289,18 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const charts = make("div", "chart-row");
     charts.append(trendCard(s), donutCard(s));
     root.append(charts);
+
+    /* --- analitik tambahan (Lampiran A, Tabel A.7) --- */
+    const more = make("div", "chart-grid");
+    more.append(
+      stackedOutcomeCard(s, OUTCOME),
+      responseTimeCard(s),
+      documentStatusCard(overview.documents, SOURCE_STATE),
+      topicsCard(s),
+      failureStageCard(s),
+      evaluationCard(),
+    );
+    root.append(more);
 
     /* --- kondisi sumber --- */
     root.append(sourceCard(overview.documents));
@@ -430,6 +478,8 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       [null, "Semua", totals.all],
       ["berbasis_sumber", "Berbasis Sumber", totals.berbasis_sumber],
       ["klarifikasi", "Klarifikasi", totals.klarifikasi],
+      ["bukti_terbatas", "Bukti Terbatas", totals.bukti_terbatas],
+      ["di_luar_cakupan", "Di Luar Cakupan", totals.di_luar_cakupan],
       ["gangguan_teknis", "Gangguan", totals.gangguan_teknis],
     ]) {
       const chip = make("button", `chip${dashboard.outcome === value ? " is-active" : ""}`, `${label} (${nf.format(count)})`);
@@ -442,6 +492,26 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       chips.append(chip);
     }
     head.append(chips);
+
+    // Filter "Kategori Pertanyaan": topik yang tercatat pada periode ini.
+    const topics = overview.summary.topics ?? [];
+    if (topics.length || dashboard.category) {
+      const category = make("select", "select");
+      category.setAttribute("aria-label", "Filter kategori pertanyaan");
+      const names = [...new Set([...topics.map((t) => t.category), ...(dashboard.category ? [dashboard.category] : [])])];
+      for (const [value, label] of [["", "Semua Kategori"], ...names.map((n) => [n, n])]) {
+        const option = make("option", "", label);
+        option.value = value;
+        option.selected = value === dashboard.category;
+        category.append(option);
+      }
+      category.addEventListener("change", () => {
+        dashboard.category = category.value;
+        dashboard.page = 1;
+        renderDashboard(root);
+      });
+      head.append(category);
+    }
     wrap.append(head);
 
     if (!interactions.rows.length) {
@@ -513,6 +583,125 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     return wrap;
   }
 
+  const exportedAtLabel = () =>
+    new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+
+  function download(blob, name) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  function exportCsv(overview) {
+    const csv = buildRecapCsv({
+      summary: overview.summary,
+      documents: overview.documents,
+      outcomes: OUTCOME,
+      exportedAt: exportedAtLabel(),
+    });
+    download(new Blob([csv], { type: "text/csv;charset=utf-8" }), `rekapitulasi-sapa-upi-${today()}.csv`);
+    showToast("Rekapitulasi CSV diunduh.");
+  }
+
+  /** Ringkasan kinerja untuk dicetak atau disimpan sebagai PDF lewat dialog cetak. */
+  function exportPdf(overview) {
+    const win = window.open("", "_blank");
+    if (!win) return showToast("Browser memblokir jendela cetak. Izinkan pop-up untuk situs ini.");
+    const s = overview.summary;
+    const docs = overview.documents;
+    const d = win.document;
+    d.title = `Ringkasan Kinerja Layanan SAPA UPI - ${today()}`;
+
+    const style = d.createElement("style");
+    style.textContent = `
+      body{font:12px/1.5 "Plus Jakarta Sans",system-ui,sans-serif;color:#111827;margin:28px}
+      h1{font-size:20px;margin:0 0 4px} h2{font-size:13px;margin:22px 0 8px}
+      .sub{color:#6b7280;margin:0 0 16px}
+      table{width:100%;border-collapse:collapse} th,td{padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
+      th{background:#b91c2c;color:#fff;font-size:10px;letter-spacing:.04em}
+      .bar{height:8px;border-radius:4px;display:inline-block;vertical-align:middle}
+      .note{color:#6b7280;font-size:11px;margin-top:18px}
+      @media print{@page{margin:14mm}}`;
+    d.head.append(style);
+
+    const el = (tag, text, className) => {
+      const node = d.createElement(tag);
+      if (text !== undefined) node.textContent = text;
+      if (className) node.className = className;
+      return node;
+    };
+    const table = (head, rows) => {
+      const t = d.createElement("table");
+      const tr = d.createElement("tr");
+      for (const h of head) tr.append(el("th", h));
+      const thead = d.createElement("thead");
+      thead.append(tr);
+      const tbody = d.createElement("tbody");
+      for (const cells of rows) {
+        const row = d.createElement("tr");
+        for (const cell of cells) {
+          const td = d.createElement("td");
+          if (cell instanceof win.Node) td.append(cell);
+          else td.textContent = cell;
+          row.append(td);
+        }
+        tbody.append(row);
+      }
+      t.append(thead, tbody);
+      return t;
+    };
+
+    const seconds = (ms) => (ms === null || ms === undefined ? "—" : `${(ms / 1000).toFixed(1).replace(".", ",")} detik`);
+    d.body.append(
+      el("h1", "Ringkasan Kinerja Layanan SAPA UPI"),
+      el("p", `${s.label} • diekspor ${exportedAtLabel()} • Program Studi Bisnis Digital, UPI Kampus Tasikmalaya`, "sub"),
+      el("h2", "Indikator utama"),
+      table(
+        ["INDIKATOR", "NILAI"],
+        [
+          ["Total interaksi", nf.format(s.total)],
+          ["Proporsi jawaban berbasis sumber", formatPercent(s.percents.berbasis_sumber)],
+          ["Tingkat keterbatasan bukti", formatPercent(s.percents.bukti_terbatas)],
+          ["Tingkat klarifikasi", formatPercent(s.percents.klarifikasi)],
+          ["Tingkat kegagalan teknis", formatPercent(s.percents.gangguan_teknis)],
+          ["Rata-rata waktu penyelesaian", seconds(s.durationMs.average)],
+          ["Tingkat kesiapan sumber", `${formatPercent(docs.readiness)} (${docs.ready} dari ${docs.total} dokumen)`],
+        ],
+      ),
+      el("h2", "Distribusi hasil respons"),
+      table(
+        ["HASIL", "JUMLAH", "PROPORSI"],
+        Object.keys(OUTCOME).map((key) => {
+          const bar = el("span", "", "bar");
+          bar.style.width = `${Math.max(2, s.percents[key])}px`;
+          bar.style.background = OUTCOME[key].color;
+          const cell = d.createElement("span");
+          cell.append(bar, ` ${formatPercent(s.percents[key])}`);
+          return [OUTCOME[key].label, nf.format(s.counts[key]), cell];
+        }),
+      ),
+      el("h2", "Tren per periode"),
+      table(["PERIODE", "INTERAKSI"], s.series.map((p) => [p.label, nf.format(p.total)])),
+      el("h2", "Kondisi sumber informasi"),
+      table(
+        ["STATUS", "JUMLAH VERSI"],
+        SOURCE_STATE.map((source) => [source.label, nf.format(docs[source.key] ?? 0)]),
+      ),
+      el(
+        "p",
+        "Laporan agregat ini tidak memuat identitas pengguna maupun isi pertanyaan. Kesesuaian jawaban dan ketepatan referensi belum dievaluasi dan tidak ditampilkan sebagai hasil.",
+        "note",
+      ),
+    );
+    win.focus();
+    // Beri waktu font dan tata letak selesai sebelum dialog cetak muncul.
+    setTimeout(() => win.print(), 300);
+  }
+
   const EXPORT_PAGE = 50;
   const EXPORT_MAX_PAGES = 20; // 1.000 interaksi terbaru sudah cukup untuk satu laporan
 
@@ -545,13 +734,10 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       wib: wibParts,
     });
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(
+    download(
       new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+      `laporan-sapa-upi-${today()}.xlsx`,
     );
-    link.download = `laporan-sapa-upi-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(link.href);
     showToast("Laporan Excel diunduh.");
   }
 

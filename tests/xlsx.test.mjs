@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildDashboardWorkbook } from "../lib/report.js";
+import { buildDashboardWorkbook, buildRecapCsv } from "../lib/report.js";
 import { bold, buildXlsx, columnName, crc32, sheetName } from "../lib/xlsx.js";
 
 test("crc32 matches the standard check value", () => {
@@ -103,4 +103,26 @@ test("the dashboard workbook carries the cards, both charts, and the data they r
   assert.ok(read("xl/charts/chart2.xml").includes('srgbClr val="B91C2C"'), "slice colours come from the web legend");
   assert.ok(read("xl/worksheets/sheet2.xml").includes("Minggu 2"), "the Data sheet feeds the charts");
   assert.ok(read("xl/charts/chart1.xml").includes("Data!$A$2:$A$3"), "chart ranges match the Data sheet");
+});
+
+test("the CSV recap is aggregate only, quotes its cells, and defuses spreadsheet formulas", () => {
+  const outcomes = { berbasis_sumber: { label: "Berbasis Sumber" }, klarifikasi: { label: "=HYPERLINK(\"x\")" } };
+  const csv = buildRecapCsv({
+    summary: {
+      label: "4 Minggu Terakhir",
+      total: 3,
+      counts: { berbasis_sumber: 2, klarifikasi: 1 },
+      percents: { berbasis_sumber: 66.7, bukti_terbatas: 0, klarifikasi: 33.3, gangguan_teknis: 0 },
+      durationMs: { average: 2100 },
+      seriesByOutcome: [{ label: "Minggu 1", counts: { berbasis_sumber: 2, klarifikasi: 1 } }],
+    },
+    documents: { readiness: 50 },
+    outcomes,
+    exportedAt: "20 Oktober 2026",
+  });
+  assert.ok(csv.startsWith("\uFEFF"), "BOM for Excel");
+  assert.ok(csv.includes('"Minggu 1","3","2","1"'));
+  assert.ok(csv.includes("\"'=HYPERLINK"), "a leading = is neutralised");
+  assert.ok(csv.includes('"2,1"') === false && csv.includes('"2.1"'), "seconds use a plain decimal point");
+  assert.ok(!/pertanyaan:|email/i.test(csv), "no question text or identity columns");
 });
