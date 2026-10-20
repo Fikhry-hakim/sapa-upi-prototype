@@ -129,24 +129,40 @@ export function likePattern(term) {
   return `%${String(term).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
 
+const SNIPPET_RADIUS = 60;
+
+/** Potongan teks di sekitar kata yang dicari, dengan "…" di sisi yang terpotong. */
+export function snippetAround(text, term) {
+  const flat = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!flat) return "";
+  const at = flat.toLowerCase().indexOf(String(term).toLowerCase());
+  if (at < 0) return flat.length > SNIPPET_RADIUS * 2 ? `${flat.slice(0, SNIPPET_RADIUS * 2)}…` : flat;
+  const start = Math.max(0, at - SNIPPET_RADIUS);
+  const end = Math.min(flat.length, at + term.length + SNIPPET_RADIUS);
+  return `${start > 0 ? "…" : ""}${flat.slice(start, end)}${end < flat.length ? "…" : ""}`;
+}
+
 /** Cari di judul dan isi percakapan milik pengguna. */
 export async function searchConversations(db, user, term) {
   if (!db || !user) return [];
   const pattern = likePattern(term);
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.title, c.updated_at
+      `SELECT c.id, c.title, c.updated_at,
+              (SELECT m.content FROM messages m
+                WHERE m.conversation_id = c.id AND m.content LIKE ?2 ESCAPE '\\'
+                ORDER BY m.created_at LIMIT 1) AS matched
          FROM conversations c
-        WHERE c.user_id = ?
-          AND (c.title LIKE ? ESCAPE '\\'
+        WHERE c.user_id = ?1
+          AND (c.title LIKE ?2 ESCAPE '\\'
                OR EXISTS (SELECT 1 FROM messages m
-                           WHERE m.conversation_id = c.id AND m.content LIKE ? ESCAPE '\\'))
+                           WHERE m.conversation_id = c.id AND m.content LIKE ?2 ESCAPE '\\'))
         ORDER BY c.updated_at DESC
-        LIMIT ?`,
+        LIMIT ?3`,
     )
-    .bind(user.id, pattern, pattern, MAX_CONVERSATIONS)
+    .bind(user.id, pattern, MAX_CONVERSATIONS)
     .all();
-  return results ?? [];
+  return (results ?? []).map(({ matched, ...row }) => ({ ...row, snippet: snippetAround(matched, term) }));
 }
 
 /** Seluruh percakapan milik pengguna beserta pesannya, untuk diunduh. */

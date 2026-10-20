@@ -78,6 +78,8 @@ const refs = {
   searchInput: $("search-input"),
   searchResults: $("search-results"),
   searchTabs: $("search-tabs"),
+  searchClear: $("search-clear"),
+  searchEsc: $("search-esc"),
   searchEmpty: $("search-empty"),
   filesSearch: $("files-search"),
   filesTabs: $("files-tabs"),
@@ -862,13 +864,37 @@ function loginPrompt(message) {
   }
 }
 
-function searchResult({ icon, title, snippet, date, onOpen }) {
+/** Teks dengan kata yang dicari dibungkus <mark>; dibangun lewat node, bukan innerHTML. */
+function highlighted(text, term) {
+  const out = document.createDocumentFragment();
+  const needle = term.toLowerCase();
+  if (!needle) {
+    out.append(text);
+    return out;
+  }
+  const lower = text.toLowerCase();
+  let from = 0;
+  for (let at = lower.indexOf(needle); at >= 0; at = lower.indexOf(needle, from)) {
+    out.append(text.slice(from, at), make("mark", "", text.slice(at, at + needle.length)));
+    from = at + needle.length;
+  }
+  out.append(text.slice(from));
+  return out;
+}
+
+function searchResult({ icon, title, snippet, date, term, onOpen }) {
   const item = make("li");
   const button = make("button", "result");
   button.type = "button";
   const text = make("span", "result-text");
-  text.append(make("strong", "", title));
-  if (snippet) text.append(make("small", "", snippet));
+  const strong = make("strong");
+  strong.append(highlighted(title, term));
+  text.append(strong);
+  if (snippet) {
+    const small = make("small");
+    small.append(highlighted(snippet, term));
+    text.append(small);
+  }
   button.insertAdjacentHTML("afterbegin", icon);
   button.append(text, make("time", "result-date", date));
   button.addEventListener("click", onOpen);
@@ -879,6 +905,8 @@ function searchResult({ icon, title, snippet, date, onOpen }) {
 async function runSearch() {
   renderSearchTabs();
   const term = refs.searchInput.value.trim();
+  refs.searchClear.hidden = !term;
+  refs.searchEsc.hidden = !term;
   const tab = state.searchTab;
   const wantChats = tab !== "documents";
   const wantDocs = tab !== "chats";
@@ -911,7 +939,8 @@ async function runSearch() {
       searchResult({
         icon: ICON.chat,
         title: conversation.title,
-        snippet: "",
+        snippet: conversation.snippet ?? "",
+        term,
         date: formatDate(conversation.updated_at),
         onOpen: () => openConversation(conversation.id),
       }),
@@ -923,6 +952,7 @@ async function runSearch() {
         icon: ICON.file,
         title: doc.title,
         snippet: `${doc.reference} • ${doc.pages} halaman`,
+        term,
         date: doc.dateLabel ?? "",
         onOpen: () => viewer.open(doc, { page: 1 }),
       }),
@@ -1468,6 +1498,18 @@ function initialize() {
   refs.sidebarClose.addEventListener("click", closeSidebar);
   refs.scrim.addEventListener("click", closeSidebar);
 
+  refs.searchClear.addEventListener("click", () => {
+    refs.searchInput.value = "";
+    runSearch();
+    refs.searchInput.focus();
+  });
+  refs.searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && refs.searchInput.value) {
+      event.preventDefault();
+      refs.searchInput.value = "";
+      runSearch();
+    }
+  });
   refs.searchInput.addEventListener("input", () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(runSearch, 220);

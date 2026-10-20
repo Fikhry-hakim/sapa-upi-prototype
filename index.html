@@ -148,6 +148,10 @@
             <label class="field field-search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
               <input id="search-input" type="search" placeholder="Cari percakapan atau dokumen..." autocomplete="off" />
+              <button type="button" class="field-clear" id="search-clear" aria-label="Hapus pencarian" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              </button>
+              <kbd class="field-kbd" id="search-esc" hidden>ESC</kbd>
             </label>
             <div class="tabs" role="tablist" aria-label="Filter hasil" id="search-tabs"></div>
             <ul class="result-list" id="search-results"></ul>

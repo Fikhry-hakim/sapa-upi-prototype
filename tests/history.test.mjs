@@ -8,6 +8,7 @@ import {
   deleteConversation,
   likePattern,
   searchConversations,
+  snippetAround,
   deleteAllConversations,
   exportConversations,
 } from "../worker/src/history.js";
@@ -157,7 +158,7 @@ test("searching always filters by the owner, in the title and the messages", asy
 
   assert.equal(found.length, 1);
   const [call] = db.calls;
-  assert.match(call.sql, /WHERE c\.user_id = \?/);
+  assert.match(call.sql, /WHERE c\.user_id = \?1/);
   assert.equal(call.bindings[0], user.id);
   assert.match(call.sql, /m\.content LIKE/);
   assert.deepEqual(await searchConversations(db, null, "x"), []);
@@ -181,4 +182,14 @@ test("the export is scoped to the asker through the conversation owner", async (
   assert.equal(data.account, user.email);
   for (const call of db.calls) assert.ok(call.bindings.includes(user.id), "every export query must bind the owner");
   assert.deepEqual((await exportConversations(db, null)).conversations, []);
+});
+
+test("a search snippet is cut around the match and marked where it was trimmed", () => {
+  const text = `${"a ".repeat(80)}sidang skripsi${" b".repeat(80)}`;
+  const snippet = snippetAround(text, "sidang");
+  assert.ok(snippet.includes("sidang skripsi"));
+  assert.ok(snippet.startsWith("…") && snippet.endsWith("…"));
+  assert.ok(snippet.length < 160);
+  assert.equal(snippetAround("sidang dekat", "sidang"), "sidang dekat");
+  assert.equal(snippetAround("", "x"), "");
 });
