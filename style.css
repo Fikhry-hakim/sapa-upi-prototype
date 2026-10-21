@@ -2001,7 +2001,13 @@ button.ref-chip:hover {
   margin: 0 auto;
   padding: 24px 28px 56px;
   display: grid;
+  /* minmax(0, 1fr): tanpa ini kolom ikut melebar sebesar tabel terlebar di dalamnya. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+}
+
+.owner-page > * {
+  min-width: 0;
 }
 
 .owner-head {
@@ -4175,6 +4181,40 @@ button.ref-chip:hover {
   }
 }
 
+/* ------------------------------------------------------------ nomor penjelasan di jawaban */
+
+.clarify-num {
+  min-width: 18px;
+  height: 18px;
+  margin: 0 2px 0 4px;
+  padding: 0 5px;
+  display: inline-grid;
+  place-items: center;
+  vertical-align: 1px;
+  background: var(--red-soft);
+  border: 1px solid var(--red-line);
+  border-radius: 999px;
+  color: var(--red);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clarify-num:hover,
+.clarify-num:focus-visible {
+  background: var(--red);
+  border-color: var(--red);
+  color: #ffffff;
+  outline: 0;
+}
+
+.clarify-hint {
+  margin: 8px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
 /* ------------------------------------------------------------ penilaian singkat di bawah jawaban */
 
 .feedback-row {
@@ -4279,4 +4319,56 @@ button.ref-chip:hover {
 .export-item small {
   color: var(--muted);
   font-size: 10.5px;
+}
+
+/* ------------------------------------------------------------ ponsel kecil */
+
+@media (max-width: 560px) {
+  /* Tabel di jawaban muat tanpa geser: kolom lebih rapat, nomor menyempit. */
+  .data-table th,
+  .data-table td {
+    padding: 7px 9px;
+  }
+
+  .data-table .col-no {
+    width: 30px;
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .data-table th {
+    font-size: 9.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .data-table td {
+    font-size: 11px;
+  }
+
+  .data-table td:nth-child(2) {
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 430px) {
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-box .upload-head {
+    padding: 14px 16px;
+  }
+
+  .upload-body,
+  .upload-methods,
+  .upload-foot {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .upload-foot .btn,
+  .upload-foot .upload-submit {
+    flex: 1;
+    justify-content: center;
+  }
 }

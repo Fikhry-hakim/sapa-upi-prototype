@@ -1,6 +1,7 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { documents, citationFor } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
+import { clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { createOwner } from "./owner.js";
@@ -335,6 +336,58 @@ function paragraph(text) {
   return p;
 }
 
+/* ------------------------------------------------------------ nomor penjelasan */
+
+/** Jumlah nomor maksimum per jawaban; jawaban sepanjang itu sudah terlalu padat untuk ditelusuri. */
+const MAX_NUMBERED = 20;
+
+/** Nomor kecil di akhir kalimat; mengkliknya menanyakan penjelasan kalimat itu. */
+function clarifyMarker(number, sentence) {
+  const button = make("button", "clarify-num", String(number));
+  button.type = "button";
+  button.setAttribute("aria-label", `Tanyakan penjelasan poin ${number}`);
+  button.title = `Tanyakan penjelasan poin ${number}`;
+  button.addEventListener("click", () => submitQuestion(clarifyQuestion(number, sentence)));
+  return button;
+}
+
+/** Teks dengan tautan, tiap kalimatnya diikuti nomor yang bisa diklik. Penghitung dipakai bersama satu jawaban. */
+function appendNumberedText(parent, text, counter) {
+  for (const sentence of splitSentences(text)) {
+    appendRichText(parent, sentence);
+    if (isClarifiable(sentence) && counter.n < MAX_NUMBERED) {
+      counter.n += 1;
+      parent.append(clarifyMarker(counter.n, sentence));
+    }
+    parent.append(" ");
+  }
+}
+
+/** Jawaban AI: paragraf dan daftar, setiap kalimat bernomor. */
+function appendNumberedAnswer(body, message, counter) {
+  for (const block of String(message).split(/\n{2,}/)) {
+    let list = null;
+    for (const rawLine of block.split("\n")) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (isBullet(line)) {
+        if (!list) {
+          list = make("ul", "bot-list");
+          body.append(list);
+        }
+        const item = document.createElement("li");
+        appendNumberedText(item, stripBullet(line), counter);
+        list.append(item);
+      } else {
+        list = null;
+        const p = make("p");
+        appendNumberedText(p, line, counter);
+        body.append(p);
+      }
+    }
+  }
+}
+
 function appendUserMessage(question, documentId) {
   if (documentId) {
     const doc = documents[documentId];
@@ -516,20 +569,24 @@ function fillCard(card, response, { feedback = false } = {}) {
         : pill("Mode offline • pencocokan kata kunci"),
     );
 
+    const counter = { n: 0 };
     if (response.generated) {
-      for (const part of String(response.message).split(/\n{2,}/)) body.append(paragraph(part.trim()));
+      appendNumberedAnswer(body, response.message, counter);
     } else {
-      body.append(paragraph(entry?.lead ?? response.message));
+      const lead = make("p");
+      appendNumberedText(lead, entry?.lead ?? response.message, counter);
+      body.append(lead);
       if (entry?.points?.length) {
         const list = make("ul", "bot-list");
         for (const point of entry.points) {
           const li = document.createElement("li");
-          appendRichText(li, point);
+          appendNumberedText(li, point, counter);
           list.append(li);
         }
         body.append(list);
       }
     }
+    if (counter.n > 0) body.append(make("p", "clarify-hint", "Klik nomor untuk menanyakan penjelasan poin itu."));
 
     if (entry?.table) renderTable(entry.table, body);
     if (entry) renderReferences(entry, body, response.citation);
