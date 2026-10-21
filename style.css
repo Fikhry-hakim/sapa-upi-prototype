@@ -4179,48 +4179,57 @@ button.ref-chip:hover {
 
 .feedback-row {
   margin-top: 12px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 14px;
-  background: #161616;
+  gap: 6px 8px;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
-  color: #d4d4d4;
+  color: var(--ink-2);
   font-size: 12px;
 }
 
 .feedback-label {
-  margin-right: 4px;
+  margin-right: 6px;
+  color: var(--muted);
 }
 
 .feedback-option {
-  padding: 2px 0;
-  background: transparent;
-  border: 0;
-  color: #8a8a8a;
-  font-size: 12px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 11.5px;
   font-weight: 600;
 }
 
 .feedback-option:hover,
 .feedback-option:focus-visible {
-  color: #ffffff;
+  background: var(--red-soft);
+  border-color: var(--red-line);
+  color: var(--red);
+  outline: 0;
 }
 
 .feedback-dismiss {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   margin-left: auto;
   display: grid;
   place-items: center;
   background: transparent;
   border: 0;
-  color: #8a8a8a;
+  border-radius: 50%;
+  color: var(--faint);
 }
 
 .feedback-dismiss:hover {
-  color: #ffffff;
+  background: var(--line-soft);
+  color: var(--ink);
 }
 
 .feedback-dismiss svg {
@@ -4229,7 +4238,8 @@ button.ref-chip:hover {
 }
 
 .feedback-thanks {
-  color: #d4d4d4;
+  color: var(--ink-2);
+  font-weight: 600;
 }
 
 .export-anchor {
