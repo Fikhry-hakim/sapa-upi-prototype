@@ -153,3 +153,34 @@ test("an entry cannot win by listing one concept several ways", () => {
   assert.equal(viaSynonym.best.entry.id, viaFullWord.best.entry.id);
   assert.equal(viaSynonym.best.entry.id, "sidang-syarat-skripsi");
 });
+
+test("the glossary lets student slang and spelled-out abbreviations reach the entries their short forms already matched", () => {
+  for (const [query, expectedId] of [
+    ["dospem saya siapa", "pembimbing-penggantian"],
+    ["surat keputusan pembimbing", "pembimbing-skripsi"],
+    ["indeks prestasi kumulatif minimal berapa", "skripsi-syarat-mengambil"],
+    ["satuan kredit semester minimal", "skripsi-syarat-mengambil"],
+  ]) {
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.notEqual(result.status, "none", query);
+    assert.equal(result.best.entry.id, expectedId, query);
+  }
+});
+
+test("TTG is found whether asked by its short or long form, on its own or inside a longer question", () => {
+  for (const query of ["apa itu TTG", "gmn jalur akhir TTG", "ketentuan Teknologi Tepat Guna"]) {
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.notEqual(result.status, "none", query);
+    assert.match(result.best.entry.id, /^ttg-/, query);
+  }
+});
+
+test("a known limitation: a fully spelled-out English phrase (\"letter of acceptance\") still loses to its own filler words", () => {
+  // "LoA" alone already matches fine — the glossary appends it here too — but
+  // the existing relevance formula discounts a match by how much of the query
+  // it covers, and "letter", "of" and "acceptance" are English words this
+  // Indonesian-tuned scorer does not otherwise recognise. Covered here so a
+  // future fix to that formula has a test to turn green, not silently fixed.
+  assert.equal(searchKnowledgeBase("loa", knowledgeBase).status, "ambiguous");
+  assert.equal(searchKnowledgeBase("letter of acceptance", knowledgeBase).status, "none");
+});

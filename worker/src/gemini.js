@@ -1,3 +1,5 @@
+import { glossaryContext } from "../../lib/glossary.js";
+
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
 export const SYSTEM_INSTRUCTION = `Kamu adalah SAPA UPI, asisten akademik untuk mahasiswa Universitas Pendidikan Indonesia.
@@ -10,7 +12,10 @@ ATURAN YANG WAJIB DIPATUHI:
 5. Jangan menyapa ulang atau menulis pembuka basa-basi. Langsung ke isi jawaban.
 6. Kalau mahasiswa menanyakan sesuatu yang terdengar seperti keputusan final (kelulusan, nilai, kelayakan sidang), ingatkan bahwa keputusan resmi tetap ada pada program studi dan sarankan memastikannya ke tenaga administrasi.
 7. Jangan menyebut jawabanmu sebagai "data contoh". Konteks berasal dari dokumen resmi yang disebutkan pada rujukan.
-8. Kalau konteks memuat dua ketentuan yang berbeda untuk hal yang sama, sebutkan keduanya beserta dokumen asalnya, jangan memilih salah satu.`;
+8. Kalau konteks memuat dua ketentuan yang berbeda untuk hal yang sama, sebutkan keduanya beserta dokumen asalnya, jangan memilih salah satu.
+9. Kalau menjelaskan sebuah singkatan, pakai kepanjangan dari "GLOSARIUM ISTILAH" di bawah kalau ada. Kalau singkatannya tidak ada di glosarium maupun di KONTEKS PEDOMAN, bilang kamu tidak tahu kepanjangannya. Jangan pernah menebak kepanjangan singkatan.
+
+${glossaryContext()}`;
 
 export function buildContextBlock(entries) {
   if (!entries.length) return "KONTEKS PEDOMAN: (tidak ada rujukan yang cocok)";

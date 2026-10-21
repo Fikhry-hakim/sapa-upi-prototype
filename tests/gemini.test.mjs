@@ -31,6 +31,12 @@ test("the model is told not to call real documents sample data", () => {
   assert.match(SYSTEM_INSTRUCTION, /dua ketentuan yang berbeda/);
 });
 
+test("the system instruction carries the glossary and forbids guessing an abbreviation outside it", () => {
+  assert.match(SYSTEM_INSTRUCTION, /GLOSARIUM ISTILAH/);
+  assert.match(SYSTEM_INSTRUCTION, /LOA = letter of acceptance/i);
+  assert.match(SYSTEM_INSTRUCTION, /Jangan pernah menebak kepanjangan singkatan/i);
+});
+
 test("context block carries the answer and its provenance", () => {
   const block = buildContextBlock([sidang]);
 
