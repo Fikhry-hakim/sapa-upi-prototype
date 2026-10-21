@@ -1244,7 +1244,7 @@ function renderFiles() {
     info.append(
       make("span", "file-name", doc.title),
       make("span", "file-sub", doc.reference),
-      make("span", "file-meta", `${doc.sizeLabel} • ${doc.pages} halaman • ${doc.dateLabel}`),
+      make("span", "file-meta", `${doc.kind} • ${doc.sizeLabel} • ${doc.pages} halaman • ${doc.dateLabel}`),
     );
     open.append(thumb, info);
     open.addEventListener("click", () => viewer.open(doc, { page: 1 }));

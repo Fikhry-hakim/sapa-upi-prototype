@@ -3211,17 +3211,27 @@ button.ref-chip:hover {
 }
 
 .file-grid.is-list .file-card {
-  padding: 8px 80px 8px 8px;
+  padding: 10px 80px 10px 12px;
 }
 
 .file-grid.is-list .file-open {
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 1fr;
   align-items: center;
-  gap: 14px;
 }
 
 .file-grid.is-list .file-thumb {
-  height: 52px;
+  display: none;
+}
+
+.file-grid.is-list .file-info {
+  padding: 0;
+}
+
+.file-grid.is-list .file-star,
+.file-grid.is-list .file-more {
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
 }
 
 /* ------------------------------------------------------------ layar masuk / galat akun */
