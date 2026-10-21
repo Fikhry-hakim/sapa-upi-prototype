@@ -178,6 +178,32 @@ Dashboard, Metrics, Knowledge Base, dan Upload hanya muncul untuk akun yang puny
 cd worker && npx wrangler d1 execute sapa-upi-kb --remote --command "INSERT INTO staff_roles (email, role, unit, assigned_by) VALUES ('<email>', 'admin', 'TPTA', '<pemberi>')"
 ```
 
+## CI dan deploy otomatis
+
+`.github/workflows/ci.yml` berjalan di setiap push dan pull request:
+
+1. **Tes** (`npm test`) selalu dijalankan.
+2. **Deploy Worker** berjalan otomatis hanya untuk push ke `main` yang lulus tes, dan hanya kalau secret Cloudflare sudah dipasang. Tanpa secret, tahap ini dilewati dengan catatan, tes tetap jalan.
+3. Kalau push **mengubah berkas skema** (`worker/schema*.sql`), deploy otomatis dilewati dan muncul peringatan: migrasi harus dijalankan lebih dulu secara manual, baru deploy (`cd worker && npx wrangler deploy`). Ini mencegah Worker baru berjalan di atas tabel yang belum ada.
+
+Frontend tidak lewat CI ini: GitHub Pages membangun ulang sendiri setiap push ke `main`.
+
+Memasang deploy otomatis (sekali saja):
+
+1. Di Cloudflare: **My Profile → API Tokens → Create Token**, pakai templat **Edit Cloudflare Workers**. Tambahkan izin **D1: Edit** dan **Workers KV Storage: Edit**, dan batasi ke akunmu.
+2. Di GitHub: **Settings → Secrets and variables → Actions**, buat dua secret: `CLOUDFLARE_API_TOKEN` (token tadi) dan `CLOUDFLARE_ACCOUNT_ID` (ID akun, ada di sidebar dashboard Cloudflare).
+3. Push berikutnya ke `main` akan men-deploy Worker kalau tes lulus.
+
+## Memeriksa koneksi Gemini
+
+Kalau jawaban sering jatuh ke Mode offline, jalankan diagnostik ini di komputermu dengan kunci Gemini milikmu. Kunci hanya dikirim ke Google dan tidak dicetak:
+
+```bash
+GEMINI_API_KEY=xxxx node worker/check-gemini.mjs
+```
+
+Skrip memeriksa apakah kunci sah, model apa yang tersedia, berapa lama permintaan kecil dijawab (Interactions API dibanding `generateContent`), dan apakah lima permintaan beruntun terkena batas kuota. Di akhir keluarannya ada panduan membaca hasilnya.
+
 ## Struktur proyek
 
 ```text

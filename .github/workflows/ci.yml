@@ -1,0 +1,75 @@
+name: CI
+
+# Setiap push dan pull request menjalankan seluruh tes. Push ke main yang lulus tes
+# juga men-deploy Worker, tetapi hanya kalau token Cloudflare sudah dipasang sebagai
+# secret repositori (lihat README, bagian CI) dan tidak ada skema database yang berubah.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Jalankan tes
+        run: npm test
+
+  deploy-worker:
+    # Hanya untuk push ke main, dan hanya setelah tes lulus.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Secret tidak bisa dipakai langsung di `if`; dipetakan ke env dulu.
+      HAS_CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Periksa token Cloudflare
+        if: env.HAS_CLOUDFLARE_TOKEN != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID belum dipasang, deploy otomatis dilewati."
+
+      - name: Periksa perubahan skema database
+        id: schema
+        if: env.HAS_CLOUDFLARE_TOKEN == 'true'
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="${{ github.sha }}~1"
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" -- 'worker/schema*.sql' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skema database berubah ($CHANGED). Jalankan migrasinya lebih dulu dengan wrangler d1 execute, lalu deploy manual: cd worker && npx wrangler deploy"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: env.HAS_CLOUDFLARE_TOKEN == 'true' && steps.schema.outputs.changed == 'false'
+        with:
+          node-version: 22
+
+      - name: Deploy Worker
+        if: env.HAS_CLOUDFLARE_TOKEN == 'true' && steps.schema.outputs.changed == 'false'
+        working-directory: worker
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
