@@ -200,3 +200,25 @@ test("a reader can ask about a single document", () => {
   assert.match(app, /scope/);
   assert.match(html, /Pertanyaan dibatasi pada dokumen ini/);
 });
+
+test("every real answer shows a contact line, with a generic fallback when no single topic was matched", () => {
+  // renderReferences always appends escalation-note, and its text comes from
+  // contactNote(), which falls back to HELP_CONTACT rather than silently
+  // showing nothing when an entry has no escalation of its own.
+  const refs = app.slice(app.indexOf("function renderReferences"), app.indexOf("function renderFollowUps"));
+  assert.match(refs, /escalation-note.*contactNote\(entry\)/);
+
+  const contactNote = app.slice(app.indexOf("function contactNote"), app.indexOf("function renderContactOnly"));
+  assert.match(contactNote, /entry\?\.escalation\s*\|\|/, "a missing escalation falls back, it does not disappear");
+  assert.match(contactNote, /HELP_CONTACT/);
+
+  // The two branches that can reach "answer"/"suggestions" without one settled
+  // topic (no curated entry, or several topics tied) still call a contact
+  // renderer, not just the citation box that assumes an entry exists.
+  const fillCard = app.slice(app.indexOf("function fillCard"), app.indexOf("/** Teks jawaban, apa adanya"));
+  assert.match(fillCard, /if \(entry\) renderReferences\(entry, body, response\.citation\);\s*\n\s*else renderContactOnly/);
+  assert.match(
+    fillCard.slice(fillCard.indexOf('"suggestions"'), fillCard.indexOf('"fallback"')),
+    /renderContactOnly\(body, null\)/,
+  );
+});

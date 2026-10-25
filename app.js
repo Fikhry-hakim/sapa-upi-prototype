@@ -489,10 +489,30 @@ function renderReferences(entry, parent, served = null) {
   box.append(list);
 
   if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
-  // Kontak penanggung jawab topik ini — ditampilkan di setiap jawaban, bukan
-  // hanya saat sistem menolak menjawab, supaya mahasiswa selalu tahu ke mana
-  // memastikan sesuatu yang sifatnya keputusan, bukan sekadar informasi.
-  if (entry.escalation) box.append(make("p", "ref-note escalation-note", entry.escalation));
+  box.append(make("p", "ref-note escalation-note", contactNote(entry)));
+  parent.append(box);
+}
+
+/**
+ * Kalimat kontak penanggung jawab. Setiap topik kurasi dan setiap halaman
+ * dokumen unggahan sudah membawa `escalation` sendiri (lihat
+ * data/knowledge-base.js dan worker/src/documents.js), jadi ini biasanya
+ * dipakai apa adanya — `HELP_CONTACT` hanya jaring pengaman kalau suatu saat
+ * ada jalur jawaban yang entrinya kosong.
+ */
+function contactNote(entry) {
+  return entry?.escalation || `Hubungi ${HELP_CONTACT.program} (${HELP_CONTACT.email}) untuk memastikan informasi ini.`;
+}
+
+/**
+ * Kontak penanggung jawab tanpa kotak rujukan dokumen di sekitarnya — dipakai
+ * saat jawaban tidak (atau belum tentu) merujuk satu topik tertentu. Setiap
+ * jawaban nyata tetap menampilkan kontak, bukan cuma saat sistem menolak
+ * menjawab sama sekali.
+ */
+function renderContactOnly(parent, entry) {
+  const box = make("div", "refs");
+  box.append(make("p", "ref-note escalation-note", contactNote(entry)));
   parent.append(box);
 }
 
@@ -594,6 +614,7 @@ function fillCard(card, response, { feedback = false } = {}) {
 
     if (entry?.table) renderTable(entry.table, body);
     if (entry) renderReferences(entry, body, response.citation);
+    else renderContactOnly(body, null); // Gemini menjawab tanpa satu topik kurasi yang jelas — tetap wajib ada kontak.
     followUps = renderFollowUps(response.followUpQuestions);
   } else if (response.type === "suggestions") {
     body.append(paragraph(response.message));
@@ -606,6 +627,7 @@ function fillCard(card, response, { feedback = false } = {}) {
       list.append(button);
     }
     body.append(list);
+    renderContactOnly(body, null); // Beberapa topik cocok sekaligus: belum ada satu entri untuk dirujuk, tapi kontak tetap wajib ada.
   } else if (response.type === "fallback") {
     head.append(pill("Di luar cakupan pedoman"));
     body.append(paragraph(response.message));
