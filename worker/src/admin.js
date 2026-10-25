@@ -6,7 +6,7 @@
  * Rute publik (daftar dokumen dan isi berkas) ada di bagian bawah berkas ini.
  */
 
-import { authenticate, can, roleOf } from "./auth.js";
+import { authenticate, can, roleOf, touchStaffSession } from "./auth.js";
 import {
   audit,
   CATEGORIES,
@@ -35,12 +35,22 @@ function json(body, { status = 200, headers = {} } = {}) {
   });
 }
 
-/** Pengguna beserta penugasannya, atau null kalau bukan pengelola. */
+/**
+ * Pengguna beserta penugasannya, atau { staff: null } kalau bukan pengelola.
+ * `idle: true` berarti sesinya sah tetapi sudah dihapus karena tidak dipakai
+ * lebih dari STAFF_IDLE_TIMEOUT_MS pada rute pengelola — beda dari sekadar
+ * belum masuk, supaya pesannya bisa menjelaskan kenapa.
+ */
 export async function staffFrom(db, request) {
   const user = await authenticate(db, request);
-  if (!user) return null;
+  if (!user) return { staff: null, idle: false };
   const assignment = await roleOf(db, user.email);
-  return assignment ? { user, assignment } : null;
+  if (!assignment) return { staff: null, idle: false };
+
+  const touch = await touchStaffSession(db, request);
+  if (touch === "idle") return { staff: null, idle: true };
+
+  return { staff: { user, assignment }, idle: false };
 }
 
 const fileKey = (id) => `doc:${id}`;
@@ -52,10 +62,16 @@ const PUBLIC_STATUSES = new Set(["ready", "expired"]);
 
 export async function handleAdmin(request, env, cors, path) {
   const db = env.sapa_upi_kb;
-  const staff = await staffFrom(db, request);
+  const { staff, idle } = await staffFrom(db, request);
   const headers = cors;
 
   if (!staff) {
+    if (idle) {
+      return json(
+        { error: "Sesi pengelola berakhir karena tidak aktif. Masuk lagi untuk melanjutkan." },
+        { status: 401, headers },
+      );
+    }
     const signedIn = await authenticate(db, request);
     return json(
       { error: signedIn ? "Akun ini bukan pengelola" : "Perlu masuk" },
@@ -256,7 +272,7 @@ export async function handleFile(request, env, cors, id) {
   if (!doc || doc.bundled) return json({ error: "Tidak ditemukan" }, { status: 404, headers: cors });
 
   if (!PUBLIC_STATUSES.has(doc.status)) {
-    const staff = await staffFrom(db, request);
+    const { staff } = await staffFrom(db, request);
     if (!staff) return json({ error: "Tidak ditemukan" }, { status: 404, headers: cors });
   }
 

@@ -11,6 +11,17 @@
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 hari
 export const AUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 menit
 
+/**
+ * Sesi pengelola (admin/upload/review) berakhir lebih cepat kalau tidak
+ * dipakai, di atas batas 30 hari yang berlaku untuk semua orang. Mahasiswa
+ * yang hanya membaca dan bertanya tidak kena batas ini — risikonya jauh lebih
+ * kecil daripada akun yang bisa mengunggah, memvalidasi, atau menghapus
+ * dokumen. 30 menit adalah titik tengah yang umum dipakai panel admin: cukup
+ * longgar untuk bekerja menelusuri beberapa dokumen, cukup ketat kalau
+ * perangkatnya tertinggal tidak terkunci.
+ */
+export const STAFF_IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 menit
+
 /** Token acak 256 bit, dalam bentuk base64url. */
 export function createToken(randomValues = crypto.getRandomValues.bind(crypto)) {
   const bytes = randomValues(new Uint8Array(32));
@@ -38,14 +49,27 @@ export function bearerToken(request) {
 
 const iso = (ms) => new Date(ms).toISOString();
 
+/**
+ * Lenturkan dua bentuk tanggal yang muncul di kolom yang sama: SQLite menulis
+ * `datetime('now')` sebagai "YYYY-MM-DD HH:MM:SS" (tanpa T, tanpa zona), sedangkan
+ * kode ini menulis lewat `iso()` di atas, yang sudah berbentuk ISO 8601 penuh
+ * ("...T...Z"). Menambahkan "Z" ke bentuk yang sudah punya "Z" akan merusaknya,
+ * jadi hanya bentuk pertama yang diberi tambahan.
+ */
+function parseSqlTimestamp(value) {
+  const text = String(value ?? "");
+  if (!text) return NaN;
+  return Date.parse(/T\d{2}:\d{2}/.test(text) ? text : `${text.replace(" ", "T")}Z`);
+}
+
 export const FRESH_LOGIN_MS = 10 * 60 * 1000;
 
 /** method: "google" atau "password"; dipakai untuk menilai seberapa baru identitas terbukti. */
 export async function createSession(db, userId, method = "google", now = Date.now) {
   const token = createToken();
   await db
-    .prepare("INSERT INTO sessions (token_hash, user_id, expires_at, method) VALUES (?, ?, ?, ?)")
-    .bind(await hashToken(token), userId, iso(now() + SESSION_TTL_MS), method)
+    .prepare("INSERT INTO sessions (token_hash, user_id, expires_at, method, last_used_at) VALUES (?, ?, ?, ?, ?)")
+    .bind(await hashToken(token), userId, iso(now() + SESSION_TTL_MS), method, iso(now()))
     .run();
   return token;
 }
@@ -62,8 +86,34 @@ export async function isFreshGoogleSession(db, request, now = Date.now) {
     .bind(await hashToken(token))
     .first();
   if (!row || row.method !== "google") return false;
-  const created = Date.parse(`${String(row.created_at).replace(" ", "T")}Z`);
+  const created = parseSqlTimestamp(row.created_at);
   return Number.isFinite(created) && now() - created <= FRESH_LOGIN_MS;
+}
+
+/**
+ * Jaga batas tidak aktif untuk sesi pengelola: "ok" dan memperbarui jam
+ * terakhir dipakai, "idle" dan menghapus sesinya kalau sudah lebih lama dari
+ * STAFF_IDLE_TIMEOUT_MS sejak dipakai terakhir, atau "none" kalau sesinya
+ * tidak ada. Dipanggil hanya dari rute pengelola (lihat admin.js), jadi
+ * mahasiswa yang cuma bertanya tidak menambah satu tulisan basis data per
+ * pertanyaan.
+ */
+export async function touchStaffSession(db, request, now = Date.now) {
+  const token = bearerToken(request);
+  if (!token || !db) return "none";
+  const hash = await hashToken(token);
+
+  const row = await db.prepare("SELECT last_used_at FROM sessions WHERE token_hash = ?").bind(hash).first();
+  if (!row) return "none";
+
+  const lastUsed = parseSqlTimestamp(row.last_used_at);
+  if (Number.isFinite(lastUsed) && now() - lastUsed > STAFF_IDLE_TIMEOUT_MS) {
+    await db.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(hash).run();
+    return "idle";
+  }
+
+  await db.prepare("UPDATE sessions SET last_used_at = ? WHERE token_hash = ?").bind(iso(now()), hash).run();
+  return "ok";
 }
 
 /**

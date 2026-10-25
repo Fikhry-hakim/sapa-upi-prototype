@@ -126,7 +126,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
           error.status === 403
             ? "Akun ini belum ditugaskan sebagai pengelola."
             : error.status === 401
-              ? "Sesi berakhir. Masuk lagi untuk melanjutkan."
+              ? error.message || "Sesi berakhir. Masuk lagi untuk melanjutkan."
               : "Data belum bisa dimuat. Coba lagi sebentar lagi.",
         ),
       );

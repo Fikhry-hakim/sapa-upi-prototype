@@ -28,11 +28,12 @@ CREATE TABLE IF NOT EXISTS staff_roles (
 -- Yang disimpan adalah hash token, bukan tokennya. Dengan begitu akses baca ke
 -- basis data tidak cukup untuk menyamar sebagai pengguna.
 CREATE TABLE IF NOT EXISTS sessions (
-  token_hash  TEXT PRIMARY KEY,
-  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  expires_at  TEXT NOT NULL,
-  method      TEXT NOT NULL DEFAULT 'google'   -- 'google' atau 'password'
+  token_hash    TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at    TEXT NOT NULL,
+  method        TEXT NOT NULL DEFAULT 'google',   -- 'google' atau 'password'
+  last_used_at  TEXT NOT NULL DEFAULT (datetime('now'))   -- dipakai untuk batas tidak aktif sesi pengelola
 );
 
 -- State OAuth berumur pendek, dipakai sekali untuk menolak callback palsu.

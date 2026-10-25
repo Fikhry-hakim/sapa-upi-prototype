@@ -489,6 +489,10 @@ function renderReferences(entry, parent, served = null) {
   box.append(list);
 
   if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
+  // Kontak penanggung jawab topik ini — ditampilkan di setiap jawaban, bukan
+  // hanya saat sistem menolak menjawab, supaya mahasiswa selalu tahu ke mana
+  // memastikan sesuatu yang sifatnya keputusan, bukan sekadar informasi.
+  if (entry.escalation) box.append(make("p", "ref-note escalation-note", entry.escalation));
   parent.append(box);
 }
 

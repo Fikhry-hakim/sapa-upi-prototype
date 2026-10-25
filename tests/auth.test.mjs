@@ -2,10 +2,30 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
-import { bearerToken, can, hashToken, createToken } from "../worker/src/auth.js";
+import { bearerToken, can, hashToken, createToken, STAFF_IDLE_TIMEOUT_MS, touchStaffSession } from "../worker/src/auth.js";
 import { isAllowedEmail, decodeIdToken, allowedDomains, safeRedirect } from "../worker/src/google-oidc.js";
 import { titleFrom } from "../worker/src/history.js";
 import { clientKey, hit } from "../worker/src/rate-limit.js";
+
+/** Satu baris `sessions`, cukup untuk apa yang disentuh touchStaffSession. */
+function sessionDb(row) {
+  let current = row ? { ...row } : null;
+  return {
+    get current() {
+      return current;
+    },
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        first: async () => (current && /SELECT last_used_at/.test(sql) ? { last_used_at: current.last_used_at } : null),
+        run: async () => {
+          if (/DELETE FROM sessions/.test(sql)) current = null;
+          if (/UPDATE sessions SET last_used_at/.test(sql)) current = { ...current, last_used_at: args[0] };
+          return {};
+        },
+      }),
+    }),
+  };
+}
 
 const request = (headers = {}) => new Request("https://example.test", { headers });
 
@@ -148,6 +168,48 @@ test("the rate limiter counts per window, refuses past the limit, and lets go wh
   const broken = { prepare: () => ({ bind: () => ({ first: async () => { throw new Error("D1 down"); } }) }) };
   assert.equal((await hit(broken, "ask:x", options)).allowed, true, "fails open");
   assert.equal((await hit(null, "ask:x", options)).allowed, true);
+});
+
+test("a staff session active within the idle window is kept alive, with its clock moved forward", async () => {
+  const db = sessionDb({ last_used_at: "2026-10-25 09:00:00" });
+  const request = new Request("https://x.test", { headers: { Authorization: "Bearer tok" } });
+  const now = () => Date.parse("2026-10-25T09:10:00Z"); // 10 menit sejak dipakai terakhir
+
+  assert.equal(await touchStaffSession(db, request, now), "ok");
+  assert.equal(db.current.last_used_at, new Date(now()).toISOString(), "the clock is refreshed, not left stale");
+});
+
+test("a staff session idle past the timeout is deleted outright, not merely refused", async () => {
+  const db = sessionDb({ last_used_at: "2026-10-25 09:00:00" });
+  const request = new Request("https://x.test", { headers: { Authorization: "Bearer tok" } });
+  const now = () => Date.parse("2026-10-25T09:00:00Z") + STAFF_IDLE_TIMEOUT_MS + 1_000;
+
+  assert.equal(await touchStaffSession(db, request, now), "idle");
+  assert.equal(db.current, null, "the row itself is gone, not just reported stale");
+});
+
+test("a timestamp already refreshed by an earlier touch (full ISO, not SQLite's space-separated form) is still read correctly", async () => {
+  // A session's first idle check ever reads a SQLite datetime('now') value
+  // ("2026-10-25 09:00:00"); every check after that reads back whatever this
+  // module itself wrote last — a full "...Z" timestamp. Both must parse.
+  const request = new Request("https://x.test", { headers: { Authorization: "Bearer tok" } });
+
+  const stillActive = sessionDb({ last_used_at: "2026-10-25T09:00:00.000Z" });
+  const tenMinutesLater = () => Date.parse("2026-10-25T09:00:00.000Z") + 10 * 60 * 1000;
+  assert.equal(await touchStaffSession(stillActive, request, tenMinutesLater), "ok");
+
+  const goneIdle = sessionDb({ last_used_at: "2026-10-25T09:00:00.000Z" });
+  const pastTimeout = () => Date.parse("2026-10-25T09:00:00.000Z") + STAFF_IDLE_TIMEOUT_MS + 1_000;
+  assert.equal(await touchStaffSession(goneIdle, request, pastTimeout), "idle");
+});
+
+test("touchStaffSession needs nothing it cannot find: no token, no db, or no matching row", async () => {
+  const withToken = new Request("https://x.test", { headers: { Authorization: "Bearer tok" } });
+  const noToken = new Request("https://x.test");
+
+  assert.equal(await touchStaffSession(sessionDb(null), withToken), "none", "no row for this token");
+  assert.equal(await touchStaffSession(sessionDb({ last_used_at: "2026-10-25 09:00:00" }), noToken), "none", "no bearer token at all");
+  assert.equal(await touchStaffSession(null, withToken), "none", "no database");
 });
 
 test("the client key is a short hash, never the address itself", async () => {

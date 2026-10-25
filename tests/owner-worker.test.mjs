@@ -262,6 +262,38 @@ test("every admin route refuses anonymous callers and signed-in non-staff alike"
   }
 });
 
+test("a valid staff session that has sat idle too long is refused with a reason, not silently treated as never-logged-in", async () => {
+  // Old enough to trip STAFF_IDLE_TIMEOUT_MS (30 min) however the clock runs when this test does.
+  let lastUsedAt = "2000-01-01 00:00:00";
+  const db = {
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        first: async () => {
+          if (/FROM sessions s\s+JOIN users/.test(sql)) {
+            return { id: "u1", email: "admin@upi.edu", name: "Admin", expires_at: "2099-01-01T00:00:00.000Z" };
+          }
+          if (/FROM staff_roles/.test(sql)) return { role: "admin", unit: "TPTA" };
+          if (/SELECT last_used_at FROM sessions/.test(sql)) return { last_used_at: lastUsedAt };
+          return null;
+        },
+        run: async () => {
+          if (/DELETE FROM sessions/.test(sql)) lastUsedAt = null;
+          if (/UPDATE sessions SET last_used_at/.test(sql)) lastUsedAt = args[0];
+          return {};
+        },
+      }),
+    }),
+  };
+
+  const request = new Request("https://example.test/admin/overview", { headers: { Authorization: "Bearer tok" } });
+  const response = await handleAdmin(request, { sapa_upi_kb: db }, {}, "/admin/overview");
+
+  assert.equal(response.status, 401);
+  const body = await response.json();
+  assert.match(body.error, /tidak aktif/, "the reason is idleness, distinct from never having signed in");
+  assert.equal(lastUsedAt, null, "the idle session is removed, not left to be found idle again");
+});
+
 /* ---------- isian unggah dan metode penyimpanan ---------- */
 
 const PAGES = [{ page: 1, text: "Ketentuan pelaksanaan yang cukup panjang untuk dibaca." }];
