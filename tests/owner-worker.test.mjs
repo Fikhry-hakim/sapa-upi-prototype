@@ -323,6 +323,48 @@ test("linking or replacing needs a target document; a new document needs none", 
   assert.equal(checkUpload({ ...base, method: "baru", targetId: "buku-panduan" }).value.targetId, null);
 });
 
+test("replacing a version is refused unless the target document is currently active", async () => {
+  // A draft that was never validated cannot sensibly "become inactive again"
+  // once replaced — it was never active in the first place. "Gabungkan
+  // Terkait" has no such requirement: linking to any non-expired document is
+  // harmless, since nothing gets expired as a side effect of linking.
+  function fakeDb(targetStatus) {
+    const target = { id: "target", status: targetStatus };
+    return {
+      prepare: (sql) => ({
+        bind: (...args) => ({
+          first: async () => {
+            if (/FROM sessions s\s+JOIN users/.test(sql)) {
+              return { id: "u1", email: "admin@upi.edu", name: "Admin", expires_at: "2099-01-01T00:00:00.000Z" };
+            }
+            if (/FROM staff_roles/.test(sql)) return { role: "admin", unit: "TPTA" };
+            if (/SELECT last_used_at FROM sessions/.test(sql)) return { last_used_at: new Date().toISOString() };
+            if (/SELECT \* FROM documents WHERE id/.test(sql)) return args[0] === "target" ? target : null;
+            return null;
+          },
+          run: async () => ({}),
+        }),
+      }),
+      batch: async (statements) => statements,
+    };
+  }
+
+  const body = { title: "Pedoman Baru", category: "Lainnya", owner: "Prodi", passages: PAGES, method: "versi", targetId: "target" };
+  const request = () =>
+    new Request("https://example.test/admin/documents", {
+      method: "POST",
+      headers: { Authorization: "Bearer tok", "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+  const refused = await handleAdmin(request(), { sapa_upi_kb: fakeDb("validating") }, {}, "/admin/documents");
+  assert.equal(refused.status, 400);
+  assert.match((await refused.json()).error, /Tervalidasi & Aktif/);
+
+  const accepted = await handleAdmin(request(), { sapa_upi_kb: fakeDb("ready") }, {}, "/admin/documents");
+  assert.equal(accepted.status, 201, "a currently-active target is accepted");
+});
+
 test("validating a new version retires the old one in the same step", async () => {
   const statements = [];
   const db = {

@@ -1374,8 +1374,15 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       if (id !== "baru") {
         targetLabel.textContent = id === "versi" ? "Dokumen yang diperbarui (akan Tidak Berlaku setelah versi baru divalidasi)" : "Dokumen yang dihubungkan";
         targetSelect.replaceChildren(Object.assign(make("option", "", "Pilih dokumen..."), { value: "" }));
-        for (const doc of existing.filter((d) => d.status !== "expired")) {
+        // "Perbarui Versi" cuma masuk akal untuk dokumen yang memang sedang
+        // berlaku — dokumen yang belum pernah divalidasi tidak bisa "menjadi
+        // tidak berlaku lagi", karena belum pernah berlaku sama sekali.
+        const candidates = id === "versi" ? existing.filter((d) => d.status === "ready") : existing.filter((d) => d.status !== "expired");
+        for (const doc of candidates) {
           targetSelect.append(Object.assign(make("option", "", doc.title), { value: doc.id }));
+        }
+        if (id === "versi" && !candidates.length) {
+          targetSelect.append(Object.assign(make("option", "", "Belum ada dokumen aktif untuk diperbarui"), { value: "", disabled: true }));
         }
       }
       refresh();

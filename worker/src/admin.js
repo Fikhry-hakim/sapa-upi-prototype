@@ -141,6 +141,11 @@ export async function handleAdmin(request, env, cors, path) {
     if (check.value.targetId) {
       const target = await getDocument(db, check.value.targetId);
       if (!target) return json({ error: "Dokumen yang dituju tidak ditemukan." }, { status: 400, headers });
+      // "Perbarui Versi" hanya masuk akal untuk dokumen yang sedang berlaku:
+      // draf yang belum divalidasi tidak bisa "menjadi tidak berlaku lagi".
+      if (check.value.method === "versi" && target.status !== "ready") {
+        return json({ error: "Dokumen yang diperbarui harus berstatus Tervalidasi & Aktif." }, { status: 400, headers });
+      }
     }
 
     const created = await createDocument(db, user.email, check.value);
