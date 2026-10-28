@@ -222,3 +222,19 @@ test("every real answer shows a contact line, with a generic fallback when no si
     /renderContactOnly\(body, null\)/,
   );
 });
+
+test("a generated answer with several sentences becomes its own list, not one run-on paragraph", () => {
+  // Gemini is told never to use bullets, so a multi-point answer always
+  // arrives as one flowing paragraph. Rendering it verbatim (one <p> with
+  // several numbered sentences squeezed together) is exactly what looked
+  // merged with the follow-up chips below it. Each sentence gets its own
+  // <li>, like entry.points already does for local/offline answers — a
+  // single-sentence line stays a plain paragraph, since a list of one is no
+  // list at all.
+  const answerFn = app.slice(app.indexOf("function appendNumberedAnswer"), app.indexOf("function appendUserMessage"));
+  assert.match(answerFn, /const sentences = splitSentences\(line\);/);
+  assert.match(answerFn, /sentences\.length > 1/);
+  const multiBranch = answerFn.slice(answerFn.indexOf("sentences.length > 1"));
+  assert.match(multiBranch, /make\("ul", "bot-list"\)/);
+  assert.match(multiBranch, /for \(const sentence of sentences\)/);
+});

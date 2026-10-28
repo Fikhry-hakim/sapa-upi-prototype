@@ -363,7 +363,18 @@ function appendNumberedText(parent, text, counter) {
   }
 }
 
-/** Jawaban AI: paragraf dan daftar, setiap kalimat bernomor. */
+/**
+ * Jawaban AI: paragraf dan daftar, setiap kalimat bernomor.
+ *
+ * Gemini dilarang memakai bullet (lihat SYSTEM_INSTRUCTION di Worker), jadi
+ * jawabannya selalu berupa satu paragraf mengalir berisi beberapa kalimat.
+ * Menampilkannya apa adanya membuat kalimat dan nomornya terlihat menyatu
+ * jadi satu blok padat. Setiap kalimat di satu baris yang sama, kalau lebih
+ * dari satu, dipecah jadi butir list sendiri-sendiri — sama seperti poin
+ * jawaban lokal (entry.points) — supaya tiap poin berdiri sendiri dan nomor
+ * penjelasannya jelas milik kalimat yang mana. Baris berisi satu kalimat saja
+ * tetap jadi paragraf biasa, karena daftar berisi satu butir tidak perlu bullet.
+ */
 function appendNumberedAnswer(body, message, counter) {
   for (const block of String(message).split(/\n{2,}/)) {
     let list = null;
@@ -378,8 +389,19 @@ function appendNumberedAnswer(body, message, counter) {
         const item = document.createElement("li");
         appendNumberedText(item, stripBullet(line), counter);
         list.append(item);
+        continue;
+      }
+      list = null;
+      const sentences = splitSentences(line);
+      if (sentences.length > 1) {
+        const ul = make("ul", "bot-list");
+        for (const sentence of sentences) {
+          const item = document.createElement("li");
+          appendNumberedText(item, sentence, counter);
+          ul.append(item);
+        }
+        body.append(ul);
       } else {
-        list = null;
         const p = make("p");
         appendNumberedText(p, line, counter);
         body.append(p);
