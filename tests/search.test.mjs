@@ -204,6 +204,27 @@ test("asking whether a document 'is available' no longer loses to its own questi
   assert.equal(searchKnowledgeBase("apakah dokumen itu sudah tersedia", knowledgeBase).status, "none");
 });
 
+test("naming UPI, the program, or the campus does not sink an otherwise-good match", () => {
+  // Reported again, live: "apakah pedoman karya ilmiah UPI sudah ada di file
+  // sapa?" still failed even after the question-word fix above — this time
+  // "UPI" alone was the one filler word tipping the score under the
+  // threshold. Everything in this knowledge base is already about UPI and one
+  // program, so these words distinguish nothing (confirmed: zero occurrences
+  // in any entry's title/category/keywords/questions).
+  for (const query of [
+    "apakah pedoman karya tulis UPI tersedia",
+    "apakah pedoman karya ilmiah UPI sudah ada di file sapa",
+    "pedoman karya ilmiah upi",
+  ]) {
+    assert.notEqual(searchKnowledgeBase(query, knowledgeBase).status, "none", query);
+  }
+  // And a normal, specific question naming them still finds the right entry —
+  // these words are ignored for scoring, not stripped from meaning entirely.
+  const sidang = searchKnowledgeBase("syarat sidang skripsi mahasiswa bisnis digital tasikmalaya", knowledgeBase);
+  assert.equal(sidang.status, "match");
+  assert.equal(sidang.best.entry.id, "sidang-syarat-skripsi");
+});
+
 test("a known limitation: a typo and a missing space together still defeat the match", () => {
   // "pedoma" (missing the final n) stems as if "pe-" were a prefix, leaving
   // garbage ("doma"); "Karyatulis" glued into one word never meets "karya" or
