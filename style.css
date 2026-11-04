@@ -558,6 +558,15 @@ svg text,
   text-transform: uppercase;
 }
 
+.pop-menu-note {
+  margin: 0;
+  padding: 0 10px 8px;
+  max-width: 220px;
+  color: var(--faint);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
 .pop-menu .menu-doc {
   height: auto;
   padding: 8px 10px;
@@ -1044,6 +1053,10 @@ button.ref-chip:hover {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 11.5px;
+}
+
+.escalation-note-ult {
+  color: var(--faint);
 }
 
 .follow-ups {
@@ -3894,6 +3907,54 @@ button.ref-chip:hover {
 .upload-field textarea:focus {
   border-color: var(--red-line);
   outline: 0;
+}
+
+/* ------------------------------------------------------------ combobox (dropdown yang bisa diketik) */
+
+.combobox {
+  position: relative;
+}
+
+.combobox-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-pop);
+}
+
+.combobox-option {
+  padding: 8px 10px;
+  border-radius: 7px;
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.combobox-option:hover,
+.combobox-option.is-active {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.combobox-option.is-disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+.combobox-empty {
+  padding: 8px 10px;
+  color: var(--faint);
+  font-size: 11.5px;
 }
 
 .upload-methods {

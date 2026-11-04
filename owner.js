@@ -8,6 +8,7 @@
 
 import { documentStatusCard, evaluationCard, failureStageCard, feedbackCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
 import { buildDashboardWorkbook, buildRecapCsv } from "./lib/report.js";
+import { matchesLoosely } from "./lib/search.js";
 import { loadPdfJs } from "./viewer.js";
 
 /* ============================================================
@@ -92,6 +93,135 @@ const SOURCE_STATE = [
   { key: "inactive", label: "Nonaktif", color: "#6b7a99", note: "Disimpan, tetapi tidak dipakai menjawab" },
   { key: "expired", label: "Tidak Berlaku", color: "#1f2a44", note: "Pedoman yang sudah diganti" },
 ];
+
+/**
+ * Dropdown yang bisa diketik sambil mencari, pengganti <select> biasa untuk
+ * daftar yang bisa panjang (dokumen, kategori). API-nya sengaja mirip elemen
+ * form biasa — `.value` dan `addEventListener("input"/"change", ...)` — jadi
+ * kode yang memakainya tidak perlu tahu ini bukan <select> asli. Pencarian
+ * pilihannya memakai matchesLoosely yang sama dengan pencarian Knowledge Base,
+ * jadi mengetik "sidang" tetap menemukan "Seminar Hasil" kalau relevan.
+ */
+function createCombobox({ placeholder = "Pilih...", emptyLabel = "Tidak ada pilihan yang cocok" } = {}) {
+  const root = make("div", "combobox");
+  const input = make("input", "combobox-input");
+  input.type = "text";
+  input.autocomplete = "off";
+  input.placeholder = placeholder;
+  const list = make("ul", "combobox-list");
+  list.hidden = true;
+  list.setAttribute("role", "listbox");
+  root.append(input, list);
+
+  let options = [];
+  let selectedValue = "";
+  let activeIndex = -1;
+
+  const labelFor = (value) => options.find((o) => o.value === value)?.label ?? "";
+  const fire = (type) => root.dispatchEvent(new Event(type));
+  const visibleOptions = () => [...list.querySelectorAll('li[role="option"]:not(.is-disabled)')];
+
+  function setActive(index) {
+    const items = visibleOptions();
+    activeIndex = Math.max(0, Math.min(items.length - 1, index));
+    items.forEach((el, i) => el.classList.toggle("is-active", i === activeIndex));
+    items[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }
+
+  function choose(option) {
+    selectedValue = option.value;
+    input.value = option.label;
+    list.hidden = true;
+    fire("input");
+    fire("change");
+  }
+
+  function renderList(filterText) {
+    const matches = !filterText ? options : options.filter((o) => matchesLoosely(o.label, filterText));
+    list.replaceChildren();
+    if (!matches.length) {
+      list.append(make("li", "combobox-empty", emptyLabel));
+    } else {
+      for (const option of matches) {
+        const li = make("li", `combobox-option${option.disabled ? " is-disabled" : ""}`, option.label);
+        li.setAttribute("role", "option");
+        li.dataset.value = option.value;
+        if (!option.disabled) {
+          // mousedown (bukan click) supaya terjadi sebelum blur menutup daftarnya.
+          li.addEventListener("mousedown", (event) => {
+            event.preventDefault();
+            choose(option);
+          });
+        }
+        list.append(li);
+      }
+    }
+    activeIndex = -1;
+  }
+
+  function open() {
+    renderList(input.value === labelFor(selectedValue) ? "" : input.value);
+    list.hidden = false;
+  }
+
+  input.addEventListener("focus", open);
+  input.addEventListener("click", open);
+  input.addEventListener("input", () => {
+    // Mengetik membatalkan pilihan sampai salah satu opsi dipilih lagi secara eksplisit.
+    if (input.value !== labelFor(selectedValue)) selectedValue = "";
+    renderList(input.value);
+    list.hidden = false;
+    fire("input");
+  });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (list.hidden) return open();
+      setActive(activeIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive(activeIndex - 1);
+    } else if (event.key === "Enter") {
+      const items = visibleOptions();
+      if (!list.hidden && activeIndex >= 0 && items[activeIndex]) {
+        event.preventDefault();
+        choose(options.find((o) => o.value === items[activeIndex].dataset.value));
+      }
+    } else if (event.key === "Escape") {
+      list.hidden = true;
+    }
+  });
+  input.addEventListener("blur", () => {
+    // Beri waktu event mousedown pada opsi selesai lebih dulu daripada blur menutup daftarnya.
+    setTimeout(() => {
+      list.hidden = true;
+      // Ketikan bebas yang tidak berujung pada pilihan tidak boleh terlihat seperti sudah terpilih.
+      input.value = labelFor(selectedValue);
+    }, 150);
+  });
+  document.addEventListener("click", (event) => {
+    if (!root.contains(event.target)) list.hidden = true;
+  });
+
+  Object.defineProperty(root, "value", {
+    get: () => selectedValue,
+    set(value) {
+      selectedValue = value ?? "";
+      input.value = labelFor(selectedValue);
+    },
+  });
+
+  root.setOptions = (nextOptions) => {
+    options = nextOptions;
+    if (selectedValue && !options.some((o) => o.value === selectedValue)) selectedValue = "";
+    input.value = labelFor(selectedValue);
+  };
+  root.disable = (disabled) => {
+    input.disabled = disabled;
+  };
+
+  return root;
+}
 
 /* ============================================================
    FABRIK
@@ -985,12 +1115,12 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     root.append(panel);
 
     const redraw = () => {
-      const term = kb.search.trim().toLowerCase();
+      const term = kb.search.trim();
       const list = data.documents.filter(
         (doc) =>
           (kb.status === "all" || doc.status === kb.status) &&
           (kb.category === "all" || doc.category === kb.category) &&
-          (!term || `${doc.title} ${doc.reference} ${doc.owner}`.toLowerCase().includes(term)),
+          matchesLoosely(`${doc.title} ${doc.reference} ${doc.owner} ${doc.category ?? ""}`, term),
       );
       drawDocumentTable(body, root, data, list);
     };
@@ -1029,7 +1159,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const table = make("table", "owner-table kb-table");
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    for (const column of ["NAMA DOKUMEN & ID VERSI", "TIPE FILE", "STATUS VALIDASI", "MASA BERLAKU", "STATUS RAG", "AKSI"]) headRow.append(make("th", "", column));
+    for (const column of ["NAMA DOKUMEN & ID VERSI", "TIPE FILE", "STATUS VALIDASI", "TANGGAL BERLAKU", "STATUS RAG", "AKSI"]) headRow.append(make("th", "", column));
     thead.append(headRow);
 
     const tbody = document.createElement("tbody");
@@ -1094,10 +1224,16 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         actions.append(remove);
       }
       if (isAdmin() && doc.status === "ready") {
-        const expire = make("button", "link", "Tidak berlaku");
+        // Label tombol sengaja berupa kata kerja ("Nonaktifkan"), beda dari label
+        // status hasilnya ("Tidak Berlaku") yang berupa kata sifat/keadaan — supaya
+        // jelas ini aksi yang bisa diklik, bukan sekadar menyebut status.
+        const expire = make("button", "link", "Nonaktifkan");
         expire.type = "button";
+        expire.title = "Menandai dokumen tidak berlaku. Dokumen tetap tersimpan untuk arsip, tidak dihapus.";
         expire.addEventListener("click", () => {
-          if (window.confirm(`Tandai "${doc.title}" tidak berlaku? Dokumen berhenti dipakai menjawab.`)) act(root, `/admin/documents/${doc.id}/expire`, {}, "Ditandai tidak berlaku.");
+          if (window.confirm(`Nonaktifkan "${doc.title}"? Dokumen akan berstatus Tidak Berlaku dan berhenti dipakai menjawab, tetapi tetap tersimpan (tidak dihapus).`)) {
+            act(root, `/admin/documents/${doc.id}/expire`, {}, "Dokumen dinonaktifkan (Tidak Berlaku).");
+          }
         });
         actions.append(expire);
       }
@@ -1229,7 +1365,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     { id: "gabung", icon: "link", title: "Gabungkan Terkait", text: "Hubungkan dengan dokumen yang telah ada tanpa mengubah file master sebelumnya." },
     { id: "versi", icon: "clock", title: "Perbarui Versi", text: "Ganti revisi arsip dari berkas aktif untuk menimpa vektor indexing lama." },
   ];
-  const FALLBACK_CATEGORIES = ["Pedoman Akademik", "Tugas Akhir & Skripsi", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Lainnya"];
+  const FALLBACK_CATEGORIES = ["Pedoman Akademik & Tugas Akhir", "Peraturan, Edaran", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Lainnya"];
   const MAX_UPLOAD = 24 * 1024 * 1024;
 
   async function openUpload(onDone) {
@@ -1311,15 +1447,16 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       const wrap = make("label", `upload-field span-${span}`);
       const text = make("span", "upload-label", label);
       if (required) text.append(make("b", "", " *"));
-      const input = tag === "select" ? make("select") : tag === "textarea" ? make("textarea") : make("input");
-      if (tag === "input") input.type = type;
-      if (placeholder) input.placeholder = placeholder;
-      if (tag === "textarea") input.rows = 3;
-      if (tag === "select") {
-        input.append(Object.assign(make("option", "", "Pilih Kategori..."), { value: "" }));
-        for (const item of options) input.append(Object.assign(make("option", "", item), { value: item }));
+      let input;
+      if (tag === "combobox") {
+        input = createCombobox({ placeholder: placeholder || "Ketik untuk mencari..." });
+        input.setOptions(options.map((item) => ({ value: item, label: item })));
       } else {
+        input = tag === "textarea" ? make("textarea") : make("input");
+        if (tag === "input") input.type = type;
+        if (placeholder) input.placeholder = placeholder;
         input.maxLength = tag === "textarea" ? 500 : 160;
+        if (tag === "textarea") input.rows = 3;
       }
       wrap.append(text, input);
       right.append(wrap);
@@ -1327,7 +1464,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     };
     right.classList.add("upload-grid");
     const titleInput = field("Nama Dokumen Resmi", { required: true, placeholder: "Contoh: Buku Pedoman Akademik UPI 2024" });
-    const categoryInput = field("Kategori Dokumen Knowledge Base", { required: true, tag: "select", options: categories });
+    const categoryInput = field("Kategori Dokumen Knowledge Base", { required: true, tag: "combobox", placeholder: "Pilih atau ketik kategori...", options: categories });
     const ownerInput = field("Penerbit / Unit Kerja", { required: true, placeholder: "Direktorat / Prodi...", span: 1 });
     const referenceInput = field("Nomor Surat / SK Resmi", { placeholder: "Nomor SK Rektor...", span: 1 });
     const dateInput = field("Tanggal Berlaku", { type: "date", span: 1 });
@@ -1347,7 +1484,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     let method = "baru";
     const targetRow = make("label", "upload-field upload-target");
     const targetLabel = make("span", "upload-label");
-    const targetSelect = make("select");
+    const targetSelect = createCombobox({ placeholder: "Ketik judul dokumen..." });
     targetRow.append(targetLabel, targetSelect);
     targetRow.hidden = true;
 
@@ -1373,17 +1510,15 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       targetRow.hidden = id === "baru";
       if (id !== "baru") {
         targetLabel.textContent = id === "versi" ? "Dokumen yang diperbarui (akan Tidak Berlaku setelah versi baru divalidasi)" : "Dokumen yang dihubungkan";
-        targetSelect.replaceChildren(Object.assign(make("option", "", "Pilih dokumen..."), { value: "" }));
         // "Perbarui Versi" cuma masuk akal untuk dokumen yang memang sedang
         // berlaku — dokumen yang belum pernah divalidasi tidak bisa "menjadi
         // tidak berlaku lagi", karena belum pernah berlaku sama sekali.
         const candidates = id === "versi" ? existing.filter((d) => d.status === "ready") : existing.filter((d) => d.status !== "expired");
-        for (const doc of candidates) {
-          targetSelect.append(Object.assign(make("option", "", doc.title), { value: doc.id }));
-        }
-        if (id === "versi" && !candidates.length) {
-          targetSelect.append(Object.assign(make("option", "", "Belum ada dokumen aktif untuk diperbarui"), { value: "", disabled: true }));
-        }
+        targetSelect.setOptions(
+          candidates.length
+            ? candidates.map((doc) => ({ value: doc.id, label: doc.title }))
+            : [{ value: "", label: id === "versi" ? "Belum ada dokumen aktif untuk diperbarui" : "Belum ada dokumen", disabled: true }],
+        );
       }
       refresh();
     }

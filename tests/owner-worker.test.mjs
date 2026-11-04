@@ -156,7 +156,7 @@ test("an upload is validated before it reaches the database", () => {
 
   const ok = checkUpload({
     title: "  Pedoman Baru  ",
-    category: "Pedoman Akademik",
+    category: "Pedoman Akademik & Tugas Akhir",
     owner: "Program Studi Bisnis Digital",
     passages: [
       { page: 1, text: "Mahasiswa wajib   menyelesaikan   administrasi pendaftaran." },

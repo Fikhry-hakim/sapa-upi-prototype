@@ -22,8 +22,8 @@ export const STATUS_LABELS = {
 };
 
 export const CATEGORIES = [
-  "Pedoman Akademik",
-  "Tugas Akhir & Skripsi",
+  "Pedoman Akademik & Tugas Akhir",
+  "Peraturan, Edaran",
   "Surat Keputusan",
   "Pengumuman",
   "Kalender Akademik",

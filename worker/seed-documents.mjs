@@ -11,8 +11,8 @@ import { documents } from "../data/sources.js";
 
 const quote = (v) => (v === null || v === undefined ? "NULL" : `'${String(v).replace(/'/g, "''")}'`);
 const categories = {
-  "buku-panduan": "Tugas Akhir & Skripsi",
-  "pedoman-karya-ilmiah": "Pedoman Akademik",
+  "buku-panduan": "Pedoman Akademik & Tugas Akhir",
+  "pedoman-karya-ilmiah": "Pedoman Akademik & Tugas Akhir",
   "pengumuman-t207": "Pengumuman",
 };
 const sizeBytes = { "buku-panduan": 3756418, "pedoman-karya-ilmiah": 8775470, "pengumuman-t207": 312662 };

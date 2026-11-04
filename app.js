@@ -512,6 +512,7 @@ function renderReferences(entry, parent, served = null) {
 
   if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
+  box.append(make("p", "ref-note escalation-note escalation-note-ult", ultLine()));
   parent.append(box);
 }
 
@@ -535,6 +536,7 @@ function contactNote(entry) {
 function renderContactOnly(parent, entry) {
   const box = make("div", "refs");
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
+  box.append(make("p", "ref-note escalation-note escalation-note-ult", ultLine()));
   parent.append(box);
 }
 
@@ -846,7 +848,12 @@ function clearScope() {
 }
 
 function buildAttachMenu() {
-  refs.attachMenu.replaceChildren(make("p", "pop-menu-label", "Tanya tentang dokumen"));
+  refs.attachMenu.replaceChildren(
+    make("p", "pop-menu-label", "Tanya tentang dokumen"),
+    // Fitur ini sering disalahpahami sebagai unggah berkas — ditegaskan di
+    // sini karena ini satu-satunya tempat pengguna melihat menunya.
+    make("p", "pop-menu-note", "Hanya membatasi pertanyaan ke dokumen ini. Tidak ada berkas yang diunggah atau disimpan."),
+  );
   for (const [id, doc] of Object.entries(documents)) {
     // Pembatasan dokumen bekerja pada topik yang sudah dikurasi; dokumen unggahan belum.
     if (doc.uploaded) continue;
@@ -1336,6 +1343,22 @@ const HELP_CONTACT = {
   address: "Jalan Dadaha Nomor 18, Kota Tasikmalaya 46115",
   site: "http://www.kd-tasikmalaya.upi.edu",
 };
+
+/**
+ * Jalur bantuan umum di luar kontak spesifik topik, ditampilkan di setiap
+ * jawaban (lihat ultLine()). Nomor telepon BELUM diisi — isi ULT.phone begitu
+ * nomornya didapat, satu baris ini saja; jangan menampilkan nomor karangan ke
+ * mahasiswa, sama seperti sistem ini tidak pernah mengarang data lain.
+ */
+const ULT = {
+  name: "ULT (Unit Layanan Terpadu)",
+  phone: "", // TODO: isi nomor telepon ULT di sini begitu tersedia.
+};
+
+/** Baris bantuan umum ULT; nomor telepon ikut ditampilkan hanya kalau sudah diisi di atas. */
+function ultLine() {
+  return ULT.phone ? `Butuh bantuan umum? Hubungi ${ULT.name} di ${ULT.phone}.` : `Butuh bantuan umum? Hubungi ${ULT.name}.`;
+}
 
 const SETTINGS_SECTIONS = [
   { id: "profile", label: "Profile", icon: ICON.user, needsAccount: true },
