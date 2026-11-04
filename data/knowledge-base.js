@@ -623,7 +623,7 @@ export const knowledgeBase = [
       "Bagaimana penilaian karya TTG?",
       "Siapa yang harus saya hubungi?",
     ],
-    keywords: ["ttg", "teknologi tepat guna", "pkm", "lomba", "juara", "inovasi", "karya"],
+    keywords: ["ttg", "teknologi tepat guna", "pkm", "lomba", "juara", "inovasi"],
     lead: "Karya Teknologi Tepat Guna adalah teknologi yang dirancang untuk masyarakat tertentu dengan memperhatikan aspek lingkungan, etika, budaya, sosial, politik, dan ekonomi. Karya yang diakui setara skripsi yaitu:",
     points: [
       "Karya yang diikutsertakan pada lomba tingkat nasional dan memperoleh juara 1 sampai juara harapan 2, baik sebagai ketua maupun anggota; atau dinyatakan lolos didanai dalam Program Kreativitas Mahasiswa (PKM).",
@@ -743,6 +743,8 @@ export const knowledgeBase = [
     questions: [
       "Bagaimana format penulisan skripsi?",
       "Berapa ukuran margin dan font skripsi?",
+      "Apakah pedoman karya ilmiah UPI sudah ada?",
+      "Apakah pedoman penulisan karya ilmiah UPI tersedia?",
     ],
     followUps: [
       "Berapa batas maksimal similarity?",

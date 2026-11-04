@@ -211,12 +211,18 @@ test("naming UPI, the program, or the campus does not sink an otherwise-good mat
   // threshold. Everything in this knowledge base is already about UPI and one
   // program, so these words distinguish nothing (confirmed: zero occurrences
   // in any entry's title/category/keywords/questions).
+  // Checked against the actual entry, not just "found something": a generic
+  // keyword shared with an unrelated topic (here, "karya" also tagging the
+  // Teknologi Tepat Guna entry) can clear the threshold on the WRONG entry,
+  // which looks identical to success if only status is asserted.
   for (const query of [
     "apakah pedoman karya tulis UPI tersedia",
     "apakah pedoman karya ilmiah UPI sudah ada di file sapa",
     "pedoman karya ilmiah upi",
   ]) {
-    assert.notEqual(searchKnowledgeBase(query, knowledgeBase).status, "none", query);
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.notEqual(result.status, "none", query);
+    assert.equal(result.best.entry.id, "format-penulisan", query);
   }
   // And a normal, specific question naming them still finds the right entry —
   // these words are ignored for scoring, not stripped from meaning entirely.
