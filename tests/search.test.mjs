@@ -184,3 +184,31 @@ test("a known limitation: a fully spelled-out English phrase (\"letter of accept
   assert.equal(searchKnowledgeBase("loa", knowledgeBase).status, "ambiguous");
   assert.equal(searchKnowledgeBase("letter of acceptance", knowledgeBase).status, "none");
 });
+
+test("asking whether a document 'is available' no longer loses to its own question words", () => {
+  // Reported: "apakah pedoman karya ilmiah sudah ada di file sapa?" came back
+  // empty-handed, even though the bare topic words alone matched fine. "apakah",
+  // "ada", "sudah", "tersedia" name no topic of their own, but used to still
+  // count toward the ratio of the question matchedTokens had to cover — enough
+  // filler words could sink a search that was otherwise on target.
+  for (const query of [
+    "apakah ada pedoman karya ilmiah",
+    "apakah pedoman karya ilmiah sudah ada di file sapa",
+    "coba cek apakah dokumen syarat kelulusan bisnis digital tersedia",
+  ]) {
+    assert.notEqual(searchKnowledgeBase(query, knowledgeBase).status, "none", query);
+  }
+  // "apakah dokumen itu sudah tersedia" stays "none" — "itu" refers to nothing
+  // this function can see, so there is genuinely no topic to go on. That is
+  // correct, not a case this fix is meant to touch.
+  assert.equal(searchKnowledgeBase("apakah dokumen itu sudah tersedia", knowledgeBase).status, "none");
+});
+
+test("a known limitation: a typo and a missing space together still defeat the match", () => {
+  // "pedoma" (missing the final n) stems as if "pe-" were a prefix, leaving
+  // garbage ("doma"); "Karyatulis" glued into one word never meets "karya" or
+  // "tulis" as separate tokens either. Neither is a filler-word problem — this
+  // is the engine's typo/spacing brittleness, a different and harder gap.
+  // Covered here, not silently "fixed" by guessing at fuzzy matching tonight.
+  assert.equal(searchKnowledgeBase("apakah pedoma Karyatulis sudah ada di file sapa", knowledgeBase).status, "none");
+});
