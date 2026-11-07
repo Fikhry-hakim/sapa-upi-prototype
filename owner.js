@@ -86,6 +86,8 @@ const OUTCOME = {
   gangguan_teknis: { label: "Gangguan Teknis", color: "#e8788a", chip: "Gangguan" },
 };
 
+const RANGE_WORD = { harian: "harian", mingguan: "mingguan", bulanan: "bulanan", rentang: "periode ini" };
+
 const SOURCE_STATE = [
   { key: "ready", label: "Siap Digunakan", color: "#2e9e6b", note: "Tervalidasi dan aktif untuk RAG" },
   { key: "validating", label: "Menunggu Validasi", color: "#e8a33a", note: "Menunggu persetujuan pengelola" },
@@ -410,12 +412,12 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     }
 
     grid.append(
-      card("Total Interaksi", nf.format(s.total), "", "Total pertanyaan chatbot selama periode pengamatan di Prodi Bisnis Digital.", "chat", "blue", delta),
-      card("Jawaban Berbasis Sumber", nf.format(s.counts.berbasis_sumber), `(${formatPercent(s.percents.berbasis_sumber)})`, "Respons substantif dengan rujukan dokumen resmi yang tercatat.", "check", "red"),
-      card("Tingkat Klarifikasi", formatPercent(s.percents.klarifikasi), `(${nf.format(s.counts.klarifikasi)} interaksi)`, "Pertanyaan yang cocok dengan beberapa topik sama kuat.", "question", "blue"),
-      card("Ketercukupan Bukti", formatPercent(s.percents.bukti_terbatas), `(${nf.format(s.counts.bukti_terbatas)} interaksi)`, "Rujukan cocok tetapi tipis; jawaban dibatasi pada rujukan itu.", "doc", "violet"),
-      card("Kegagalan Teknis", formatPercent(s.percents.gangguan_teknis), `(${nf.format(s.counts.gangguan_teknis)} interaksi)`, "Model bahasa tidak terjangkau (kuota, beban, atau batas waktu); pembaca dilayani mode offline.", "warn", "red"),
-      card("Kesiapan Sumber", formatPercent(overview.documents.readiness), `(${overview.documents.ready} dari ${overview.documents.total} dokumen)`, "Sumber akademik tervalidasi, berstatus aktif, dan siap dipakai menjawab.", "docCheck", "violet"),
+      card("Total Interaksi", nf.format(s.total), "", "Jumlah pertanyaan yang dikirim pengguna ke SAPA UPI.", "chat", "blue", delta),
+      card("Jawaban Berbasis Sumber", nf.format(s.counts.berbasis_sumber), `(${formatPercent(s.percents.berbasis_sumber)})`, "Jawaban yang didukung oleh dokumen resmi akademik UPI.", "check", "red"),
+      card("Tingkat Klarifikasi", formatPercent(s.percents.klarifikasi), `(${nf.format(s.counts.klarifikasi)} interaksi)`, "Pertanyaan yang membutuhkan penjelasan tambahan dari pengguna.", "question", "blue"),
+      card("Keterbatasan Bukti", formatPercent(s.percents.bukti_terbatas), `(${nf.format(s.counts.bukti_terbatas)} interaksi)`, "Jawaban dengan sumber rujukan yang belum cukup lengkap.", "doc", "violet"),
+      card("Kegagalan Teknis", formatPercent(s.percents.gangguan_teknis), `(${nf.format(s.counts.gangguan_teknis)} interaksi)`, "Pertanyaan yang gagal diproses karena kendala teknis sistem.", "warn", "red"),
+      card("Kesiapan Sumber", formatPercent(overview.documents.readiness), `(${overview.documents.ready} dari ${overview.documents.total} dokumen)`, "Dokumen yang siap digunakan sebagai sumber jawaban chatbot.", "docCheck", "violet"),
     );
     root.append(grid);
 
@@ -450,7 +452,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const text = make("div");
     text.append(
       make("h2", "", "Tren Penggunaan Chatbot"),
-      make("p", "", `Interaksi mahasiswa Program Studi Bisnis Digital (Total: ${nf.format(s.total)})`),
+      make("p", "", `Tren ${RANGE_WORD[s.range] ?? "periode ini"} interaksi mahasiswa Program Studi Bisnis Digital (Total: ${nf.format(s.total)})`),
     );
     head.append(text, make("span", "pill-soft", s.label));
     wrap.append(head, make("p", "chart-axis-title", "Volume Interaksi"));
@@ -564,7 +566,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const wrap = make("section", "panel-card");
     const head = make("div", "panel-card-head");
     const text = make("div");
-    text.append(make("h2", "", "Kondisi Sumber Informasi Akademik"), make("p", "", `Status distribusi ${stats.total} dokumen pada basis pengetahuan RAG SAPA UPI.`));
+    text.append(make("h2", "", "Kondisi Sumber Informasi Akademik"), make("p", "", `Status distribusi ${stats.total} versi dokumen terdaftar pada basis pengetahuan RAG SAPA UPI.`));
     const link = make("button", "link-arrow");
     link.type = "button";
     link.append("Kelola Knowledge Base", icon("arrow"));
