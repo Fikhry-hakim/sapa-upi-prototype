@@ -1346,13 +1346,11 @@ const HELP_CONTACT = {
 
 /**
  * Jalur bantuan umum di luar kontak spesifik topik, ditampilkan di setiap
- * jawaban (lihat ultLine()). Nomor telepon BELUM diisi — isi ULT.phone begitu
- * nomornya didapat, satu baris ini saja; jangan menampilkan nomor karangan ke
- * mahasiswa, sama seperti sistem ini tidak pernah mengarang data lain.
+ * jawaban (lihat ultLine()).
  */
 const ULT = {
   name: "ULT (Unit Layanan Terpadu)",
-  phone: "", // TODO: isi nomor telepon ULT di sini begitu tersedia.
+  phone: "+62 811-2096-229",
 };
 
 /** Baris bantuan umum ULT; nomor telepon ikut ditampilkan hanya kalau sudah diisi di atas. */
