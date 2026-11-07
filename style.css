@@ -1059,6 +1059,12 @@ button.ref-chip:hover {
   color: var(--faint);
 }
 
+.ult-phone-link {
+  color: var(--red);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .follow-ups {
   margin-top: 12px;
   display: flex;

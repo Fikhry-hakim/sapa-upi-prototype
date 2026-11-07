@@ -512,7 +512,7 @@ function renderReferences(entry, parent, served = null) {
 
   if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
-  box.append(make("p", "ref-note escalation-note escalation-note-ult", ultLine()));
+  box.append(ultNote());
   parent.append(box);
 }
 
@@ -536,7 +536,7 @@ function contactNote(entry) {
 function renderContactOnly(parent, entry) {
   const box = make("div", "refs");
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
-  box.append(make("p", "ref-note escalation-note escalation-note-ult", ultLine()));
+  box.append(ultNote());
   parent.append(box);
 }
 
@@ -1346,16 +1346,32 @@ const HELP_CONTACT = {
 
 /**
  * Jalur bantuan umum di luar kontak spesifik topik, ditampilkan di setiap
- * jawaban (lihat ultLine()).
+ * jawaban (lihat ultNote()).
  */
 const ULT = {
   name: "ULT (Unit Layanan Terpadu)",
   phone: "+62 811-2096-229",
 };
 
-/** Baris bantuan umum ULT; nomor telepon ikut ditampilkan hanya kalau sudah diisi di atas. */
-function ultLine() {
-  return ULT.phone ? `Butuh bantuan umum? Hubungi ${ULT.name} di ${ULT.phone}.` : `Butuh bantuan umum? Hubungi ${ULT.name}.`;
+/**
+ * Baris bantuan umum ULT; nomor telepon ikut ditampilkan dan jadi tautan ke
+ * WhatsApp hanya kalau sudah diisi di atas. Nomor WA dibentuk dari ULT.phone
+ * sendiri (bukan diketik ulang) supaya keduanya tidak pernah berbeda.
+ */
+function ultNote() {
+  const p = make("p", "ref-note escalation-note escalation-note-ult");
+  const waNumber = ULT.phone.replace(/\D/g, "");
+  if (waNumber) {
+    p.append(`Butuh bantuan umum? Hubungi ${ULT.name} di `);
+    const link = make("a", "ult-phone-link", ULT.phone);
+    link.href = `https://wa.me/${waNumber}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+    p.append(link, ".");
+  } else {
+    p.append(`Butuh bantuan umum? Hubungi ${ULT.name}.`);
+  }
+  return p;
 }
 
 const SETTINGS_SECTIONS = [
