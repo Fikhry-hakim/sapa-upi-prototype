@@ -201,9 +201,19 @@ function createCombobox({ placeholder = "Pilih...", emptyLabel = "Tidak ada pili
       input.value = labelFor(selectedValue);
     }, 150);
   });
-  document.addEventListener("click", (event) => {
-    if (!root.contains(event.target)) list.hidden = true;
-  });
+  // Lepas listener dokumen ini lewat root.destroy() saat combobox dibuang —
+  // kalau tidak, setiap combobox yang pernah dibuat (mis. tiap kali modal
+  // upload dibuka) menumpuk selamanya di document, karena tidak ada <select>
+  // asli yang otomatis berhenti mendengarkan saat elemennya dilepas dari DOM.
+  const closeOnOutsideClick = new AbortController();
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!root.contains(event.target)) list.hidden = true;
+    },
+    { signal: closeOnOutsideClick.signal },
+  );
+  root.destroy = () => closeOnOutsideClick.abort();
 
   Object.defineProperty(root, "value", {
     get: () => selectedValue,
@@ -1393,6 +1403,8 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const close = () => {
       dialog.remove();
       document.removeEventListener("keydown", onKey);
+      categoryInput.destroy();
+      targetSelect.destroy();
     };
     function onKey(event) {
       if (event.key === "Escape") close();
