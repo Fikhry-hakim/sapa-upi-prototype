@@ -6,7 +6,7 @@
  * bukan angka yang terlihat meyakinkan tetapi tidak nyata.
  */
 
-import { documentStatusCard, evaluationCard, failureStageCard, feedbackCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
+import { evaluationCard, failureStageCard, feedbackCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
 import { buildDashboardWorkbook, buildRecapCsv } from "./lib/report.js";
 import { matchesLoosely } from "./lib/search.js";
 import { loadPdfJs } from "./viewer.js";
@@ -437,11 +437,15 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     root.append(charts);
 
     /* --- analitik tambahan (Lampiran A, Tabel A.7) --- */
+    // Grafik 5 ("Status Dokumen") sengaja tidak dipakai di sini: datanya
+    // sama persis dengan bagian "Kondisi Sumber Informasi Akademik" di
+    // bawah (sourceCard), yang lebih lengkap (ada catatan per status dan
+    // tautan Kelola Knowledge Base) — menampilkan dua-duanya cuma mengulang
+    // angka yang sama dua kali di satu halaman.
     const more = make("div", "chart-grid");
     more.append(
       stackedOutcomeCard(s, OUTCOME),
       responseTimeCard(s),
-      documentStatusCard(overview.documents, SOURCE_STATE),
       topicsCard(s),
       failureStageCard(s),
       feedbackCard(overview.feedback),
