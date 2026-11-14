@@ -238,3 +238,16 @@ test("a generated answer with several sentences becomes its own list, not one ru
   assert.match(multiBranch, /make\("ul", "bot-list"\)/);
   assert.match(multiBranch, /for \(const sentence of sentences\)/);
 });
+
+test("the viewer offers continuous scrolling and frees far-away pages instead of keeping every canvas", () => {
+  assert.match(viewerSource, /id="viewer-mode-scroll"/);
+  assert.match(viewerSource, /id="viewer-mode-page"/);
+  assert.match(viewerSource, /id="viewer-pages"/);
+  // Satu kanvas bisa lebih dari 10 MB; dokumen puluhan halaman harus melepas yang jauh dari layar.
+  assert.match(viewerSource, /KEEP_MARGIN/);
+  assert.match(viewerSource, /release\(entry\)/);
+  // Pilihan cara membaca diingat, dan dibungkus try/catch karena penyimpanan bisa tidak tersedia.
+  assert.match(viewerSource, /sapa-upi:viewer-mode/);
+  // PDF.js perlu skala halaman pada lapisan teks, kalau tidak ia mengeluh di konsol tiap halaman.
+  assert.match(viewerSource, /--scale-factor/);
+});

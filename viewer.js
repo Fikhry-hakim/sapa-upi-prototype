@@ -142,6 +142,10 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
           <span id="viewer-zoom-label">100%</span>
           <button type="button" id="viewer-zoom-in" aria-label="Perbesar">${ICONS.plus}</button>
         </div>
+        <div class="viewer-mode" role="group" aria-label="Cara membaca">
+          <button type="button" id="viewer-mode-scroll" aria-pressed="true" title="Gulir terus ke bawah">Gulir</button>
+          <button type="button" id="viewer-mode-page" aria-pressed="false" title="Satu halaman per layar">Halaman</button>
+        </div>
         <div class="viewer-pager" role="group" aria-label="Halaman">
           <button type="button" id="viewer-prev" aria-label="Halaman sebelumnya">${ICONS.prev}</button>
           <span>Halaman <strong id="viewer-page-now">1</strong> dari <span id="viewer-page-total">1</span></span>
@@ -158,6 +162,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
           <canvas id="viewer-canvas"></canvas>
           <div class="textLayer" id="viewer-text"></div>
         </div>
+        <div class="viewer-pages" id="viewer-pages" hidden></div>
       </div>
       <footer class="viewer-foot" id="viewer-foot" hidden>
         <span class="viewer-foot-mark">${ICONS.check}Sumber Resmi Jawaban SAPA</span>
@@ -184,11 +189,28 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     stage: $("viewer-stage"),
     status: $("viewer-status"),
     sheet: $("viewer-sheet"),
+    pages: $("viewer-pages"),
+    modeScroll: $("viewer-mode-scroll"),
+    modePage: $("viewer-mode-page"),
     canvas: $("viewer-canvas"),
     text: $("viewer-text"),
     foot: $("viewer-foot"),
     footWhere: $("viewer-foot-where"),
   };
+
+  const MODE_KEY = "sapa-upi:viewer-mode";
+  // Halaman yang digambar: yang berada di dalam jarak ini dari layar. Yang lebih jauh
+  // dilepas supaya dokumen puluhan halaman tidak menghabiskan memori (satu kanvas bisa >10 MB).
+  const RENDER_MARGIN = 1200;
+  const KEEP_MARGIN = 2800;
+
+  function readMode() {
+    try {
+      return localStorage.getItem(MODE_KEY) === "page" ? "page" : "scroll";
+    } catch {
+      return "scroll";
+    }
+  }
 
   const state = {
     doc: null,
@@ -196,74 +218,103 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     page: 1,
     zoomIndex: ZOOM_STEPS.indexOf(1),
     highlight: "",
+    citedPage: 1,
     cited: null, // { page, text }
+    citationFocused: false,
     token: 0,
     opener: null,
+    mode: readMode(),
+    scrollGen: 0,
   };
+
+  /** Mode gulir: nomor halaman -> { el, canvas, rendered, rendering }. */
+  const scrollPages = new Map();
+  let frame = 0;
+
+  /** Lebar halaman 100% = selebar panel, dengan sedikit ruang di kiri-kanan. */
+  function scaleFor(naturalWidth) {
+    const available = Math.max(280, ui.stage.clientWidth - 40);
+    return (available / naturalWidth) * ZOOM_STEPS[state.zoomIndex];
+  }
+
+  function updateControls() {
+    ui.pageNow.textContent = String(state.page);
+    ui.prev.disabled = state.page <= 1;
+    ui.next.disabled = !state.pdf || state.page >= state.pdf.numPages;
+    ui.zoomLabel.textContent = `${Math.round(ZOOM_STEPS[state.zoomIndex] * 100)}%`;
+    ui.zoomOut.disabled = state.zoomIndex === 0;
+    ui.zoomIn.disabled = state.zoomIndex === ZOOM_STEPS.length - 1;
+    ui.modeScroll.setAttribute("aria-pressed", String(state.mode === "scroll"));
+    ui.modePage.setAttribute("aria-pressed", String(state.mode === "page"));
+  }
 
   function setStatus(message) {
     ui.status.textContent = message ?? "";
     ui.status.hidden = !message;
-    ui.sheet.hidden = Boolean(message);
+    ui.sheet.hidden = Boolean(message) || state.mode !== "page";
+    ui.pages.hidden = Boolean(message) || state.mode !== "scroll";
   }
 
-  async function render() {
-    if (!state.pdf) return;
-    const token = ++state.token;
-
-    ui.pageNow.textContent = String(state.page);
-    ui.prev.disabled = state.page <= 1;
-    ui.next.disabled = state.page >= state.pdf.numPages;
-    ui.zoomLabel.textContent = `${Math.round(ZOOM_STEPS[state.zoomIndex] * 100)}%`;
-    ui.zoomOut.disabled = state.zoomIndex === 0;
-    ui.zoomIn.disabled = state.zoomIndex === ZOOM_STEPS.length - 1;
-
-    const page = await state.pdf.getPage(state.page);
-    if (token !== state.token) return;
-
-    // 100% = halaman selebar panel, dengan sedikit ruang di kiri-kanan.
-    const natural = page.getViewport({ scale: 1 });
-    const available = Math.max(280, ui.stage.clientWidth - 40);
-    const scale = (available / natural.width) * ZOOM_STEPS[state.zoomIndex];
-    const viewport = page.getViewport({ scale });
+  /** Gambar satu halaman beserta lapisan teksnya; null kalau sudah tidak relevan (isStale). */
+  async function paintPage(page, viewport, canvas, textEl, isStale) {
     const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(viewport.width * ratio);
+    canvas.height = Math.floor(viewport.height * ratio);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-    ui.canvas.width = Math.floor(viewport.width * ratio);
-    ui.canvas.height = Math.floor(viewport.height * ratio);
-    ui.canvas.style.width = `${Math.floor(viewport.width)}px`;
-    ui.canvas.style.height = `${Math.floor(viewport.height)}px`;
-    ui.sheet.style.width = `${Math.floor(viewport.width)}px`;
-    ui.sheet.style.height = `${Math.floor(viewport.height)}px`;
-
-    const context = ui.canvas.getContext("2d");
+    const context = canvas.getContext("2d");
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     await page.render({ canvasContext: context, viewport }).promise;
-    if (token !== state.token) return;
+    if (isStale()) return null;
 
     // Lapisan teks: dasar untuk memilih/menyalin teks dan untuk sorotan.
-    ui.text.replaceChildren();
-    ui.text.style.width = `${Math.floor(viewport.width)}px`;
-    ui.text.style.height = `${Math.floor(viewport.height)}px`;
+    textEl.replaceChildren();
+    textEl.style.width = `${Math.floor(viewport.width)}px`;
+    textEl.style.height = `${Math.floor(viewport.height)}px`;
+    // PDF.js menghitung ukuran teks dari variabel ini; tanpanya ia mengeluh di konsol setiap halaman.
+    textEl.style.setProperty("--scale-factor", String(viewport.scale));
     const content = await page.getTextContent();
-    if (token !== state.token) return;
+    if (isStale()) return null;
 
     const spans = [];
     await window.pdfjsLib.renderTextLayer({
       textContentSource: content,
-      container: ui.text,
+      container: textEl,
       viewport,
       textDivs: spans,
     }).promise;
-    if (token !== state.token) return;
+    return isStale() ? null : spans;
+  }
 
-    markCitation(spans);
+  /* ------------------------------------------------------------ mode halaman */
+
+  async function render() {
+    if (!state.pdf) return;
+    const token = ++state.token;
+    const stale = () => token !== state.token;
+
+    updateControls();
+    ui.foot.hidden = true;
+    state.cited = null;
+
+    const page = await state.pdf.getPage(state.page);
+    if (stale()) return;
+
+    const viewport = page.getViewport({ scale: scaleFor(page.getViewport({ scale: 1 }).width) });
+    ui.sheet.style.width = `${Math.floor(viewport.width)}px`;
+    ui.sheet.style.height = `${Math.floor(viewport.height)}px`;
+
+    const spans = await paintPage(page, viewport, ui.canvas, ui.text, stale);
+    if (!spans) return;
+
+    markCitation(spans, state.page);
     setStatus("");
   }
 
-  function markCitation(spans) {
-    ui.foot.hidden = true;
-    state.cited = null;
-    if (!state.highlight || state.page !== state.citedPage) return;
+  /** Sorot kalimat rujukan kalau halaman ini yang dirujuk, dan bawa ke tengah layar sekali. */
+  function markCitation(spans, pageNumber) {
+    if (!state.highlight || pageNumber !== state.citedPage) return;
 
     const range = findSpanRange(
       spans.map((span) => span.textContent),
@@ -273,7 +324,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
 
     for (let i = range.first; i <= range.last; i += 1) spans[i].classList.add("is-cited");
     state.cited = {
-      page: state.page,
+      page: pageNumber,
       text: spans
         .slice(range.first, range.last + 1)
         .map((span) => span.textContent)
@@ -281,12 +332,150 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
         .replace(/\s+/g, " ")
         .trim(),
     };
-    ui.footWhere.textContent = `${state.doc.reference} · hal. ${state.page}`;
+    ui.footWhere.textContent = `${state.doc.reference} · hal. ${pageNumber}`;
     ui.foot.hidden = false;
 
     // Bawa kalimat yang disorot ke tengah layar, bukan dibiarkan di bawah lipatan.
-    const top = spans[range.first].offsetTop;
-    ui.stage.scrollTo({ top: Math.max(0, top - ui.stage.clientHeight / 3) });
+    if (state.mode === "page" || !state.citationFocused) {
+      state.citationFocused = true;
+      const stage = ui.stage.getBoundingClientRect();
+      const at = spans[range.first].getBoundingClientRect();
+      ui.stage.scrollTo({ top: Math.max(0, ui.stage.scrollTop + (at.top - stage.top) - ui.stage.clientHeight / 3) });
+    }
+  }
+
+  /* ------------------------------------------------------------ mode gulir */
+
+  function teardownScroll() {
+    state.scrollGen += 1;
+    cancelAnimationFrame(frame);
+    frame = 0;
+    scrollPages.clear();
+    ui.pages.replaceChildren();
+  }
+
+  /** Susun penampung semua halaman; isinya digambar belakangan, hanya yang mendekati layar. */
+  async function buildScroll() {
+    teardownScroll();
+    if (!state.pdf) return;
+    const gen = state.scrollGen;
+
+    const first = await state.pdf.getPage(1);
+    if (gen !== state.scrollGen) return;
+    const guide = first.getViewport({ scale: scaleFor(first.getViewport({ scale: 1 }).width) });
+
+    for (let n = 1; n <= state.pdf.numPages; n += 1) {
+      const el = document.createElement("div");
+      el.className = "viewer-sheet viewer-page";
+      el.dataset.page = String(n);
+      el.style.width = `${Math.floor(guide.width)}px`;
+      el.style.height = `${Math.floor(guide.height)}px`;
+      ui.pages.append(el);
+      scrollPages.set(n, { el, canvas: null, rendered: false, rendering: false });
+    }
+
+    setStatus("");
+    updateControls();
+    scrollToPage(state.page);
+  }
+
+  async function ensureRendered(n) {
+    const entry = scrollPages.get(n);
+    if (!entry || entry.rendered || entry.rendering) return;
+    entry.rendering = true;
+    const gen = state.scrollGen;
+    const stale = () => gen !== state.scrollGen;
+    try {
+      const page = await state.pdf.getPage(n);
+      if (stale()) return;
+
+      // Halaman yang ukurannya beda dari halaman pertama menyesuaikan diri di sini.
+      const viewport = page.getViewport({ scale: scaleFor(page.getViewport({ scale: 1 }).width) });
+      entry.el.style.width = `${Math.floor(viewport.width)}px`;
+      entry.el.style.height = `${Math.floor(viewport.height)}px`;
+
+      const canvas = document.createElement("canvas");
+      const text = document.createElement("div");
+      text.className = "textLayer";
+      entry.el.replaceChildren(canvas, text);
+
+      const spans = await paintPage(page, viewport, canvas, text, stale);
+      if (!spans) return;
+      entry.canvas = canvas;
+      entry.rendered = true;
+      markCitation(spans, n);
+    } catch (error) {
+      if (!stale()) console.warn(`Halaman ${n} gagal digambar:`, error);
+    } finally {
+      entry.rendering = false;
+    }
+  }
+
+  function release(entry) {
+    if (entry.canvas) entry.canvas.width = 0;
+    entry.el.replaceChildren();
+    entry.canvas = null;
+    entry.rendered = false;
+  }
+
+  /** Gambar halaman yang dekat layar, lepas yang jauh, dan perbarui nomor halaman yang sedang dibaca. */
+  function syncScroll() {
+    frame = 0;
+    if (state.mode !== "scroll" || !scrollPages.size) return;
+
+    const top = ui.stage.scrollTop;
+    const bottom = top + ui.stage.clientHeight;
+    const reading = top + ui.stage.clientHeight / 3;
+    let current = state.page;
+
+    for (const [n, entry] of scrollPages) {
+      const from = entry.el.offsetTop;
+      const to = from + entry.el.offsetHeight;
+      if (from <= reading && reading < to) current = n;
+      if (to >= top - RENDER_MARGIN && from <= bottom + RENDER_MARGIN) ensureRendered(n);
+      else if (entry.rendered && (to < top - KEEP_MARGIN || from > bottom + KEEP_MARGIN)) release(entry);
+    }
+
+    if (current !== state.page) {
+      state.page = current;
+      updateControls();
+    }
+  }
+
+  function scrollToPage(n) {
+    const entry = scrollPages.get(n);
+    if (!entry) return;
+    ui.stage.scrollTop = Math.max(0, entry.el.offsetTop - 12);
+    syncScroll();
+  }
+
+  ui.stage.addEventListener("scroll", () => {
+    if (state.mode === "scroll" && !frame) frame = requestAnimationFrame(syncScroll);
+  });
+
+  /* ------------------------------------------------------------ buka, tutup, navigasi */
+
+  async function showCurrentMode() {
+    if (!state.pdf) return;
+    if (state.mode === "scroll") {
+      state.token += 1; // batalkan gambar mode halaman yang masih berjalan
+      await buildScroll();
+    } else {
+      teardownScroll();
+      await render();
+    }
+  }
+
+  async function setMode(mode) {
+    if (state.mode === mode) return;
+    state.mode = mode;
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      /* pilihan tidak tersimpan; tetap berlaku untuk pembaca ini */
+    }
+    updateControls();
+    await showCurrentMode();
   }
 
   async function open(doc, { page = 1, highlight = "", headers = null } = {}) {
@@ -295,6 +484,9 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     state.page = page;
     state.citedPage = page;
     state.highlight = highlight;
+    state.citationFocused = false;
+    state.cited = null;
+    state.mode = readMode();
     state.zoomIndex = ZOOM_STEPS.indexOf(1);
 
     ui.reference.textContent = doc.reference;
@@ -305,6 +497,8 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     ui.download.hidden = Boolean(headers);
     ui.download.setAttribute("download", doc.file.split("/").pop());
     ui.foot.hidden = true;
+    teardownScroll();
+    updateControls();
     setStatus("Memuat dokumen…");
 
     root.hidden = false;
@@ -319,7 +513,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
       ui.pageTotal.textContent = String(state.pdf.numPages);
       state.page = Math.min(Math.max(1, page), state.pdf.numPages);
       state.citedPage = state.page;
-      await render();
+      await showCurrentMode();
     } catch (error) {
       console.warn("Pembaca dokumen gagal:", error);
       ui.status.innerHTML = "";
@@ -333,6 +527,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
       ui.status.append(message, link);
       ui.status.hidden = false;
       ui.sheet.hidden = true;
+      ui.pages.hidden = true;
       onError(error);
     }
   }
@@ -342,6 +537,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     root.classList.remove("is-open");
     document.body.classList.remove("viewer-open");
     state.token += 1;
+    teardownScroll();
     setTimeout(() => {
       root.hidden = true;
       state.pdf?.destroy?.();
@@ -355,24 +551,36 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     const next = Math.min(Math.max(1, state.page + delta), state.pdf.numPages);
     if (next === state.page) return;
     state.page = next;
-    render();
+    if (state.mode === "scroll") {
+      updateControls();
+      scrollToPage(next);
+    } else {
+      render();
+    }
   }
 
   function zoom(delta) {
     const next = Math.min(Math.max(0, state.zoomIndex + delta), ZOOM_STEPS.length - 1);
     if (next === state.zoomIndex) return;
     state.zoomIndex = next;
-    render();
+    if (state.mode === "scroll") {
+      updateControls();
+      buildScroll();
+    } else {
+      render();
+    }
   }
 
   ui.prev.addEventListener("click", () => go(-1));
   ui.next.addEventListener("click", () => go(1));
   ui.zoomIn.addEventListener("click", () => zoom(1));
   ui.zoomOut.addEventListener("click", () => zoom(-1));
+  ui.modeScroll.addEventListener("click", () => setMode("scroll"));
+  ui.modePage.addEventListener("click", () => setMode("page"));
 
   ui.copy.addEventListener("click", async () => {
     const quote = state.cited?.text;
-    const where = `${state.doc.title}, ${state.doc.reference}, hal. ${state.page}`;
+    const where = `${state.doc.title}, ${state.doc.reference}, hal. ${quote ? state.cited.page : state.page}`;
     const text = quote ? `"${quote}"\n— ${where}` : where;
     try {
       await navigator.clipboard.writeText(text);
@@ -389,8 +597,8 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
   document.addEventListener("keydown", (event) => {
     if (root.hidden) return;
     if (event.key === "Escape") close();
-    else if (event.key === "ArrowLeft" && event.target === ui.stage) go(-1);
-    else if (event.key === "ArrowRight" && event.target === ui.stage) go(1);
+    else if (state.mode === "page" && event.key === "ArrowLeft" && event.target === ui.stage) go(-1);
+    else if (state.mode === "page" && event.key === "ArrowRight" && event.target === ui.stage) go(1);
   });
 
   return { open, close, isOpen: () => !root.hidden };

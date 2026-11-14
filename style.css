@@ -1913,10 +1913,50 @@ button.ref-chip:hover {
 }
 
 .viewer-stage {
+  position: relative; /* offsetTop halaman di mode gulir dihitung dari sini */
   min-height: 0;
   padding: 20px;
   overflow: auto;
   background: #eceef2;
+}
+
+.viewer-pages {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+
+.viewer-page {
+  margin: 0;
+}
+
+.viewer-mode {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  gap: 2px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.viewer-mode button {
+  height: 22px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.viewer-mode button:hover {
+  color: var(--ink);
+}
+
+.viewer-mode button[aria-pressed="true"] {
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .viewer-status {
