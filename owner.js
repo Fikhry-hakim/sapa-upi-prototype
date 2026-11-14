@@ -304,7 +304,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const s = overview.summary;
 
     /* --- kepala + kontrol --- */
-    const head = pageHeader(root, "Dashboard Overview", "dashboard-title");
+    const head = pageHeader(root, "Ringkasan Dashboard", "dashboard-title");
     const controls = make("div", "owner-controls");
 
     const refresh = make("button", "icon-btn");
@@ -584,7 +584,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     text.append(make("h2", "", "Kondisi Sumber Informasi Akademik"), make("p", "", `Status distribusi ${stats.total} versi dokumen terdaftar pada basis pengetahuan RAG SAPA UPI.`));
     const link = make("button", "link-arrow");
     link.type = "button";
-    link.append("Kelola Knowledge Base", icon("arrow"));
+    link.append("Kelola Basis Pengetahuan", icon("arrow"));
     link.addEventListener("click", () => document.getElementById("nav-kb").click());
     head.append(text, link);
     wrap.append(head);
@@ -902,7 +902,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     await guarded(root, async () => {
       const overview = await api("/admin/overview?range=bulanan");
       const s = overview.summary;
-      pageHeader(root, "Metrics", "metrics-title");
+      pageHeader(root, "Metrik", "metrics-title");
       root.append(
         make(
           "p",
@@ -1060,7 +1060,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
 
   function drawKnowledgeBase(root, data, auditEntries) {
     root.replaceChildren();
-    pageHeader(root, "Knowledge Base", "kb-title");
+    pageHeader(root, "Basis Pengetahuan", "kb-title");
 
     /* --- kartu repositori --- */
     const repo = make("section", "panel-card repo-card");

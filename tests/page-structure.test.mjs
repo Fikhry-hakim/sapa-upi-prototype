@@ -54,7 +54,7 @@ test("no answer claims to know the reader's own academic record", () => {
 /* ---------- layout follows the MVP frames ---------- */
 
 test("the sidebar offers exactly the MVP destinations", () => {
-  for (const label of ["New Chat", "Search Chats", "Files", "Recent"]) {
+  for (const label of ["Chat Baru", "Cari Chat", "Berkas", "Terbaru"]) {
     assert.ok(html.includes(`<span>${label}</span>`), `missing nav item: ${label}`);
   }
   // Present in the older design, absent from the MVP New Chat frame.

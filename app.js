@@ -1014,9 +1014,9 @@ function buildMoreMenu() {
 let searchTimer;
 
 const SEARCH_TABS = [
-  ["all", "All"],
-  ["chats", "Chats"],
-  ["documents", "Documents"],
+  ["all", "Semua"],
+  ["chats", "Chat"],
+  ["documents", "Dokumen"],
 ];
 
 function renderSearchTabs() {
@@ -1209,9 +1209,9 @@ function writeFavorites(set) {
 }
 
 const FILE_TABS = [
-  ["suggested", "Suggested"],
-  ["favorites", "Favorites"],
-  ["all", "All"],
+  ["suggested", "Disarankan"],
+  ["favorites", "Favorit"],
+  ["all", "Semua"],
 ];
 
 function renderFilesTabs() {
@@ -1389,10 +1389,10 @@ function ultNote() {
 }
 
 const SETTINGS_SECTIONS = [
-  { id: "profile", label: "Profile", icon: ICON.user, needsAccount: true },
-  { id: "security", label: "Security and login", icon: ICON.shield, needsAccount: true },
-  { id: "data", label: "Data controls", icon: ICON.database, needsAccount: true },
-  { id: "help", label: "Help", icon: ICON.help, needsAccount: false },
+  { id: "profile", label: "Profil", icon: ICON.user, needsAccount: true },
+  { id: "security", label: "Keamanan dan login", icon: ICON.shield, needsAccount: true },
+  { id: "data", label: "Kontrol data", icon: ICON.database, needsAccount: true },
+  { id: "help", label: "Bantuan", icon: ICON.help, needsAccount: false },
 ];
 
 function row(label, description, value) {
@@ -1744,7 +1744,7 @@ const AUTH_COPY = {
     sub: "Masuk dengan akun UPI kamu untuk menyimpan riwayat percakapan.",
     hint: "",
     google: "Continue with Google",
-    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Kata sandi dipasang dari Settings setelah masuk dengan Google. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
+    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Kata sandi dipasang dari Pengaturan setelah masuk dengan Google. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
     alert: false,
   },
   domain: {
@@ -2171,7 +2171,7 @@ function initialize() {
     $("auth-eye").setAttribute("aria-label", show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi");
   });
   $("auth-forgot").addEventListener("click", () => {
-    authError("Masuk dengan Google di bawah, lalu atur ulang kata sandi di Settings > Security and login (dalam 10 menit setelah masuk).");
+    authError("Masuk dengan Google di bawah, lalu atur ulang kata sandi di Pengaturan > Keamanan dan login (dalam 10 menit setelah masuk).");
   });
   $("auth-skip").addEventListener("click", hideAuthScreen);
   document.addEventListener("keydown", (event) => {
