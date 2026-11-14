@@ -160,7 +160,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
         </div>
       </div>
       <footer class="viewer-foot" id="viewer-foot" hidden>
-        <span class="viewer-foot-mark">${ICONS.check}Rujukan Resmi Jawaban SAPA</span>
+        <span class="viewer-foot-mark">${ICONS.check}Sumber Resmi Jawaban SAPA</span>
         <span class="viewer-foot-where" id="viewer-foot-where"></span>
       </footer>
     </aside>
@@ -376,7 +376,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     const text = quote ? `"${quote}"\n— ${where}` : where;
     try {
       await navigator.clipboard.writeText(text);
-      onCopy(quote ? "Kutipan disalin." : "Rujukan disalin.");
+      onCopy(quote ? "Kutipan disalin." : "Sumber disalin.");
     } catch {
       onCopy("Browser menolak akses papan klip.");
     }

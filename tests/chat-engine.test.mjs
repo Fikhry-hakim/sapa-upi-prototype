@@ -42,11 +42,11 @@ test("unrelated question returns fallback with official escalation options", () 
 
   assert.equal(response.type, "fallback");
   assert.match(response.message, /belum menemukan/i);
-  assert.equal(response.reason, "Informasi tidak tersedia pada pedoman yang terindeks.");
+  assert.equal(response.reason, "Informasi ini belum ada di dokumen yang tersedia.");
   assert.deepEqual(response.escalationOptions, [
     "Tenaga Administrasi Program Studi",
-    "Dosen atau pihak yang berwenang",
-    "Sumber informasi resmi terkait",
+    "Dosen pembimbing atau Ketua Program Studi",
+    "Situs atau pengumuman resmi UPI",
   ]);
 });
 

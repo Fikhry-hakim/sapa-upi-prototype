@@ -157,7 +157,7 @@ test("the processing card does not claim checks the prototype never performs", (
 
 test("the answer badge says where the answer came from, honestly", () => {
   assert.match(app, /Dijawab AI/);
-  assert.match(app, /Mode offline/);
+  assert.match(app, /Jawaban cadangan/);
   assert.ok(!app.includes("Jawaban Resmi Terverifikasi"), "an AI answer must not be called officially verified");
 });
 
@@ -183,10 +183,10 @@ test("answers are built with text nodes, never with untrusted HTML", () => {
 
 test("the source chip opens the document, for anyone", () => {
   assert.match(app, /viewer\.open\(citation\.document/);
-  assert.match(app, /RUJUKAN DOKUMEN RESMI/);
+  assert.match(app, /SUMBER DOKUMEN RESMI/);
   assert.ok(!/state\.account\s*&&[^\n]*viewer\.open/.test(app), "opening a document must not need an account");
   assert.match(viewerSource, /SUMBER RESMI/);
-  assert.match(viewerSource, /Rujukan Resmi Jawaban SAPA/);
+  assert.match(viewerSource, /Sumber Resmi Jawaban SAPA/);
 });
 
 test("the Files page lists the published documents without an account", () => {

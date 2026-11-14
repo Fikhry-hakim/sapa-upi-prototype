@@ -345,8 +345,8 @@ const MAX_NUMBERED = 20;
 function clarifyMarker(number, sentence) {
   const button = make("button", "clarify-num", String(number));
   button.type = "button";
-  button.setAttribute("aria-label", `Tanyakan penjelasan poin ${number}`);
-  button.title = `Tanyakan penjelasan poin ${number}`;
+  button.setAttribute("aria-label", `Jelaskan lebih lanjut poin ${number}`);
+  button.title = `Jelaskan lebih lanjut poin ${number}`;
   button.addEventListener("click", () => submitQuestion(clarifyQuestion(number, sentence)));
   return button;
 }
@@ -441,12 +441,12 @@ function pill(text, kind) {
 function showProcessing() {
   const { card, head, body } = createBotCard();
   card.dataset.processing = "true";
-  head.append(pill("Mencari rujukan...", "busy"));
+  head.append(pill("Mencari di dokumen...", "busy"));
 
   const steps = make("div", "steps");
   for (const [label, done] of [
-    ["Mencocokkan pertanyaan", true],
-    ["Memilih rujukan pedoman", true],
+    ["Membaca pertanyaan", true],
+    ["Mencari di dokumen resmi", true],
     ["Menyusun jawaban", false],
   ]) {
     const step = make("span", `step${done ? " is-done" : ""}`);
@@ -490,7 +490,7 @@ function renderReferences(entry, parent, served = null) {
   // Jawaban dari dokumen unggahan membawa rujukannya sendiri dari Worker.
   const citation = served ?? citationFor(entry);
   const box = make("div", "refs");
-  box.append(make("p", "refs-label", "RUJUKAN DOKUMEN RESMI"));
+  box.append(make("p", "refs-label", "SUMBER DOKUMEN RESMI"));
   const list = make("div", "refs-list");
 
   if (citation) {
@@ -510,7 +510,7 @@ function renderReferences(entry, parent, served = null) {
   }
   box.append(list);
 
-  if (!citation) box.append(make("p", "ref-note", "Dokumen sumber ini belum dipublikasikan di sini."));
+  if (!citation) box.append(make("p", "ref-note", "Dokumen ini belum bisa dibuka di SAPA."));
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
   box.append(ultNote());
   parent.append(box);
@@ -524,7 +524,7 @@ function renderReferences(entry, parent, served = null) {
  * ada jalur jawaban yang entrinya kosong.
  */
 function contactNote(entry) {
-  return entry?.escalation || `Hubungi ${HELP_CONTACT.program} (${HELP_CONTACT.email}) untuk memastikan informasi ini.`;
+  return entry?.escalation || `Untuk memastikan, hubungi ${HELP_CONTACT.program} (${HELP_CONTACT.email}).`;
 }
 
 /**
@@ -613,8 +613,8 @@ function fillCard(card, response, { feedback = false } = {}) {
   if (response.type === "answer") {
     head.append(
       response.generated
-        ? pill("Dijawab AI • dirujuk ke Pedoman", "ok")
-        : pill("Mode offline • pencocokan kata kunci"),
+        ? pill("Dijawab AI • berdasarkan dokumen resmi", "ok")
+        : pill("Jawaban cadangan • AI sedang tidak tersedia"),
     );
 
     const counter = { n: 0 };
@@ -634,7 +634,7 @@ function fillCard(card, response, { feedback = false } = {}) {
         body.append(list);
       }
     }
-    if (counter.n > 0) body.append(make("p", "clarify-hint", "Klik nomor untuk menanyakan penjelasan poin itu."));
+    if (counter.n > 0) body.append(make("p", "clarify-hint", "Mau penjelasan lebih lanjut? Klik angka di ujung kalimat."));
 
     if (entry?.table) renderTable(entry.table, body);
     if (entry) renderReferences(entry, body, response.citation);
@@ -653,10 +653,10 @@ function fillCard(card, response, { feedback = false } = {}) {
     body.append(list);
     renderContactOnly(body, null); // Beberapa topik cocok sekaligus: belum ada satu entri untuk dirujuk, tapi kontak tetap wajib ada.
   } else if (response.type === "fallback") {
-    head.append(pill("Di luar cakupan pedoman"));
+    head.append(pill("Belum ada di dokumen"));
     body.append(paragraph(response.message));
     const box = make("div", "refs");
-    box.append(make("p", "refs-label", "BUTUH BANTUAN? HUBUNGI PIHAK BERWENANG"));
+    box.append(make("p", "refs-label", "BUTUH BANTUAN? HUBUNGI:"));
     const list = make("ul", "bot-list");
     for (const option of response.escalationOptions ?? []) list.append(make("li", "", option));
     box.append(list);
@@ -854,7 +854,7 @@ function buildAttachMenu() {
     make("p", "pop-menu-label", "Tanya tentang dokumen"),
     // Fitur ini sering disalahpahami sebagai unggah berkas — ditegaskan di
     // sini karena ini satu-satunya tempat pengguna melihat menunya.
-    make("p", "pop-menu-note", "Hanya membatasi pertanyaan ke dokumen ini. Tidak ada berkas yang diunggah atau disimpan."),
+    make("p", "pop-menu-note", "Jawaban hanya diambil dari dokumen yang kamu pilih. Tidak ada berkas yang diunggah atau disimpan."),
   );
   for (const [id, doc] of Object.entries(documents)) {
     // Pembatasan dokumen bekerja pada topik yang sudah dikurasi; dokumen unggahan belum.
@@ -1446,13 +1446,13 @@ function renderSettings() {
       row(
         "Kata sandi",
         account.hasPassword
-          ? "Dipakai untuk masuk dengan email. Mengganti menuntut kata sandi saat ini"
+          ? "Dipakai untuk masuk dengan email. Untuk menggantinya, kamu perlu kata sandi yang sekarang"
           : "Pasang kata sandi untuk masuk dengan email, tanpa Google",
         actionButton(account.hasPassword ? "Ganti" : "Atur", openPasswordDialog),
       ),
       row(
         "Keluar dari semua perangkat",
-        "Mengakhiri setiap sesi yang sedang aktif, termasuk yang ini",
+        "Keluar dari semua perangkat, termasuk yang sedang kamu pakai sekarang",
         actionButton("Keluar semua", logoutEverywhere),
       ),
     );
@@ -1485,7 +1485,7 @@ function renderSettings() {
       row("Laman", "", link(HELP_CONTACT.site, "kd-tasikmalaya.upi.edu")),
       row(
         "Tentang jawaban SAPA",
-        "Dirujuk ke pedoman yang tersedia. Keputusan resmi tetap pada program studi",
+        "Jawaban diambil dari dokumen yang tersedia. Keputusan resmi tetap ada di program studi",
         "",
       ),
     );
@@ -1737,7 +1737,7 @@ function storeToken(token, remember = true) {
 const AUTH_COPY = {
   login: {
     title: "Selamat Datang Kembali!",
-    sub: "Masuk dengan akun UPI Anda untuk menyimpan riwayat percakapan.",
+    sub: "Masuk dengan akun UPI kamu untuk menyimpan riwayat percakapan.",
     hint: "",
     google: "Continue with Google",
     note: "Hanya akun dengan domain upi.edu yang dapat masuk. Kata sandi dipasang dari Settings setelah masuk dengan Google. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",

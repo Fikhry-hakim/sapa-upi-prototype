@@ -9,6 +9,7 @@
 import { evaluationCard, failureStageCard, feedbackCard, responseTimeCard, stackedOutcomeCard, topicsCard } from "./lib/charts.js";
 import { buildDashboardWorkbook, buildRecapCsv } from "./lib/report.js";
 import { matchesLoosely } from "./lib/search.js";
+import { versionInfo, versionLabel } from "./lib/versions.js";
 import { loadPdfJs } from "./viewer.js";
 
 /* ============================================================
@@ -1161,6 +1162,35 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     root.append(auditCard(auditEntries));
   }
 
+  /**
+   * Keterangan versi di bawah judul dokumen: "Versi 2 dari 3", dokumen yang diperbarui,
+   * yang menggantikannya, dan dokumen terkait. Tidak ada apa-apa untuk dokumen yang berdiri
+   * sendiri. Semua nama dipasang lewat textContent.
+   */
+  function lineageBlock(doc, allDocs) {
+    const info = versionInfo(doc, allDocs);
+    if (!info.inChain && !info.related.length) return null;
+    // `inChain` saja sudah cukup untuk menampilkan baris "Memperbarui: …" walau leluhurnya sudah dihapus.
+
+    const block = make("div", "doc-lineage");
+    // Lencana hanya kalau memang ada lebih dari satu versi yang masih ada; "Versi 1 dari 1"
+    // untuk dokumen yang memperbarui sesuatu yang sudah dihapus tidak berarti apa-apa.
+    if (info.total > 1) {
+      const head = make("span", "version-tag", `Versi ${info.number} dari ${info.total}`);
+      head.title = "Urutan dokumen ini dalam rantai pembaruan (Perbarui Versi).";
+      block.append(head);
+    }
+    const line = (label, docs) => {
+      const row = make("div", "doc-lineage-row");
+      row.append(make("span", "doc-lineage-label", `${label} `), docs.map(versionLabel).join(", "));
+      block.append(row);
+    };
+    if (info.replaces) line("Memperbarui:", [info.replaces]);
+    if (info.replacedBy.length) line("Digantikan oleh:", info.replacedBy);
+    if (info.related.length) line("Terkait:", info.related);
+    return block;
+  }
+
   function drawDocumentTable(body, root, data, list) {
     body.replaceChildren();
     if (!list.length) {
@@ -1186,6 +1216,8 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       const icon = make("span", "doc-kind", doc.kind);
       const label = make("div");
       label.append(make("strong", "", doc.title), make("small", "", `${doc.reference} • ${sizeLabel(doc.sizeBytes)} • ${doc.pages} hlm`));
+      const lineage = lineageBlock(doc, data.documents);
+      if (lineage) label.append(lineage);
       name.append(icon, label);
 
       const meta = STATUS_META[doc.status] ?? { label: doc.status, tone: "muted" };
@@ -1377,9 +1409,9 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
   }
 
   const METHODS = [
-    { id: "baru", icon: "doc", title: "Dokumen Baru", text: "Unggah sebagai dokumen baru yang berdiri sendiri dalam repositori RAG." },
+    { id: "baru", icon: "doc", title: "Dokumen Baru", text: "Unggah sebagai dokumen baru yang berdiri sendiri." },
     { id: "gabung", icon: "link", title: "Gabungkan Terkait", text: "Hubungkan dengan dokumen yang telah ada tanpa mengubah file master sebelumnya." },
-    { id: "versi", icon: "clock", title: "Perbarui Versi", text: "Ganti revisi arsip dari berkas aktif untuk menimpa vektor indexing lama." },
+    { id: "versi", icon: "clock", title: "Perbarui Versi", text: "Gantikan dokumen yang sedang berlaku dengan versi terbarunya. Dokumen lama menjadi Tidak Berlaku." },
   ];
   const FALLBACK_CATEGORIES = ["Pedoman Akademik & Tugas Akhir", "Peraturan, Edaran", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Lainnya"];
   const MAX_UPLOAD = 24 * 1024 * 1024;
@@ -1489,7 +1521,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     const periodInput = field("Periode Akademik", { placeholder: "Semester Ganjil 2024/2025", span: 1 });
     const descInput = field("Deskripsi / Singkat Dokumen", {
       tag: "textarea",
-      placeholder: "Ringkasan konteks atau cakupan materi dokumen untuk mempermudah indexing RAG...",
+      placeholder: "Ringkasan singkat isi dokumen, agar mudah dikenali pengelola lain...",
     });
 
     const body = make("div", "upload-body");
@@ -1548,7 +1580,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     message.hidden = true;
     const footer = make("div", "upload-foot");
     const note = make("p", "upload-note");
-    note.append(icon("info"), "Dokumen akan diproses otomatis melalui pipeline ekstraksi teks & embedding RAG UPI.");
+    note.append(icon("info"), "Teks dokumen dibaca otomatis supaya bisa dipakai menjawab pertanyaan setelah divalidasi.");
     const cancel = make("button", "btn upload-cancel", "Batal");
     cancel.type = "button";
     cancel.addEventListener("click", close);
