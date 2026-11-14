@@ -69,3 +69,14 @@ test("dashboard text is translated, but document categories and titles are left 
     assert.equal(translate(untouched), untouched);
   }
 });
+
+test("dashboard charts: titles, week and date labels, and decimal separators", () => {
+  assert.equal(translate("Tren Waktu Respons"), "Response Time Trend");
+  assert.equal(translate("Minggu 2"), "Week 2");
+  assert.equal(translate("14 Mei"), "14 May");
+  assert.equal(translate("Puncak: Minggu 4 (101 interaksi)"), "Peak: Week 4 (101 interactions)");
+  assert.equal(translate("9,1 dtk"), "9.1 s");
+  assert.equal(translate("Median 5,4 detik"), "Median 5.4 seconds");
+  assert.equal(translate("Rata-rata: 12,3 interaksi/minggu"), "Average: 12.3 interactions/week");
+  assert.match(translate("11 penilaian, 90,9% di antaranya Baik. Penilaian bersifat sukarela dan tidak memuat pertanyaan maupun identitas."), /^11 ratings, 90\.9% of them Good/);
+});
