@@ -60,3 +60,12 @@ test("a question with no known English terms is left alone, and an unrelated one
   assert.equal(toIndonesianQuery("Apa syarat sidang?"), "Apa syarat sidang?");
   assert.equal(searchKnowledgeBase(toIndonesianQuery("What is the weather in Bandung?"), knowledgeBase).status, "none");
 });
+
+test("dashboard text is translated, but document categories and titles are left as written", () => {
+  assert.equal(translate("Tingkat Kegagalan Teknis"), "Technical Failure Rate");
+  assert.equal(translate("Versi 2 dari 3"), "Version 2 of 3");
+  assert.equal(translate("Menampilkan 10 dari 1.234 interaksi"), "Showing 10 of 1.234 interactions");
+  for (const untouched of ["Pengumuman", "Surat Edaran", "Kalender Akademik", "Pedoman Akademik & Tugas Akhir", "Surat Edaran Nomor 48 Tahun 2026"]) {
+    assert.equal(translate(untouched), untouched);
+  }
+});
