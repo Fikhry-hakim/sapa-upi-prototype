@@ -342,22 +342,27 @@ function paragraph(text) {
 const MAX_NUMBERED = 20;
 
 /** Nomor kecil di akhir kalimat; mengkliknya menanyakan penjelasan kalimat itu. */
-function clarifyMarker(number, sentence) {
+function clarifyMarker(number, sentence, topic) {
   const button = make("button", "clarify-num", String(number));
   button.type = "button";
   button.setAttribute("aria-label", `Jelaskan lebih lanjut poin ${number}`);
   button.title = `Jelaskan lebih lanjut poin ${number}`;
-  button.addEventListener("click", () => submitQuestion(clarifyQuestion(number, sentence)));
+  button.addEventListener("click", () => submitQuestion(clarifyQuestion(number, sentence), { topic }));
   return button;
 }
 
+/** Id topik kurasi dari sebuah jawaban; topik dari dokumen unggahan (id "p:...") tidak dipakai. */
+function topicOf(entry) {
+  return entry?.id && !String(entry.id).startsWith("p:") ? entry.id : null;
+}
+
 /** Teks dengan tautan, tiap kalimatnya diikuti nomor yang bisa diklik. Penghitung dipakai bersama satu jawaban. */
-function appendNumberedText(parent, text, counter) {
+function appendNumberedText(parent, text, counter, topic) {
   for (const sentence of splitSentences(text)) {
     appendRichText(parent, sentence);
     if (isClarifiable(sentence) && counter.n < MAX_NUMBERED) {
       counter.n += 1;
-      parent.append(clarifyMarker(counter.n, sentence));
+      parent.append(clarifyMarker(counter.n, sentence, topic));
     }
     parent.append(" ");
   }
@@ -366,16 +371,14 @@ function appendNumberedText(parent, text, counter) {
 /**
  * Jawaban AI: paragraf dan daftar, setiap kalimat bernomor.
  *
- * Gemini dilarang memakai bullet (lihat SYSTEM_INSTRUCTION di Worker), jadi
- * jawabannya selalu berupa satu paragraf mengalir berisi beberapa kalimat.
- * Menampilkannya apa adanya membuat kalimat dan nomornya terlihat menyatu
- * jadi satu blok padat. Setiap kalimat di satu baris yang sama, kalau lebih
- * dari satu, dipecah jadi butir list sendiri-sendiri — sama seperti poin
+ * Gemini menjawab dengan kerangka pembuka, daftar bernomor/berpoin, lalu penutup
+ * (lihat KERANGKA JAWABAN di SYSTEM_INSTRUCTION, Worker). Baris berisi beberapa
+ * kalimat dipecah jadi butir list sendiri-sendiri — sama seperti poin
  * jawaban lokal (entry.points) — supaya tiap poin berdiri sendiri dan nomor
  * penjelasannya jelas milik kalimat yang mana. Baris berisi satu kalimat saja
  * tetap jadi paragraf biasa, karena daftar berisi satu butir tidak perlu bullet.
  */
-function appendNumberedAnswer(body, message, counter) {
+function appendNumberedAnswer(body, message, counter, topic) {
   for (const block of String(message).split(/\n{2,}/)) {
     let list = null;
     for (const rawLine of block.split("\n")) {
@@ -387,7 +390,7 @@ function appendNumberedAnswer(body, message, counter) {
           body.append(list);
         }
         const item = document.createElement("li");
-        appendNumberedText(item, stripBullet(line), counter);
+        appendNumberedText(item, stripBullet(line), counter, topic);
         list.append(item);
         continue;
       }
@@ -397,13 +400,13 @@ function appendNumberedAnswer(body, message, counter) {
         const ul = make("ul", "bot-list");
         for (const sentence of sentences) {
           const item = document.createElement("li");
-          appendNumberedText(item, sentence, counter);
+          appendNumberedText(item, sentence, counter, topic);
           ul.append(item);
         }
         body.append(ul);
       } else {
         const p = make("p");
-        appendNumberedText(p, line, counter);
+        appendNumberedText(p, line, counter, topic);
         body.append(p);
       }
     }
@@ -619,16 +622,16 @@ function fillCard(card, response, { feedback = false } = {}) {
 
     const counter = { n: 0 };
     if (response.generated) {
-      appendNumberedAnswer(body, response.message, counter);
+      appendNumberedAnswer(body, response.message, counter, topicOf(entry));
     } else {
       const lead = make("p");
-      appendNumberedText(lead, entry?.lead ?? response.message, counter);
+      appendNumberedText(lead, entry?.lead ?? response.message, counter, topicOf(entry));
       body.append(lead);
       if (entry?.points?.length) {
         const list = make("ul", "bot-list");
         for (const point of entry.points) {
           const li = document.createElement("li");
-          appendNumberedText(li, point, counter);
+          appendNumberedText(li, point, counter, topicOf(entry));
           list.append(li);
         }
         body.append(list);
@@ -696,12 +699,12 @@ function scopedEntries() {
   return scope ? knowledgeBase.filter((entry) => entry.sourceUrl === scope) : knowledgeBase;
 }
 
-async function askBackend(question) {
+async function askBackend(question, topic = null) {
   const scope = state.scopeDocumentId ? documents[state.scopeDocumentId]?.file : null;
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId: state.conversationId, scope }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope, ...(topic ? { topic } : {}) }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -764,7 +767,7 @@ function trackLocalChat(question, response) {
   setRecentOpen(true);
 }
 
-async function submitQuestion(raw) {
+async function submitQuestion(raw, { topic = null } = {}) {
   const question = String(raw ?? "").trim();
   if (!question) return;
 
@@ -784,7 +787,7 @@ async function submitQuestion(raw) {
   let response;
   if (API_URL) {
     try {
-      response = await askBackend(question);
+      response = await askBackend(question, topic);
     } catch (error) {
       console.warn("Backend tidak tersedia, pakai pencocokan lokal:", error);
     }

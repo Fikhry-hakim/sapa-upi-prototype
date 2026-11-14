@@ -1,5 +1,6 @@
 import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base.js";
 import { searchKnowledgeBase } from "../../lib/search.js";
+import { clarifiedSentence, prioritizeTopic } from "../../lib/clarify.js";
 import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
@@ -107,8 +108,9 @@ async function handleAsk(request, env, cors, ctx) {
   let question = "";
   let conversationId = null;
   let scope = null;
+  let topic = null;
   try {
-    ({ question = "", conversationId = null, scope = null } = await request.json());
+    ({ question = "", conversationId = null, scope = null, topic = null } = await request.json());
   } catch {
     return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
   }
@@ -141,11 +143,27 @@ async function handleAsk(request, env, cors, ctx) {
 
   // Only the question reaches retrieval. Nothing about the reader does, so two
   // people asking the same thing are answered from the same sources.
-  const found = retrieve(question, knowledgeBase, {
+  // Pertanyaan klik-angka dicari lewat kalimatnya saja, dan topik dari jawaban yang sedang
+  // dibaca didahulukan supaya penjelasannya bersumber dari dokumen yang sama.
+  const clicked = clarifiedSentence(question);
+  const found = retrieve(clicked ?? question, knowledgeBase, {
     scope: typeof scope === "string" ? scope : null,
     excluded,
   });
   let { entries } = found;
+  let evidence = { status: found.status, score: found.score };
+  if (clicked && typeof topic === "string") {
+    const prioritized = prioritizeTopic(entries, knowledgeBase, topic.slice(0, 80), {
+      scope: typeof scope === "string" ? scope : null,
+      excluded,
+      limit: MAX_CONTEXT_ENTRIES,
+    });
+    if (prioritized !== entries) {
+      entries = prioritized;
+      // Buktinya milik jawaban induk, bukan hasil mencari kalimat pendek tadi.
+      evidence = { status: "match", score: null };
+    }
+  }
 
   // Nothing in the curated topics: look through the pages of documents a
   // manager uploaded and validated. Curated topics always take precedence.
@@ -163,8 +181,8 @@ async function handleAsk(request, env, cors, ctx) {
     const outcome = classifyOutcome({
       failed,
       entryCount: entries.length,
-      status: found.status,
-      score: found.score,
+      status: evidence.status,
+      score: evidence.score,
       fromPassage,
     });
     const cited = top ? (fromPassage ? { documentId: citation.documentId, page: citation.page } : citationFor(top)) : null;

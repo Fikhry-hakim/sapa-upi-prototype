@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { clarifyQuestion, isBullet, isClarifiable, MAX_QUESTION_LENGTH, splitSentences, stripBullet } from "../lib/clarify.js";
+import {
+  clarifiedSentence,
+  clarifyQuestion,
+  isBullet,
+  isClarifiable,
+  MAX_QUESTION_LENGTH,
+  prioritizeTopic,
+  splitSentences,
+  stripBullet,
+} from "../lib/clarify.js";
 
 test("an answer is split into the sentences a reader would number", () => {
   const answer =
@@ -61,4 +70,45 @@ test("a very long sentence is trimmed so the question never exceeds what the Wor
   assert.ok(q.length <= MAX_QUESTION_LENGTH, `${q.length} characters`);
   assert.ok(q.includes("…"));
   assert.ok(q.endsWith('"'));
+});
+
+/* ---------- klik angka: mencari lewat kalimatnya, dari topik yang sama ---------- */
+
+
+test("the clicked sentence is recovered from the clarify question, and ordinary questions are left alone", () => {
+  const question = clarifyQuestion(6, "Transkrip dengan SKS 144 sampai 152 tanpa ada mata kuliah bernilai E");
+  assert.equal(clarifiedSentence(question), "Transkrip dengan SKS 144 sampai 152 tanpa ada mata kuliah bernilai E");
+  assert.equal(clarifiedSentence("syarat sidang skripsi"), null);
+  assert.equal(clarifiedSentence(undefined), null);
+  assert.equal(clarifiedSentence('Jelaskan lebih detail poin 2: ""'), null);
+});
+
+test("a sentence cut short for the length limit loses the ellipsis it was given", () => {
+  const long = "kalimat panjang ".repeat(40).trim();
+  const recovered = clarifiedSentence(clarifyQuestion(1, long));
+  assert.ok(!recovered.endsWith("…"));
+  assert.ok(long.startsWith(recovered));
+});
+
+const KB = [
+  { id: "sidang", sourceUrl: "a.pdf", title: "Sidang" },
+  { id: "kkn", sourceUrl: "b.pdf", title: "KKN" },
+  { id: "tanpa-sumber", title: "Tanpa sumber" },
+];
+
+test("the topic of the answer being read goes first, without duplicates, within the limit", () => {
+  const found = [KB[1], KB[0]];
+  assert.deepEqual(prioritizeTopic(found, KB, "sidang").map((e) => e.id), ["sidang", "kkn"]);
+  assert.deepEqual(prioritizeTopic([], KB, "sidang").map((e) => e.id), ["sidang"]);
+  assert.deepEqual(prioritizeTopic([KB[1], KB[2]], KB, "sidang", { limit: 2 }).map((e) => e.id), ["sidang", "kkn"]);
+});
+
+test("a topic that is unknown, switched off or outside the chosen document is ignored", () => {
+  const found = [KB[1]];
+  assert.equal(prioritizeTopic(found, KB, "tidak-ada"), found);
+  assert.equal(prioritizeTopic(found, KB, undefined), found);
+  assert.equal(prioritizeTopic(found, KB, 42), found);
+  assert.equal(prioritizeTopic(found, KB, "sidang", { excluded: new Set(["a.pdf"]) }), found);
+  assert.equal(prioritizeTopic(found, KB, "sidang", { scope: "b.pdf" }), found);
+  assert.deepEqual(prioritizeTopic(found, KB, "kkn", { scope: "b.pdf" }).map((e) => e.id), ["kkn"]);
 });
