@@ -2158,6 +2158,41 @@ function toggleVoice() {
    INIT
 ============================================================ */
 
+/* ---- Mode terang / gelap ---- */
+
+const THEME_KEY = "sapa-theme";
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const color = document.querySelector('meta[name="theme-color"]');
+  if (color) color.setAttribute("content", theme === "dark" ? "#0f1013" : "#b91c2c");
+  $("theme-button").setAttribute("aria-pressed", String(theme === "dark"));
+}
+
+function initThemeSwitch() {
+  const current = () => (document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+  applyTheme(current());
+  $("theme-button").addEventListener("click", () => {
+    const next = current() === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* penyimpanan diblokir: pilihan berlaku sampai halaman ditutup */
+    }
+  });
+  // Selama belum memilih sendiri, ikuti pengaturan sistem kalau berubah.
+  window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+    let chosen = null;
+    try {
+      chosen = localStorage.getItem(THEME_KEY);
+    } catch {
+      /* abaikan */
+    }
+    if (!chosen) applyTheme(event.matches ? "dark" : "light");
+  });
+}
+
 function initLanguageSwitch() {
   const buttons = { id: $("lang-id"), en: $("lang-en") };
   const paint = (lang) => {
@@ -2170,6 +2205,7 @@ function initLanguageSwitch() {
 }
 
 function initialize() {
+  initThemeSwitch();
   initLanguageSwitch();
   refs.composer.addEventListener("submit", (event) => {
     event.preventDefault();

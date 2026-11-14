@@ -43,6 +43,19 @@
   --green-line: #bbf7d0;
   --amber-soft: #fffbeb;
   --amber-line: #fde68a;
+  --on-accent: #ffffff; /* teks di atas warna merek; tetap putih di mode gelap */
+  --surface-2: #f9fafb;
+  --surface-3: #f3f4f6;
+  --surface-stage: #eceef2;
+  --owner-bg: #f6f7f9;
+  --tint: rgba(17, 24, 39, 0.05);
+  --tint-strong: rgba(17, 24, 39, 0.06);
+  --glass: rgba(255, 255, 255, 0.92);
+  --red-wash: #fff8f8;
+  --skeleton-a: #eceef2;
+  --skeleton-b: #f6f7f9;
+  --mark-bg: #fde9a8;
+  color-scheme: light;
   --sidebar-w: 181px;
   --radius-card: 14px;
   --shadow-pop: 0 10px 30px rgba(17, 24, 39, 0.14);
@@ -201,7 +214,7 @@ svg text,
 }
 
 .icon-btn:hover {
-  background: rgba(17, 24, 39, 0.06);
+  background: var(--tint-strong);
   color: var(--ink);
 }
 
@@ -240,17 +253,17 @@ svg text,
 }
 
 .nav-item:hover {
-  background: rgba(17, 24, 39, 0.05);
+  background: var(--tint);
 }
 
 .nav-item.is-active {
   background: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
 .nav-item.is-active svg {
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .nav-item.is-active:hover {
@@ -298,12 +311,12 @@ svg text,
 }
 
 .recent-item:hover {
-  background: rgba(17, 24, 39, 0.05);
+  background: var(--tint);
 }
 
 .recent-item.is-active {
   background: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
   font-weight: 500;
 }
 
@@ -372,7 +385,7 @@ svg text,
 }
 
 .profile-row:hover {
-  background: rgba(17, 24, 39, 0.05);
+  background: var(--tint);
 }
 
 .avatar {
@@ -472,12 +485,12 @@ svg text,
 .profile-menu button.is-current,
 .pop-menu button.is-current {
   background: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .profile-menu button.is-current svg,
 .pop-menu button.is-current svg {
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .profile-menu hr {
@@ -539,7 +552,7 @@ svg text,
 }
 
 .text-btn:hover {
-  background: rgba(17, 24, 39, 0.06);
+  background: var(--tint-strong);
 }
 
 /* Elemen topbar yang hanya relevan pada satu tampilan. */
@@ -726,7 +739,7 @@ svg text,
   background: var(--red);
   border: 0;
   border-radius: 50%;
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .send svg {
@@ -760,7 +773,7 @@ svg text,
   padding: 2px 5px;
   background: var(--red);
   border-radius: 4px;
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 8.5px;
   font-weight: 800;
 }
@@ -836,7 +849,7 @@ svg text,
   padding: 12px 18px;
   background: var(--red);
   border-radius: 12px;
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 13px;
   line-height: 1.55;
   overflow-wrap: anywhere;
@@ -991,7 +1004,7 @@ svg text,
 
 .data-table th {
   height: 30px;
-  background: #f9fafb;
+  background: var(--surface-2);
   color: var(--ink-2);
   font-size: 10.5px;
   font-weight: 700;
@@ -1019,7 +1032,7 @@ svg text,
 .refs {
   margin-top: 16px;
   padding: 12px 14px;
-  background: #f9fafb;
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 10px;
 }
@@ -1122,7 +1135,7 @@ button.ref-chip:hover {
 
 .skeleton span {
   height: 9px;
-  background: linear-gradient(90deg, #eceef2, #f6f7f9, #eceef2);
+  background: linear-gradient(90deg, var(--skeleton-a), var(--skeleton-b), var(--skeleton-a));
   background-size: 200% 100%;
   border-radius: 5px;
   animation: shimmer 1.4s linear infinite;
@@ -1274,7 +1287,7 @@ button.ref-chip:hover {
 
 .result mark {
   padding: 0 2px;
-  background: #fde9a8;
+  background: var(--mark-bg);
   border-radius: 3px;
   color: inherit;
 }
@@ -1426,7 +1439,7 @@ button.ref-chip:hover {
   position: relative;
   height: 150px;
   overflow: hidden;
-  background: #f3f4f6;
+  background: var(--surface-3);
   border-radius: 10px;
 }
 
@@ -1445,7 +1458,7 @@ button.ref-chip:hover {
   padding: 2px 6px;
   background: var(--red);
   border-radius: 4px;
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -1459,7 +1472,7 @@ button.ref-chip:hover {
   height: 24px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--glass);
   border: 0;
   border-radius: 50%;
   color: var(--faint);
@@ -1590,17 +1603,17 @@ button.ref-chip:hover {
 }
 
 .settings-item:hover {
-  background: rgba(17, 24, 39, 0.05);
+  background: var(--tint);
 }
 
 .settings-item.is-active {
   background: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
 .settings-item.is-active svg {
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .settings-body {
@@ -1756,7 +1769,7 @@ button.ref-chip:hover {
   padding: 2px 7px;
   background: var(--red);
   border-radius: 4px;
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -1812,7 +1825,7 @@ button.ref-chip:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: #f9fafb;
+  background: var(--surface-2);
   border-bottom: 1px solid var(--line);
 }
 
@@ -1917,7 +1930,7 @@ button.ref-chip:hover {
   min-height: 0;
   padding: 20px;
   overflow: auto;
-  background: #eceef2;
+  background: var(--surface-stage);
 }
 
 .viewer-pages {
@@ -1944,6 +1957,7 @@ button.ref-chip:hover {
 
 .viewer-mode button,
 .lang-switch button {
+  background: transparent;
   height: 22px;
   padding: 0 10px;
   color: var(--muted);
@@ -2076,7 +2090,7 @@ button.ref-chip:hover {
 
 .view-owner {
   overflow-y: auto;
-  background: #f6f7f9;
+  background: var(--owner-bg);
 }
 
 .owner-page {
@@ -2166,7 +2180,7 @@ button.ref-chip:hover {
   background: var(--red);
   border: 0;
   border-radius: 8px;
-  color: var(--white);
+  color: var(--on-accent);
   font-size: 12px;
   font-weight: 700;
 }
@@ -2386,7 +2400,7 @@ button.ref-chip:hover {
 }
 
 .trend .trend-dot {
-  fill: var(--white);
+  fill: var(--on-accent);
   stroke: var(--red);
   stroke-width: 2;
 }
@@ -2400,7 +2414,7 @@ button.ref-chip:hover {
 }
 
 .trend .trend-tag text {
-  fill: var(--white);
+  fill: var(--on-accent);
   font-size: 9.5px;
   font-weight: 700;
 }
@@ -2504,7 +2518,7 @@ button.ref-chip:hover {
 
 .source-cell {
   padding: 10px 12px;
-  background: #f9fafb;
+  background: var(--surface-2);
   border: 1px solid var(--line-soft);
   border-radius: 10px;
 }
@@ -2569,7 +2583,7 @@ button.ref-chip:hover {
 .chip.is-active {
   background: var(--red);
   border-color: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .table-scroll {
@@ -2584,7 +2598,7 @@ button.ref-chip:hover {
 
 .owner-table th {
   padding: 9px 12px;
-  background: #f9fafb;
+  background: var(--surface-2);
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -2713,7 +2727,7 @@ button.ref-chip:hover {
 .pager button.is-active {
   background: var(--red);
   border-color: var(--red);
-  color: var(--white);
+  color: var(--on-accent);
 }
 
 .pager button:disabled {
@@ -2967,7 +2981,7 @@ button.ref-chip:hover {
   gap: 4px;
   border: 1.5px dashed var(--line);
   border-radius: 12px;
-  background: #f9fafb;
+  background: var(--surface-2);
   color: var(--ink-2);
   text-align: center;
   cursor: pointer;
@@ -3248,7 +3262,7 @@ button.ref-chip:hover {
   height: 24px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--glass);
   border: 0;
   border-radius: 50%;
   color: var(--faint);
@@ -3862,7 +3876,7 @@ button.ref-chip:hover {
   place-items: center;
   align-content: center;
   gap: 6px;
-  background: #fff8f8;
+  background: var(--red-wash);
   border: 1.5px dashed var(--red-line);
   border-radius: 14px;
   text-align: center;
@@ -4058,7 +4072,7 @@ button.ref-chip:hover {
 }
 
 .method-card.is-active {
-  background: #fff8f8;
+  background: var(--red-wash);
   border-color: var(--red);
 }
 
@@ -4092,7 +4106,7 @@ button.ref-chip:hover {
 .method-card.is-active .method-mark {
   background: var(--red);
   border-color: var(--red);
-  box-shadow: inset 0 0 0 3px #fff;
+  box-shadow: inset 0 0 0 3px var(--white);
 }
 
 .method-card strong {
@@ -4538,4 +4552,120 @@ button.ref-chip:hover {
 .doc-lineage-label {
   color: var(--faint);
   font-weight: 600;
+}
+
+
+/* ============================================================
+   MODE GELAP
+   Dipilih lewat tombol di bilah atas (disimpan di perangkat) dan, kalau belum
+   dipilih, mengikuti pengaturan sistem. Atribut data-theme dipasang lebih awal
+   oleh theme-init.js supaya halaman tidak berkedip terang dulu.
+============================================================ */
+
+:root[data-theme="dark"] {
+  --red: #e2485a;
+  --red-dark: #cc3547;
+  --red-soft: #3a1d23;
+  --red-line: #5c2b33;
+  --ink: #ececf1;
+  --ink-2: #c8ccd5;
+  --muted: #9aa1af;
+  --faint: #6e7686;
+  --line: #2f3239;
+  --line-soft: #262930;
+  --sidebar-bg: #16171b;
+  --main-bg: #0f1013;
+  --white: #1b1d22; /* permukaan kartu dan panel */
+  --green: #46c97f;
+  --green-soft: #11271b;
+  --green-line: #1f4a32;
+  --amber-soft: #2a2410;
+  --amber-line: #5a4a12;
+  --surface-2: #191b20;
+  --surface-3: #22252b;
+  --surface-stage: #121317;
+  --owner-bg: #0f1013;
+  --tint: rgba(255, 255, 255, 0.06);
+  --tint-strong: rgba(255, 255, 255, 0.08);
+  --glass: rgba(27, 29, 34, 0.92);
+  --red-wash: #241518;
+  --skeleton-a: #22252b;
+  --skeleton-b: #2b2e35;
+  --mark-bg: rgba(250, 204, 21, 0.28);
+  --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .stat-badge {
+  background: #1f2440;
+  color: #8f9cf5;
+}
+
+:root[data-theme="dark"] .tone-red .stat-badge {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+:root[data-theme="dark"] .tone-violet .stat-badge {
+  background: #2a2145;
+  color: #b49cf2;
+}
+
+:root[data-theme="dark"] .outcome-klarifikasi {
+  background: #222a45;
+  color: #aab6e6;
+}
+
+:root[data-theme="dark"] .outcome-bukti_terbatas,
+:root[data-theme="dark"] .status-tag.tone-wait {
+  background: #33270f;
+  color: #f0b45a;
+}
+
+:root[data-theme="dark"] .outcome-di_luar_cakupan {
+  background: #352512;
+  color: #f0a95f;
+}
+
+:root[data-theme="dark"] .outcome-gangguan_teknis,
+:root[data-theme="dark"] .status-tag.tone-bad {
+  background: #3a1d23;
+  color: #f08793;
+}
+
+:root[data-theme="dark"] .file-star[aria-pressed="true"] {
+  color: #fbbf24;
+}
+
+:root[data-theme="dark"] .result mark {
+  color: var(--ink);
+}
+
+/* Lembar PDF dan lapisan sorotannya tetap putih seperti kertas aslinya. */
+:root[data-theme="dark"] .viewer-sheet canvas,
+:root[data-theme="dark"] .viewer-pages canvas {
+  background: #fff;
+}
+
+/* Grafik SVG: jalur kosong donat dan garis bantu mengikuti tema. */
+:root[data-theme="dark"] svg circle[stroke="#eef0f3"] {
+  stroke: var(--line);
+}
+
+:root[data-theme="dark"] .brand-mark,
+:root[data-theme="dark"] .file-thumb img {
+  filter: none;
+}
+
+/* Tombol tema */
+.theme-btn .icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-btn .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-btn .icon-moon {
+  display: none;
 }
