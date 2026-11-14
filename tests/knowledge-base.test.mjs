@@ -11,6 +11,8 @@ const requiredCategories = [
   "Kelulusan",
   "Penulisan Ilmiah",
   "Administrasi",
+  // Backed by the Rector's Academic Calendar 2026/2027 (dokumen/kalender-akademik-upi-2026-2027.pdf).
+  "Kalender Akademik",
 ];
 
 const requiredFields = [

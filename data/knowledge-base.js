@@ -62,6 +62,70 @@ const SURAT_KEWIRAUSAHAAN = {
   sourceUrl: null,
 };
 
+const KALENDER_UPI = {
+  sourceTitle: "Kalender Akademik UPI Tahun Akademik 2026/2027",
+  sourceOwner: "Rektor Universitas Pendidikan Indonesia",
+  validPeriod: "Tahun Akademik 2026/2027",
+  updatedAt: "7 Januari 2026",
+  sourceRef: "Keputusan Rektor Nomor 11/UN40/PK.01/2026",
+  sourceUrl: "./dokumen/kalender-akademik-upi-2026-2027.pdf",
+};
+
+const EDARAN_48 = {
+  sourceTitle: "Surat Edaran Pembayaran UKT/BPP, Pengisian IRS, dan Perwalian Daring Semester Ganjil 2026/2027",
+  sourceOwner: "Wakil Rektor Bidang Pendidikan dan Penjaminan Mutu UPI",
+  validPeriod: "Semester Ganjil 2026/2027",
+  updatedAt: "21 Mei 2026",
+  sourceRef: "Surat Edaran Nomor 48 Tahun 2026",
+  sourceUrl: "./dokumen/surat-edaran-48-2026-ukt-irs-perwalian.pdf",
+};
+
+const PENGUMUMAN_T150 = {
+  sourceTitle: "Pengumuman Pengisian IRS dan Perwalian Daring Semester Ganjil 2026/2027",
+  sourceOwner: "Ketua Program Studi Bisnis Digital, Adam Hermawan",
+  validPeriod: "20 Juli–10 Agustus 2026",
+  updatedAt: "14 Juli 2026",
+  sourceRef: "Nomor T-150/UN40.C3.4.4/TM.02.00/2026",
+  sourceUrl: "./dokumen/T-150-pengumuman-irs-perwalian-2026.pdf",
+};
+
+const EDARAN_68 = {
+  sourceTitle: "Surat Edaran Batas Akhir Pengajuan Cuti Akademik Semester Ganjil 2026/2027",
+  sourceOwner: "Wakil Rektor Bidang Pendidikan dan Penjaminan Mutu UPI",
+  validPeriod: "Semester Ganjil 2026/2027",
+  updatedAt: "26 Agustus 2026",
+  sourceRef: "Surat Edaran Nomor 68 Tahun 2026",
+  sourceUrl: "./dokumen/surat-edaran-68-2026-cuti-akademik.pdf",
+};
+
+const PENGUMUMAN_T45 = {
+  sourceTitle: "Pengumuman Ketentuan Tugas Akhir Jalur Artikel Ilmiah dan TTG Angkatan 2023",
+  sourceOwner: "Ketua Program Studi Bisnis Digital, Adam Hermawan",
+  validPeriod: "Pengajuan Maret dan Juli 2026",
+  updatedAt: "23 Februari 2026",
+  sourceRef: "Nomor T-45/UN40.C3.4.4/PK.03.03/2026",
+  sourceUrl: "./dokumen/T-45-pengumuman-ta-artikel-ttg-angkatan-2023.pdf",
+};
+
+const EDARAN_MSIB = {
+  sourceTitle: "Surat Edaran Laporan MSIB Mandiri Program Studi Bisnis Digital",
+  sourceOwner: "Ketua Program Studi Bisnis Digital, Dr. Syti Sarah Maesaroh, S.P., M.M.",
+  validPeriod: "Mahasiswa Angkatan 2022",
+  updatedAt: "12 Maret 2025",
+  sourceRef: "Surat Edaran Nomor 092 Tahun 2025",
+  sourceUrl: "./dokumen/surat-edaran-092-2025-laporan-msib.pdf",
+};
+
+const INFO_SCOPUS = {
+  sourceTitle: "Pengumuman Akses Scopus dan Scopus AI untuk Sivitas Akademika UPI",
+  sourceOwner: "Universitas Pendidikan Indonesia",
+  validPeriod: "Berlaku sampai ada pemberitahuan baru",
+  updatedAt: "Tanggal terbit tidak tercantum pada pengumuman",
+  sourceRef: "Pengumuman layanan Scopus dan Scopus AI untuk sivitas akademika UPI",
+  // Berupa pesan pengumuman (teks dan poster), bukan berkas PDF.
+  sourceUrl: null,
+};
+
 export const knowledgeBase = [
   {
     id: "ta-tiga-jalur",
@@ -889,5 +953,480 @@ export const knowledgeBase = [
     escalation:
       "Hubungi Wakil Direktur Bidang Pendidikan, Kemahasiswaan dan Penjaminan Mutu Kampus UPI Tasikmalaya untuk jadwal dan bukti keikutsertaan pelatihan.",
     ...SURAT_KEWIRAUSAHAAN,
+  },
+  {
+    id: "kalender-registrasi",
+    category: "Kalender Akademik",
+    title: "Jadwal registrasi, verifikasi data, dan perubahan rencana studi 2026/2027",
+    questions: [
+      "Kapan jadwal registrasi semester ganjil 2026/2027?",
+      "Kapan kuliah umum dan pra perkuliahan?",
+      "Kapan masa perubahan rencana studi (PRS)?",
+    ],
+    followUps: [
+      "Kapan batas pembayaran UKT mahasiswa lama?",
+      "Kapan pengisian IRS dan perwalian?",
+      "Kapan awal perkuliahan?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["kalender akademik", "registrasi", "ukt", "pembayaran", "verifikasi data", "mahasiswa baru", "prs", "perubahan rencana studi", "kuliah umum", "pra perkuliahan"],
+    lead: "Jadwal registrasi menurut Kalender Akademik UPI 2026/2027 (semester ganjil / genap):",
+    points: [
+      "Pembayaran UKT mahasiswa lama (D4, S1, S2, S3): 9 Juni–17 Juli 2026 / 25 Desember 2026–15 Januari 2027.",
+      "Pembayaran UKT mahasiswa baru jalur SNBP: 20–30 April 2026; jalur SNBT: 22 Juni–10 Juli 2026; jalur Seleksi Mandiri (SM dan PI): 1–10 Juli 2026.",
+      "Pembayaran mahasiswa baru S2 dan S3: 22–26 Juni 2026 / 11–16 Januari 2027.",
+      "Verifikasi data mahasiswa baru: SNBP 30 Mei–3 Juni 2026; SNBT dan Pascasarjana 27–31 Juli 2026 / 18–22 Januari 2027; SM dan PI 20–24 Juli 2026.",
+      "Pengisian IRS dan perwalian: 20 Juli–10 Agustus 2026 / 4–23 Januari 2027.",
+      "Kuliah umum dan pra perkuliahan: 19–21 Agustus 2026 / 25–27 Januari 2027.",
+      "Perubahan Rencana Studi (PRS): 31 Agustus–7 September 2026 / 8–13 Februari 2027.",
+    ],
+    table: {
+      title: "Jadwal Registrasi Mahasiswa Lama",
+      columns: ["KEGIATAN", "GANJIL 2026", "GENAP 2027"],
+      rows: [
+        ["Pembayaran UKT/biaya pendidikan", "9 Juni–17 Juli 2026", "25 Desember 2026–15 Januari 2027"],
+        ["Pengisian IRS dan perwalian", "20 Juli–10 Agustus 2026", "4–23 Januari 2027"],
+        ["Kuliah umum dan pra perkuliahan", "19–21 Agustus 2026", "25–27 Januari 2027"],
+        ["Perubahan Rencana Studi (PRS)", "31 Agustus–7 September 2026", "8–13 Februari 2027"],
+      ],
+    },
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal awal perkuliahan dan ujian.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, pembayaran UKT mahasiswa lama berlangsung 9 Juni sampai 17 Juli 2026 untuk semester ganjil dan 25 Desember 2026 sampai 15 Januari 2027 untuk semester genap. Pengisian IRS dan perwalian berlangsung 20 Juli sampai 10 Agustus 2026 (ganjil) dan 4 sampai 23 Januari 2027 (genap). Kuliah umum dan pra perkuliahan berlangsung 19 sampai 21 Agustus 2026 (ganjil) dan 25 sampai 27 Januari 2027 (genap). Perubahan Rencana Studi berlangsung 31 Agustus sampai 7 September 2026 (ganjil) dan 8 sampai 13 Februari 2027 (genap). Kalender yang sama juga memuat jadwal pembayaran dan verifikasi data mahasiswa baru.",
+    escalation:
+      "Pastikan jadwal terbaru ke staf Program Studi Bisnis Digital atau petugas akademik.",
+    ...KALENDER_UPI,
+  },
+
+  {
+    id: "kalender-perkuliahan-ujian",
+    category: "Kalender Akademik",
+    title: "Jadwal awal dan akhir perkuliahan, UTS, UAS, dan pemasukan nilai 2026/2027",
+    questions: [
+      "Kapan awal perkuliahan semester ganjil 2026/2027?",
+      "Kapan jadwal UTS dan UAS?",
+      "Kapan ujian ulang dan remedial?",
+      "Kapan akhir perkuliahan semester ini?",
+    ],
+    followUps: [
+      "Kapan nilai UAS dimasukkan?",
+      "Kapan jadwal registrasi?",
+      "Kapan semester antara?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["kalender akademik", "awal perkuliahan", "akhir perkuliahan", "uts", "uas", "ujian tengah semester", "ujian akhir semester", "ujian ulang", "remedial", "pemasukan nilai", "jadwal ujian"],
+    lead: "Jadwal perkuliahan dan ujian menurut Kalender Akademik UPI 2026/2027 (semester ganjil / genap):",
+    points: [
+      "Awal perkuliahan: 24 Agustus 2026 / 25 Januari 2027.",
+      "Akhir perkuliahan: 7 Desember 2026 / 10 Mei 2027.",
+      "Ujian Tengah Semester (UTS): 12–16 Oktober 2026 / 15–19 Maret 2027.",
+      "Ujian Akhir Semester (UAS): 10–24 Desember 2026 / 10–21 Mei 2027.",
+      "Pemeriksaan dan pemasukan nilai UAS: 15–26 Desember 2026 / 13–25 Mei 2027.",
+      "Remedial dan ujian ulang: 17–26 Desember 2026 / 15–25 Mei 2027.",
+      "Pemasukan nilai hasil ujian ulang: 17–31 Desember 2026 / 15–28 Mei 2027.",
+    ],
+    table: {
+      title: "Jadwal Perkuliahan dan Ujian",
+      columns: ["KEGIATAN", "GANJIL 2026", "GENAP 2027"],
+      rows: [
+        ["Awal perkuliahan", "24 Agustus 2026", "25 Januari 2027"],
+        ["UTS", "12–16 Oktober 2026", "15–19 Maret 2027"],
+        ["Akhir perkuliahan", "7 Desember 2026", "10 Mei 2027"],
+        ["UAS", "10–24 Desember 2026", "10–21 Mei 2027"],
+        ["Pemasukan nilai UAS", "15–26 Desember 2026", "13–25 Mei 2027"],
+        ["Remedial dan ujian ulang", "17–26 Desember 2026", "15–25 Mei 2027"],
+        ["Pemasukan nilai ujian ulang", "17–31 Desember 2026", "15–28 Mei 2027"],
+      ],
+    },
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal semester antara atau wisuda.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, perkuliahan semester ganjil dimulai 24 Agustus 2026 dan berakhir 7 Desember 2026, sedangkan semester genap dimulai 25 Januari 2027 dan berakhir 10 Mei 2027. UTS berlangsung 12 sampai 16 Oktober 2026 (ganjil) dan 15 sampai 19 Maret 2027 (genap). UAS berlangsung 10 sampai 24 Desember 2026 (ganjil) dan 10 sampai 21 Mei 2027 (genap). Pemeriksaan dan pemasukan nilai UAS berlangsung 15 sampai 26 Desember 2026 dan 13 sampai 25 Mei 2027. Remedial dan ujian ulang berlangsung 17 sampai 26 Desember 2026 dan 15 sampai 25 Mei 2027, dengan pemasukan nilainya 17 sampai 31 Desember 2026 dan 15 sampai 28 Mei 2027.",
+    escalation:
+      "Pastikan jadwal ujian terbaru ke staf Program Studi Bisnis Digital atau petugas akademik.",
+    ...KALENDER_UPI,
+  },
+
+  {
+    id: "kalender-semester-antara",
+    category: "Kalender Akademik",
+    title: "Jadwal semester antara (semester padat) 2026 dan 2027",
+    questions: [
+      "Kapan jadwal semester antara?",
+      "Kapan pendaftaran semester padat?",
+      "Kapan pembayaran uang kuliah semester antara?",
+    ],
+    followUps: [
+      "Kapan awal dan akhir perkuliahan semester antara?",
+      "Kapan ujian akhir semester antara?",
+      "Kapan jadwal UAS semester ganjil?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["semester antara", "semester padat", "pendaftaran", "uang kuliah", "kalender akademik", "isian rencana studi"],
+    lead: "Jadwal Semester Antara/Padat menurut Kalender Akademik UPI 2026/2027 (tahun 2026 / tahun 2027):",
+    points: [
+      "Pendaftaran di Program Studi: 2–13 Mei 2026 / 23–30 April 2027.",
+      "Penyerahan daftar peserta dari prodi ke Direktorat Keuangan: 15–22 Mei 2026 / 3–14 Mei 2027.",
+      "Pembayaran uang kuliah: 1–15 Juni 2026 / 19–26 Mei 2027.",
+      "Isian Rencana Studi (IRS): 18–25 Juni 2026 / 31 Mei–4 Juni 2027.",
+      "Awal perkuliahan: 22 Juni 2026 / 7 Juni 2027.",
+      "Akhir perkuliahan: 14 Agustus 2026 / 23 Juli 2027.",
+      "Ujian akhir: 17–21 Agustus 2026 / 26–30 Juli 2027.",
+      "Pemasukan nilai: 18–23 Agustus 2026 / 2–6 Agustus 2027.",
+    ],
+    table: {
+      title: "Jadwal Semester Antara/Padat",
+      columns: ["KEGIATAN", "TAHUN 2026", "TAHUN 2027"],
+      rows: [
+        ["Pendaftaran di Program Studi", "2–13 Mei 2026", "23–30 April 2027"],
+        ["Pembayaran uang kuliah", "1–15 Juni 2026", "19–26 Mei 2027"],
+        ["Isian Rencana Studi (IRS)", "18–25 Juni 2026", "31 Mei–4 Juni 2027"],
+        ["Awal perkuliahan", "22 Juni 2026", "7 Juni 2027"],
+        ["Akhir perkuliahan", "14 Agustus 2026", "23 Juli 2027"],
+        ["Ujian akhir", "17–21 Agustus 2026", "26–30 Juli 2027"],
+        ["Pemasukan nilai", "18–23 Agustus 2026", "2–6 Agustus 2027"],
+      ],
+    },
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal perkuliahan dan ujian semester reguler.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, pendaftaran Semester Antara/Padat di program studi berlangsung 2 sampai 13 Mei 2026 dan 23 sampai 30 April 2027. Prodi menyerahkan daftar peserta ke Direktorat Keuangan pada 15 sampai 22 Mei 2026 dan 3 sampai 14 Mei 2027. Pembayaran uang kuliah berlangsung 1 sampai 15 Juni 2026 dan 19 sampai 26 Mei 2027, lalu pengisian IRS pada 18 sampai 25 Juni 2026 dan 31 Mei sampai 4 Juni 2027. Perkuliahan berlangsung 22 Juni sampai 14 Agustus 2026 dan 7 Juni sampai 23 Juli 2027, dengan ujian akhir pada 17 sampai 21 Agustus 2026 dan 26 sampai 30 Juli 2027, serta pemasukan nilai pada 18 sampai 23 Agustus 2026 dan 2 sampai 6 Agustus 2027.",
+    escalation:
+      "Pastikan syarat dan jadwal terbaru ke staf Program Studi Bisnis Digital atau petugas akademik.",
+    ...KALENDER_UPI,
+  },
+
+  {
+    id: "kalender-wisuda-dies",
+    category: "Kalender Akademik",
+    title: "Jadwal wisuda lima gelombang dan Dies Natalis UPI 2026",
+    questions: [
+      "Kapan jadwal wisuda UPI tahun 2026?",
+      "Kapan wisuda gelombang berikutnya?",
+      "Kapan Dies Natalis UPI?",
+    ],
+    followUps: [
+      "Berkas apa saja untuk pemberkasan wisuda?",
+      "Kapan pengukuhan guru besar?",
+      "Kapan jadwal sidang?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["jadwal wisuda", "gelombang", "wisuda", "dies natalis", "pengukuhan guru besar", "kalender akademik"],
+    lead: "Jadwal wisuda, pengukuhan guru besar, dan Dies Natalis menurut Kalender Akademik UPI 2026/2027:",
+    points: [
+      "Wisuda Gelombang I: 10–11 Februari 2026.",
+      "Wisuda Gelombang II: 12–13 Mei 2026.",
+      "Wisuda Gelombang III: 14–15 Juli 2026.",
+      "Wisuda Gelombang IV: 13–14 Oktober 2026.",
+      "Wisuda Gelombang V: 8–9 Desember 2026.",
+      "Pengukuhan Guru Besar: April, Juli, dan November 2026.",
+      "Dies Natalis: 20 Oktober 2026.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan pemberkasan wisuda.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, wisuda berlangsung dalam lima gelombang: Gelombang I pada 10 sampai 11 Februari 2026, Gelombang II pada 12 sampai 13 Mei 2026, Gelombang III pada 14 sampai 15 Juli 2026, Gelombang IV pada 13 sampai 14 Oktober 2026, dan Gelombang V pada 8 sampai 9 Desember 2026. Pengukuhan Guru Besar dilaksanakan pada April, Juli, dan November 2026, sedangkan Dies Natalis jatuh pada 20 Oktober 2026.",
+    escalation:
+      "Pastikan jadwal wisuda terbaru ke staf Program Studi Bisnis Digital atau petugas akademik.",
+    ...KALENDER_UPI,
+  },
+
+  {
+    id: "kalender-penerimaan-s1",
+    category: "Kalender Akademik",
+    title: "Jadwal penerimaan mahasiswa baru S1 (SNBP, SNBT, dan seleksi mandiri) 2026",
+    questions: [
+      "Kapan jadwal SNBP, SNBT, dan seleksi mandiri UPI 2026?",
+      "Kapan pendaftaran SNBT UPI?",
+      "Kapan pengumuman seleksi mandiri?",
+    ],
+    followUps: [
+      "Kapan pembayaran UKT mahasiswa baru?",
+      "Kapan jadwal registrasi?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["penerimaan mahasiswa baru", "snbp", "snbt", "utbk", "seleksi mandiri", "pdss", "pengumuman kelulusan", "kalender akademik"],
+    lead: "Jadwal penerimaan mahasiswa baru jenjang S1 menurut Kalender Akademik UPI 2026/2027:",
+    points: [
+      "SNBP: pengisian PDSS 5 Januari–2 Februari 2026, pendaftaran 3–18 Februari 2026, pengumuman 31 Maret 2026.",
+      "SNBT: pendaftaran 25 Maret–7 April 2026, UTBK 21–30 April 2026, pengumuman 25 Mei 2026.",
+      "Seleksi Mandiri berdasarkan nilai UTBK SNBT: pendaftaran 26 Mei–19 Juni 2026, pengumuman 23 Juni 2026.",
+      "Seleksi Mandiri Jalur Reguler (SM) dan Prestasi Istimewa (PI): pendaftaran 26 Mei–26 Juni 2026, UTBK 6–8 Juli 2026, ujian keterampilan dan/atau wawancara 9–12 Juli 2026, pengumuman 17 Juli 2026.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal pembayaran UKT mahasiswa baru.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, SNBP memiliki pengisian PDSS 5 Januari sampai 2 Februari 2026, pendaftaran 3 sampai 18 Februari 2026, dan pengumuman 31 Maret 2026. SNBT memiliki pendaftaran 25 Maret sampai 7 April 2026, UTBK 21 sampai 30 April 2026, dan pengumuman 25 Mei 2026. Seleksi Mandiri berdasarkan nilai UTBK SNBT membuka pendaftaran 26 Mei sampai 19 Juni 2026 dengan pengumuman 23 Juni 2026. Seleksi Mandiri Jalur Reguler dan Prestasi Istimewa membuka pendaftaran 26 Mei sampai 26 Juni 2026, UTBK 6 sampai 8 Juli 2026, ujian keterampilan dan/atau wawancara 9 sampai 12 Juli 2026, dan pengumuman 17 Juli 2026.",
+    escalation:
+      "Pastikan jadwal penerimaan terbaru ke panitia penerimaan mahasiswa baru UPI.",
+    ...KALENDER_UPI,
+  },
+
+  {
+    id: "ukt-pembayaran-ganjil",
+    category: "Administrasi",
+    title: "Pembayaran UKT/BPP semester ganjil 2026/2027 bagi mahasiswa lama",
+    questions: [
+      "Kapan batas pembayaran UKT semester ganjil 2026/2027?",
+      "Kapan pembayaran BPP mahasiswa lama?",
+    ],
+    followUps: [
+      "Kapan pengisian IRS dan perwalian?",
+      "Bagaimana kalau saya tidak membayar UKT?",
+      "Kapan pengajuan cuti akademik?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["ukt", "bpp", "pembayaran", "mahasiswa lama", "semester ganjil", "biaya pendidikan", "cuti akademik", "surat edaran 48"],
+    lead: "Berdasarkan Surat Edaran Nomor 48 Tahun 2026 untuk semester ganjil tahun akademik 2026/2027:",
+    points: [
+      "Pembayaran UKT/BPP bagi mahasiswa lama berlangsung 9 Juni–17 Juli 2026.",
+      "Pembayaran biaya dan pengajuan cuti akademik berlangsung 27 Juli–21 Agustus 2026.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal pengisian IRS dan perwalian.",
+    answer:
+      "Berdasarkan Surat Edaran Nomor 48 Tahun 2026, pembayaran UKT/BPP semester ganjil 2026/2027 bagi mahasiswa lama berlangsung 9 Juni sampai 17 Juli 2026. Pembayaran biaya dan pengajuan cuti akademik semester ganjil berlangsung 27 Juli sampai 21 Agustus 2026.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital atau petugas akademik untuk memastikan status pembayaran UKT.",
+    ...EDARAN_48,
+  },
+
+  {
+    id: "irs-perwalian-jadwal",
+    category: "Administrasi",
+    title: "Jadwal pengisian IRS dan perwalian daring per angkatan semester ganjil 2026/2027",
+    questions: [
+      "Kapan jadwal pengisian IRS dan perwalian untuk angkatan saya?",
+      "Di mana mengisi IRS dan perwalian daring?",
+      "Bagaimana kalau saya terlambat mengisi IRS?",
+    ],
+    followUps: [
+      "Mata kuliah apa yang bisa dikontrak?",
+      "Kapan masa Perubahan Rencana Studi?",
+      "Kapan pembayaran UKT?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["irs", "isian rencana studi", "perwalian", "daring", "siakku", "dosen pa", "pembimbing akademik", "prs", "angkatan", "kontrak kuliah"],
+    lead: "Berdasarkan Surat Edaran Nomor 48 Tahun 2026, pengisian IRS dan perwalian daring semester ganjil 2026/2027 berlangsung 20 Juli–10 Agustus 2026:",
+    points: [
+      "Mahasiswa mengisi IRS melalui portal SIAKKu di https://student.upi.edu/.",
+      "Dosen Pembimbing Akademik (PA) melakukan perwalian melalui https://siak.upi.edu/perwalian/.",
+      "Akun yang dipakai sama dengan akun SIAKKu untuk mahasiswa dan SInNDo untuk dosen PA.",
+      "Yang belum punya akun internet mendaftar ke Direktorat Sistem Teknologi Informasi dan Pusat Data.",
+      "Angkatan 2020/2021 dan 2021/2022: 20–26 Juli 2026.",
+      "Angkatan 2022/2023 dan 2023/2024: 27 Juli–2 Agustus 2026.",
+      "Angkatan 2024/2025, 2025/2026, dan 2026/2027: 3–10 Agustus 2026.",
+      "Yang belum mengisi IRS sampai batas waktu wajib memperbaiki kontrak kuliah pada masa PRS, 31 Agustus–7 September 2026.",
+      "Dosen PA yang belum menyetujui IRS dalam batas waktu wajib menyetujuinya pada masa PRS.",
+    ],
+    table: {
+      title: "Masa IRS dan Perwalian per Angkatan",
+      columns: ["ANGKATAN", "MASA IRS DAN PERWALIAN"],
+      rows: [
+        ["2020/2021 dan 2021/2022", "20–26 Juli 2026"],
+        ["2022/2023 dan 2023/2024", "27 Juli–2 Agustus 2026"],
+        ["2024/2025, 2025/2026, dan 2026/2027", "3–10 Agustus 2026"],
+      ],
+    },
+    closing: "Kalau kamu mau, saya bisa jelaskan daftar mata kuliah yang bisa dikontrak.",
+    answer:
+      "Berdasarkan Surat Edaran Nomor 48 Tahun 2026, pengisian IRS dan perwalian daring semester ganjil 2026/2027 berlangsung 20 Juli sampai 10 Agustus 2026 dan dibagi per angkatan: angkatan 2020/2021 dan 2021/2022 pada 20 sampai 26 Juli 2026, angkatan 2022/2023 dan 2023/2024 pada 27 Juli sampai 2 Agustus 2026, serta angkatan 2024/2025, 2025/2026, dan 2026/2027 pada 3 sampai 10 Agustus 2026. Mahasiswa mengisi IRS melalui SIAKKu di https://student.upi.edu/, sedangkan dosen Pembimbing Akademik menyetujuinya melalui https://siak.upi.edu/perwalian/ dengan akun yang sama. Mahasiswa yang tidak mengisi IRS sampai batas waktu wajib memperbaiki kontrak kuliah pada masa Perubahan Rencana Studi, 31 Agustus sampai 7 September 2026.",
+    escalation:
+      "Hubungi dosen Pembimbing Akademik atau staf Program Studi Bisnis Digital kalau IRS belum disetujui.",
+    ...EDARAN_48,
+  },
+
+  {
+    id: "irs-prosedur-prodi",
+    category: "Administrasi",
+    title: "Ketentuan kontrak mata kuliah dan kelas gabungan pada IRS Prodi Bisnis Digital",
+    questions: [
+      "Bagaimana ketentuan kontrak mata kuliah di IRS Prodi Bisnis Digital?",
+      "Bagaimana kontrak mata kuliah pendidikan agama non-Islam?",
+      "Apa itu menu kelas gabungan?",
+    ],
+    followUps: [
+      "Mata kuliah apa yang bisa dikontrak angkatan saya?",
+      "Kapan jadwal IRS dan perwalian?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["irs", "kontrak mata kuliah", "kelas gabungan", "pendidikan agama", "dosen pa", "perwalian", "t-150"],
+    lead: "Berdasarkan Pengumuman T-150 Program Studi Bisnis Digital tentang IRS dan perwalian daring:",
+    points: [
+      "Pengisian IRS dan perwalian daring dilaksanakan 20 Juli–10 Agustus 2026 melalui https://student.upi.edu/.",
+      "Kontrak mata kuliah mengikuti daftar mata kuliah, tahun angkatan, dan kelas yang sudah ditetapkan.",
+      "Pendidikan Agama Kristen, Katolik, Hindu, Buddha, dan Khonghucu dikontrak melalui menu \"Kelas Gabungan\".",
+      "Dosen Pembimbing Akademik memeriksa kesesuaian mata kuliah yang dikontrak sebelum memberi persetujuan di https://siak.upi.edu/perwalian/.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan daftar mata kuliah per angkatan.",
+    answer:
+      "Berdasarkan Pengumuman T-150 Program Studi Bisnis Digital, IRS dan perwalian daring dilaksanakan 20 Juli sampai 10 Agustus 2026 melalui https://student.upi.edu/. Kontrak mata kuliah dilakukan sesuai daftar mata kuliah, tahun angkatan, dan kelas yang telah ditetapkan. Mata kuliah Pendidikan Agama Kristen, Katolik, Hindu, Buddha, dan Khonghucu dikontrak melalui menu Kelas Gabungan. Dosen Pembimbing Akademik memeriksa kembali kesesuaian mata kuliah yang dikontrak sebelum memberi persetujuan melalui https://siak.upi.edu/perwalian/.",
+    escalation:
+      "Hubungi Program Studi Bisnis Digital di bisnisdigital@upi.edu atau (0265) 331860 kalau mata kuliah tidak muncul di IRS.",
+    ...PENGUMUMAN_T150,
+  },
+
+  {
+    id: "mata-kuliah-ganjil-2026",
+    category: "Administrasi",
+    title: "Daftar mata kuliah semester ganjil 2026/2027 per angkatan Prodi Bisnis Digital",
+    questions: [
+      "Mata kuliah apa saja yang dikontrak semester ganjil 2026/2027?",
+      "Berapa total SKS yang dikontrak angkatan saya?",
+      "Mata kuliah apa untuk angkatan 2023?",
+    ],
+    followUps: [
+      "Bagaimana cara mengontrak mata kuliah agama?",
+      "Kapan jadwal IRS angkatan saya?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["mata kuliah", "sks", "angkatan", "semester ganjil", "daftar mata kuliah", "kontrak", "kurikulum", "irs", "skripsi"],
+    lead: "Daftar mata kuliah yang dapat dikontrak pada IRS semester ganjil 2026/2027 (Pengumuman T-150, tertanggal 14 Juli 2026):",
+    points: [
+      "Angkatan 2026 (20 SKS): Manajemen Keuangan (BD112, 4), Kewirausahaan Digital (BD113, 4), Landasan Pendidikan (DK300, 2), Sistem Informasi Bisnis Digital (BD229, 4), Pendidikan Pancasila (KU110, 2), Olahraga dan Kebugaran (KU108, 2), serta satu mata kuliah Pendidikan Agama (2).",
+      "Angkatan 2025 (23 SKS): Bahasa Inggris Bisnis (BD210, 4), Proyek Kreatif (TS403, 3), Merek Visual (BD220, 4), Sistem Basis Data (BD321, 4), Algoritma & Pemrograman (BD223, 4), Pemasaran Digital (BD231, 4).",
+      "Angkatan 2024 (23 SKS): Penambangan Data (BD421, 4), Bahasa Inggris Bisnis (BD210, 3), Praktek Penulisan Naskah Periklanan (BD425, 4), Kecerdasan Buatan (BD422, 4), Metodologi Penelitian (BD432, 4), Riset Pasar dan Analisis Data (BD431, 4).",
+      "Angkatan 2023 jalur skripsi (16 SKS): Strategi Bisnis (BD403, 3), Market Research (BD431, 3), Seminar Inisiasi Bisnis Digital (BD455, 4), Analisis dan Desain Sistem Informasi (BD411, 3), Visualisasi Data (BD444, 3).",
+      "Angkatan 2023 jalur artikel dan TTG (22 SKS): kelima mata kuliah di atas ditambah Skripsi (BD598, 6) dan Ujian Sidang (BD599, 0).",
+      "Angkatan 2020–2023 (6 SKS): Skripsi (BD598, 6) dan Ujian Sidang (BD599, 0).",
+    ],
+    table: {
+      title: "Total SKS per Angkatan",
+      columns: ["ANGKATAN", "TOTAL SKS"],
+      rows: [
+        ["2026", "20"],
+        ["2025", "23"],
+        ["2024", "23"],
+        ["2023 jalur skripsi", "16"],
+        ["2023 jalur artikel dan TTG", "22"],
+        ["2020–2023", "6"],
+      ],
+    },
+    closing: "Kalau kamu mau, saya bisa jelaskan cara kontrak mata kuliah agama di IRS.",
+    answer:
+      "Menurut Pengumuman T-150 tanggal 14 Juli 2026, mata kuliah yang dikontrak pada semester ganjil 2026/2027 berbeda tiap angkatan. Angkatan 2026 mengontrak 20 SKS: Manajemen Keuangan, Kewirausahaan Digital, Landasan Pendidikan, Sistem Informasi Bisnis Digital, Pendidikan Pancasila, Olahraga dan Kebugaran, dan satu mata kuliah Pendidikan Agama. Angkatan 2025 mengontrak 23 SKS: Bahasa Inggris Bisnis, Proyek Kreatif, Merek Visual, Sistem Basis Data, Algoritma & Pemrograman, dan Pemasaran Digital. Angkatan 2024 mengontrak 23 SKS: Penambangan Data, Bahasa Inggris Bisnis, Praktek Penulisan Naskah Periklanan, Kecerdasan Buatan, Metodologi Penelitian, dan Riset Pasar dan Analisis Data. Angkatan 2023 jalur skripsi mengontrak 16 SKS (Strategi Bisnis, Market Research, Seminar Inisiasi Bisnis Digital, Analisis dan Desain Sistem Informasi, Visualisasi Data), sedangkan jalur artikel dan TTG mengontrak 22 SKS karena ditambah Skripsi 6 SKS dan Ujian Sidang. Angkatan 2020 sampai 2023 mengontrak Skripsi dan Ujian Sidang, total 6 SKS.",
+    escalation:
+      "Hubungi dosen Pembimbing Akademik atau Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk memastikan daftar mata kuliah angkatan kamu.",
+    ...PENGUMUMAN_T150,
+  },
+
+  {
+    id: "cuti-akademik-batas",
+    category: "Administrasi",
+    title: "Batas akhir pengajuan cuti akademik semester ganjil 2026/2027",
+    questions: [
+      "Kapan batas akhir pengajuan cuti akademik semester ganjil 2026/2027?",
+      "Bagaimana kalau saya belum bayar UKT dan tidak mengajukan cuti?",
+      "Apa yang terjadi kalau tidak mengajukan cuti akademik?",
+    ],
+    followUps: [
+      "Kapan batas pembayaran UKT?",
+      "Siapa yang boleh mengajukan cuti?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["cuti akademik", "cuti", "batas akhir", "ukt", "mengundurkan diri", "status kemahasiswaan", "surat edaran 68", "masa studi"],
+    lead: "Berdasarkan Surat Edaran Nomor 68 Tahun 2026 (ditetapkan 26 Agustus 2026):",
+    points: [
+      "Mahasiswa yang belum membayar UKT semester ganjil 2026/2027 dan masih memiliki hak cuti serta masa studi diimbau mengajukan cuti akademik paling lambat 16 November 2026.",
+      "Kalau sampai tanggal itu tidak mengajukan cuti, statusnya dianggap mengundurkan diri.",
+      "Dasarnya Peraturan Rektor Nomor 38 Tahun 2026 pasal 68 ayat (1): tidak melakukan registrasi administrasi dan akademik serta tidak mengajukan cuti sesuai ketentuan dapat menyebabkan pembatalan status kemahasiswaan.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan jadwal pembayaran UKT.",
+    answer:
+      "Berdasarkan Surat Edaran Nomor 68 Tahun 2026, mahasiswa yang belum membayar UKT semester ganjil 2026/2027 dan masih memiliki hak cuti serta masa studi diimbau mengajukan cuti akademik paling lambat 16 November 2026. Kalau sampai tanggal itu tidak mengajukan cuti, statusnya dianggap mengundurkan diri. Ketentuan ini merujuk Peraturan Rektor Nomor 38 Tahun 2026 pasal 68 ayat (1), yang menyebut bahwa tidak melakukan registrasi administrasi dan akademik serta tidak mengajukan cuti akademik sesuai ketentuan dapat menyebabkan pembatalan status kemahasiswaan.",
+    escalation:
+      "Segera hubungi staf Program Studi Bisnis Digital atau petugas akademik untuk proses pengajuan cuti.",
+    ...EDARAN_68,
+  },
+
+  {
+    id: "ta-artikel-ttg-angkatan-2023",
+    category: "Tugas Akhir",
+    title: "Pengajuan dosen pembimbing tugas akhir jalur artikel ilmiah dan TTG angkatan 2023",
+    questions: [
+      "Bagaimana mengajukan dosen pembimbing tugas akhir angkatan 2023?",
+      "Kapan periode pengajuan dosen pembimbing angkatan 2023?",
+      "Berapa lama surat keterangan calon dosen pembimbing berlaku?",
+    ],
+    followUps: [
+      "Apa isi draf yang harus disiapkan?",
+      "Bagaimana kalau tidak ada kesepakatan dengan calon pembimbing?",
+      "Bagaimana mendapatkan buku bimbingan?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["pengajuan pembimbing", "angkatan 2023", "surat keterangan", "buku bimbingan", "periode pengajuan", "dosen pa"],
+    lead: "Berdasarkan Pengumuman T-45 (23 Februari 2026) untuk mahasiswa Prodi Bisnis Digital angkatan 2023:",
+    points: [
+      "Periode pengajuan: Periode I 2–31 Maret 2026 dan Periode II 1–31 Juli 2026.",
+      "Mahasiswa wajib berkonsultasi dengan Dosen PA dan menyiapkan draf sesuai jalur.",
+      "Draf jalur artikel memuat tema, latar belakang, rumusan masalah, tujuan dan manfaat, metodologi, nama jurnal yang dituju, dan daftar referensi.",
+      "Draf jalur TTG memuat tema, analisis situasi, manfaat produk, unsur kebaruan, langkah pengembangan, sasaran pengguna, dan daftar referensi.",
+      "Draf yang disetujui Dosen PA diajukan untuk Surat Keterangan Calon Dosen Pembimbing dari Ketua Prodi melalui https://forms.gle/c6KWapSm2uJDCEnb9.",
+      "Surat Keterangan berlaku 14 hari kerja; dalam waktu itu mahasiswa dan calon pembimbing menyepakati kelanjutan rencana penulisan.",
+      "Kalau sepakat, ajukan SK Direktur tentang Dosen Pembimbing melalui https://forms.gle/Ky1YPstjhBuE22xr6; kalau tidak sepakat, ajukan ulang calon pembimbing.",
+      "Selama bimbingan mahasiswa wajib membawa Buku Bimbingan, yang diperoleh dengan menyerahkan salinan SK Direktur ke Bagian Pendidikan dan Kemahasiswaan.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan ketentuan umum artikel ilmiah.",
+    answer:
+      "Berdasarkan Pengumuman T-45 tanggal 23 Februari 2026, mahasiswa angkatan 2023 mengajukan dosen pembimbing jalur Artikel Ilmiah atau TTG pada dua periode, yaitu 2 sampai 31 Maret 2026 dan 1 sampai 31 Juli 2026. Sebelum mengajukan, mahasiswa berkonsultasi dengan Dosen PA dan menyiapkan draf sesuai jalur. Draf yang disetujui diajukan untuk Surat Keterangan Calon Dosen Pembimbing dari Ketua Program Studi melalui formulir yang disediakan. Surat itu berlaku 14 hari kerja, dan dalam waktu tersebut mahasiswa serta calon pembimbing menyepakati kelanjutan rencana penulisan. Kalau sepakat, mahasiswa mengajukan SK Direktur tentang Dosen Pembimbing; kalau tidak, mahasiswa dapat mengajukan calon pembimbing lagi. Selama bimbingan, mahasiswa wajib membawa Buku Bimbingan yang diperoleh dengan menyerahkan salinan SK Direktur ke Bagian Pendidikan dan Kemahasiswaan.",
+    escalation:
+      "Hubungi Program Studi Bisnis Digital di bisnisdigital@upi.edu atau (0265) 331860 untuk kepastian periode dan tautan pengajuan.",
+    ...PENGUMUMAN_T45,
+  },
+
+  {
+    id: "msib-laporan-akhir",
+    category: "Administrasi",
+    title: "Laporan akhir MSIB Mandiri Prodi Bisnis Digital angkatan 2022",
+    questions: [
+      "Apa saja yang harus dikumpulkan setelah selesai MSIB?",
+      "Bagaimana ketentuan laporan MSIB Mandiri?",
+      "Apa kewajiban mahasiswa yang ikut magang MSIB?",
+    ],
+    followUps: [
+      "Bagaimana ketentuan dokumen PKS dan IA?",
+      "Apa kewajiban peserta magang setelah MSIB?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["msib", "magang", "studi independen", "laporan msib", "logbook", "pks", "ia", "implementation of agreement", "penilaian mentor", "angkatan 2022"],
+    lead: "Berdasarkan Surat Edaran Nomor 092 Tahun 2025 untuk mahasiswa Prodi Bisnis Digital angkatan 2022 (berlaku untuk MSIB Batch 8):",
+    points: [
+      "Mahasiswa melaksanakan MSIB di tempat yang sudah ditentukan dan melaporkan progres secara berkala kepada Dosen Pembimbing.",
+      "Dokumen akhir diunggah ke folder Dosen Pembimbing masing-masing dengan format Nama_NIM.",
+      "Dokumen yang diunggah: Laporan MSIB, Logbook, penilaian mentor (magang atau studi independen), serta dokumen PKS dan IA.",
+      "PKS dan IA dibuat rapi sesuai format; satu perusahaan dengan beberapa mahasiswa cukup satu PKS dan satu IA.",
+      "PKS dan IA dibuat dua rangkap, ditandatangani, dicap, dan dibubuhi materai; bagian yang disesuaikan ditandai highlight kuning.",
+      "Dokumen laporan PKS dan IA dibuat dua rangkap, ditandatangani, dan dicap.",
+      "Mahasiswa magang wajib menyiapkan PPT untuk presentasi ujian magang dan membuat collaboration content dengan Instagram @digitalbusiness.upi tentang aktivitas magang.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan ketentuan dokumen PKS dan IA.",
+    answer:
+      "Berdasarkan Surat Edaran Nomor 092 Tahun 2025 untuk mahasiswa angkatan 2022, mahasiswa melaksanakan MSIB di tempat yang sudah ditentukan dan melaporkan progres secara berkala kepada Dosen Pembimbing. Dokumen akhir diunggah ke folder Dosen Pembimbing masing-masing dengan format Nama_NIM, terdiri dari Laporan MSIB, Logbook, penilaian mentor, serta dokumen Perjanjian Kerjasama (PKS) dan Implementation of Agreement (IA). PKS dan IA dibuat rapi sesuai format, cukup satu set per perusahaan kalau ada beberapa mahasiswa, dibuat dua rangkap, ditandatangani, dicap, dan dibubuhi materai. Dokumen laporan PKS dan IA juga dibuat dua rangkap, ditandatangani, dan dicap. Mahasiswa yang mengikuti magang wajib menyiapkan PPT presentasi ujian magang dan membuat collaboration content dengan Instagram @digitalbusiness.upi.",
+    escalation:
+      "Hubungi Dosen Pembimbing MSIB atau Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk tautan format dan jadwal terbaru.",
+    ...EDARAN_MSIB,
+  },
+
+  {
+    id: "scopus-akses",
+    category: "Penulisan Ilmiah",
+    title: "Akses Scopus dan Scopus AI untuk sivitas akademika UPI",
+    questions: [
+      "Apakah mahasiswa UPI bisa mengakses Scopus?",
+      "Bagaimana cara mengakses Scopus dan Scopus AI?",
+    ],
+    followUps: [
+      "Bagaimana cara mencari jurnal untuk artikel tugas akhir?",
+      "Berapa minimal referensi dari artikel jurnal?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    keywords: ["scopus", "scopus ai", "database jurnal", "sitasi", "riset", "publikasi", "akses", "poster", "qr code"],
+    lead: "Berdasarkan pengumuman untuk sivitas akademika UPI:",
+    points: [
+      "Scopus dan Scopus AI sudah dapat diakses oleh seluruh sivitas akademika UPI.",
+      "Layanan ini membantu dosen, mahasiswa, dan peneliti mengakses database abstrak dan sitasi global secara lebih komprehensif.",
+      "Panduan tata cara akses ada di tautan https://view.highspot.com/viewer/46dc272ae0513703d8da5907a160e3db atau lewat QR Code pada poster pengumuman.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan ketentuan referensi artikel jurnal pada tugas akhir.",
+    answer:
+      "Berdasarkan pengumuman untuk sivitas akademika UPI, Scopus dan Scopus AI sudah dapat diakses oleh seluruh sivitas akademika UPI, termasuk dosen, mahasiswa, dan peneliti. Layanan ini memberi akses ke database abstrak dan sitasi global secara lebih komprehensif. Panduan lengkap tata cara akses tersedia di https://view.highspot.com/viewer/46dc272ae0513703d8da5907a160e3db atau melalui QR Code pada poster pengumuman.",
+    escalation:
+      "Hubungi perpustakaan atau unit layanan informasi UPI kalau akses Scopus bermasalah.",
+    ...INFO_SCOPUS,
   },
 ];

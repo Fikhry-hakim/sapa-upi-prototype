@@ -14,8 +14,21 @@ const categories = {
   "buku-panduan": "Pedoman Akademik & Tugas Akhir",
   "pedoman-karya-ilmiah": "Pedoman Akademik & Tugas Akhir",
   "pengumuman-t207": "Pengumuman",
+  "kalender-akademik-2026": "Kalender Akademik",
+  "edaran-48-2026": "Surat Edaran",
+  "pengumuman-t150": "Pengumuman",
+  "edaran-68-2026": "Surat Edaran",
+  "pengumuman-t45": "Pengumuman",
+  "edaran-092-2025": "Surat Edaran",
 };
-const sizeBytes = { "buku-panduan": 3756418, "pedoman-karya-ilmiah": 8775470, "pengumuman-t207": 312662 };
+const sizeBytes = { "buku-panduan": 3756418, "pedoman-karya-ilmiah": 8775470, "pengumuman-t207": 312662,
+  "kalender-akademik-2026": 800546,
+  "edaran-48-2026": 1008547,
+  "pengumuman-t150": 306230,
+  "edaran-68-2026": 974039,
+  "pengumuman-t45": 293651,
+  "edaran-092-2025": 328634,
+};
 
 const lines = [];
 for (const [id, doc] of Object.entries(documents)) {

@@ -143,13 +143,13 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
           <button type="button" id="viewer-zoom-in" aria-label="Perbesar">${ICONS.plus}</button>
         </div>
         <div class="viewer-mode" role="group" aria-label="Cara membaca">
-          <button type="button" id="viewer-mode-scroll" aria-pressed="true" title="Gulir terus ke bawah">Gulir</button>
-          <button type="button" id="viewer-mode-page" aria-pressed="false" title="Satu halaman per layar">Halaman</button>
+          <button type="button" id="viewer-mode-scroll" aria-pressed="true" title="Keep scrolling down">Scroll</button>
+          <button type="button" id="viewer-mode-page" aria-pressed="false" title="One page per screen">Page</button>
         </div>
-        <div class="viewer-pager" role="group" aria-label="Halaman">
-          <button type="button" id="viewer-prev" aria-label="Halaman sebelumnya">${ICONS.prev}</button>
-          <span>Halaman <strong id="viewer-page-now">1</strong> dari <span id="viewer-page-total">1</span></span>
-          <button type="button" id="viewer-next" aria-label="Halaman berikutnya">${ICONS.next}</button>
+        <div class="viewer-pager" role="group" aria-label="Page">
+          <button type="button" id="viewer-prev" aria-label="Previous page">${ICONS.prev}</button>
+          <span>Page <strong id="viewer-page-now">1</strong> of <span id="viewer-page-total">1</span></span>
+          <button type="button" id="viewer-next" aria-label="Next page">${ICONS.next}</button>
         </div>
         <div class="viewer-actions">
           <button type="button" class="viewer-action" id="viewer-copy">${ICONS.copy}<span>Salin</span></button>
