@@ -720,6 +720,7 @@ async function askBackend(question) {
 
 async function recordLocalAnswer(question, response) {
   if (!state.account || !API_URL) return;
+  const sentToken = state.sessionToken;
   const answer = answerText(response);
   if (!answer) return;
 
@@ -735,6 +736,7 @@ async function recordLocalAnswer(question, response) {
       }),
       signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
     });
+    if (dropExpiredSession(result, sentToken)) return;
     if (!result.ok) throw new Error(`record ${result.status}`);
     const data = await result.json();
     if (data.conversationId) state.conversationId = data.conversationId;
@@ -894,7 +896,9 @@ function openLocalChat(localId) {
 
 async function openConversation(id) {
   try {
+    const sentToken = state.sessionToken;
     const response = await fetch(`${API_URL}/conversations/${id}`, { headers: authHeaders() });
+    if (dropExpiredSession(response, sentToken)) return;
     if (!response.ok) {
       showToast("Percakapan tidak ditemukan.");
       return;
@@ -932,7 +936,9 @@ async function openConversation(id) {
 async function refreshHistory() {
   if (!state.account) return;
   try {
+    const sentToken = state.sessionToken;
     const response = await fetch(`${API_URL}/conversations`, { headers: authHeaders() });
+    if (dropExpiredSession(response, sentToken)) return;
     if (!response.ok) return;
     state.conversations = (await response.json()).conversations ?? [];
     renderRecent();
@@ -947,7 +953,9 @@ async function deleteCurrentConversation() {
     return;
   }
   const id = state.conversationId;
+  const sentToken = state.sessionToken;
   const response = await fetch(`${API_URL}/conversations/${id}`, { method: "DELETE", headers: authHeaders() });
+  if (dropExpiredSession(response, sentToken)) return;
   if (!response.ok) {
     showToast("Gagal menghapus percakapan.");
     return;
@@ -1087,9 +1095,11 @@ async function runSearch() {
     chats = state.conversations;
     if (term) {
       try {
+        const sentToken = state.sessionToken;
         const response = await fetch(`${API_URL}/conversations?q=${encodeURIComponent(term)}`, {
           headers: authHeaders(),
         });
+        if (dropExpiredSession(response, sentToken)) return;
         if (response.ok) chats = (await response.json()).conversations ?? [];
       } catch (error) {
         console.warn("Pencarian gagal:", error);
@@ -1586,7 +1596,9 @@ function openSettings(section = "profile") {
 
 async function exportHistory() {
   try {
+    const sentToken = state.sessionToken;
     const response = await fetch(`${API_URL}/conversations/export`, { headers: authHeaders() });
+    if (dropExpiredSession(response, sentToken)) return;
     if (!response.ok) throw new Error(`export ${response.status}`);
     const blob = new Blob([JSON.stringify(await response.json(), null, 2)], { type: "application/json" });
     const link = document.createElement("a");
@@ -1603,7 +1615,9 @@ async function exportHistory() {
 async function deleteAllHistory() {
   if (!window.confirm("Hapus semua riwayat percakapan? Ini tidak bisa dibatalkan.")) return;
   try {
+    const sentToken = state.sessionToken;
     const response = await fetch(`${API_URL}/conversations`, { method: "DELETE", headers: authHeaders() });
+    if (dropExpiredSession(response, sentToken)) return;
     if (!response.ok) throw new Error(`delete ${response.status}`);
     state.conversations = [];
     state.conversationId = null;
@@ -1624,9 +1638,12 @@ async function api(path, options = {}) {
   const headers = { ...authHeaders(), ...(options.headers ?? {}) };
   if (typeof options.body === "string" && !headers["content-type"]) headers["content-type"] = "application/json";
 
+  const sentToken = state.sessionToken;
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    // Pesan "sesi berakhir karena tidak aktif" dari server lebih jelas daripada "Perlu masuk".
+    dropExpiredSession(response, sentToken, /berakhir/i.test(data.error ?? "") ? data.error : undefined);
     const error = new Error(data.error || `API ${response.status}`);
     error.status = response.status;
     throw error;
@@ -1914,16 +1931,34 @@ async function logoutEverywhere() {
   signOutLocally("Keluar dari semua perangkat.");
 }
 
-function signOutLocally(message) {
+/**
+ * Server menjawab 401 untuk token yang masih disimpan browser: sesinya sudah tidak
+ * ada (kedaluwarsa, pengelola terlalu lama tidak aktif, atau dicabut dari perangkat
+ * lain). Sisa token dan akunnya dibuang dan pengguna kembali ke halaman utama sebagai
+ * pengunjung, bukan dibiarkan melihat halaman kosong "Perlu masuk" dengan nama akun
+ * yang seolah masih masuk. `sentToken` memastikan jawaban lama tidak menendang keluar
+ * sesi yang baru saja dibuat. Mengembalikan true kalau sesinya dibuang.
+ */
+function dropExpiredSession(response, sentToken, message) {
+  if (response.status !== 401 || !sentToken || state.sessionToken !== sentToken) return false;
+  // Layar yang tidak butuh akun (beranda, percakapan, Files) dibiarkan: pertanyaan tetap
+  // dijawab sebagai pengunjung, dan jawaban yang baru diterima tidak boleh lenyap hanya
+  // karena riwayatnya gagal direkam. Halaman yang butuh akun kembali ke beranda.
+  const keepScreen = ["home", "chat", "files"].includes(state.view);
+  signOutLocally(message || "Sesi berakhir. Masuk lagi untuk melanjutkan.", { keepScreen });
+  return true;
+}
+
+function signOutLocally(message, { keepScreen = false } = {}) {
   state.sessionToken = null;
   storeToken(null);
   writeAccountHint(null);
   state.account = null;
   state.conversations = [];
   state.conversationId = null;
-  refs.chatLog.replaceChildren();
+  if (!keepScreen) refs.chatLog.replaceChildren();
   renderAccount();
-  showView("home");
+  if (!keepScreen) showView("home");
   showToast(message);
 }
 
