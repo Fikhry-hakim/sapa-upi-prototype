@@ -305,7 +305,14 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     ui.sheet.style.width = `${Math.floor(viewport.width)}px`;
     ui.sheet.style.height = `${Math.floor(viewport.height)}px`;
 
-    const spans = await paintPage(page, viewport, ui.canvas, ui.text, stale);
+    let spans;
+    try {
+      spans = await paintPage(page, viewport, ui.canvas, ui.text, stale);
+    } catch (error) {
+      // Berpindah halaman atau mode membatalkan gambar yang sedang berjalan; itu bukan galat.
+      if (stale() || error?.name === "RenderingCancelledException") return;
+      throw error;
+    }
     if (!spans) return;
 
     markCitation(spans, state.page);
