@@ -91,3 +91,10 @@ test("documents are linked, never invented", () => {
     assert.ok(!entry.sourceUrl.startsWith("http"), `${entry.id} should link the published copy`);
   }
 });
+
+test("every topic offers at least one follow-up that is not just a request for contacts", () => {
+  // The composer's placeholder suggests the next question for the topic being discussed.
+  for (const entry of knowledgeBase) {
+    assert.ok(entry.followUps.some((q) => !/hubungi/i.test(q)), `${entry.id} has no usable follow-up`);
+  }
+});

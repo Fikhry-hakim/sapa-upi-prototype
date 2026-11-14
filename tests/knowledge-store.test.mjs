@@ -161,7 +161,7 @@ test("entries seeded from the bundled file keep every field the UI renders", () 
   const sample = knowledgeBase[0];
 
   for (const field of Object.keys(sample)) {
-    if (["questions", "keywords", "points", "followUps", "table"].includes(field)) continue;
+    if (["questions", "keywords", "points", "followUps", "table", "hints"].includes(field)) continue;
     assert.ok(field in rebuilt, `assembled entry is missing ${field}`);
   }
 });

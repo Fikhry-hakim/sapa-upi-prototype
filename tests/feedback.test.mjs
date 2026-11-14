@@ -61,7 +61,7 @@ test("the summary counts each rating and the share of good ones", async () => {
 
 test("every answer card offers the rating row, and it never sends the question", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
-  assert.match(app, /fillCard\(card, response, \{ feedback: true \}\)/);
+  assert.match(app, /fillCard\(card, response, \{ feedback: true, question \}\)/);
   const sender = app.slice(app.indexOf("function feedbackRow"), app.indexOf("function fillCard"));
   assert.ok(sender.includes("/feedback"));
   assert.ok(!/question/.test(sender.replace("entryId", "")), "the rating row has no access to the question text");

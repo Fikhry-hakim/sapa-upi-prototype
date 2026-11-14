@@ -141,6 +141,11 @@ export const knowledgeBase = [
       "Apa itu jalur Teknologi Tepat Guna?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Apa saja syarat sidang jalur skripsi?",
+      "Apa ketentuan jalur artikel ilmiah?",
+      "Bagaimana cara mengajukan tugas akhir jalur TTG?",
+    ],
     keywords: ["jalur", "tugas akhir", "skripsi", "artikel", "ttg", "teknologi tepat guna", "pilihan"],
     lead: "Prodi Bisnis Digital menyediakan tiga jalur penyelesaian tugas akhir:",
     points: [
@@ -171,6 +176,11 @@ export const knowledgeBase = [
       "Berapa IPK minimal yang diperlukan?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa SKS minimal untuk mengambil skripsi?",
+      "Bagaimana cara mengajukan topik skripsi?",
+      "Berapa jumlah dosen pembimbing skripsi?",
+    ],
     keywords: ["mengambil skripsi", "kontrak skripsi", "mulai skripsi", "sks", "ipk", "metode penelitian", "110 sks"],
     lead: "Ketentuan umum untuk dapat mengikuti penyelesaian skripsi:",
     points: [
@@ -199,6 +209,11 @@ export const knowledgeBase = [
       "Berapa lama jadwal seminar ditetapkan?",
       "Apa ketentuan berpakaian saat seminar proposal?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Dokumen apa saja untuk seminar proposal?",
+      "Berapa lama jadwal seminar ditetapkan?",
+      "Apa ketentuan berpakaian saat seminar proposal?",
     ],
     keywords: ["seminar proposal", "sempro", "daftar", "pendaftaran", "proposal", "berkas", "map kuning"],
     lead: "Persiapan dan pendaftaran seminar proposal skripsi:",
@@ -234,6 +249,11 @@ export const knowledgeBase = [
       "Berapa lama jadwal seminar ditetapkan?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Apa ketentuan berpakaian saat seminar proposal?",
+      "Siapa yang menguji seminar proposal?",
+      "Bagaimana cara mendaftar seminar proposal?",
+    ],
     keywords: ["pakaian", "berpakaian", "jas almamater", "seminar proposal", "pelaksanaan", "presentasi"],
     lead: "Ketentuan pelaksanaan seminar proposal skripsi:",
     points: [
@@ -265,6 +285,11 @@ export const knowledgeBase = [
       "Apa syarat dosen pembimbing?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa jumlah dosen pembimbing skripsi?",
+      "Berapa lama masa pembimbingan skripsi?",
+      "Bagaimana cara mengganti dosen pembimbing?",
+    ],
     keywords: ["pembimbing", "dosen pembimbing", "bimbingan", "sk pembimbing", "masa bimbingan"],
     lead: "Ketentuan pembimbingan skripsi di Prodi Bisnis Digital:",
     points: [
@@ -294,6 +319,11 @@ export const knowledgeBase = [
       "Siapa yang memutuskan penggantian pembimbing?",
       "Berapa jumlah dosen pembimbing skripsi?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Siapa yang memutuskan penggantian pembimbing?",
+      "Berapa lama keputusan penggantian pembimbing?",
+      "Berapa jumlah dosen pembimbing skripsi?",
     ],
     keywords: ["ganti pembimbing", "penggantian", "pindah pembimbing", "pembimbing", "tps"],
     lead: "Pembimbing dapat diganti berdasarkan Surat Keputusan, dengan mekanisme berikut:",
@@ -327,6 +357,11 @@ export const knowledgeBase = [
       "Berapa minimal referensi dari jurnal?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Di mana artikel skripsi harus dipublikasikan?",
+      "Berapa minimal referensi dari jurnal?",
+      "Apa saja syarat sidang jalur skripsi?",
+    ],
     keywords: ["publikasi", "artikel", "jurnal", "prosiding", "loa", "accepted", "referensi"],
     lead: "Ketentuan publikasi artikel bagi mahasiswa jalur skripsi:",
     points: [
@@ -357,6 +392,12 @@ export const knowledgeBase = [
       "Berapa batas maksimal similarity Turnitin?",
       "Bagaimana pelaksanaan ujian sidang?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Berapa skor TESOL minimal?",
+      "Berapa batas maksimal similarity Turnitin?",
+      "Berapa SKS pada transkrip untuk sidang?",
+      "Bagaimana cara mendaftar ujian sidang skripsi?",
     ],
     keywords: ["sidang", "daftar sidang", "persyaratan sidang", "ujian sidang", "berkas", "sias", "tesol", "turnitin"],
     lead: "Pendaftaran ujian sidang dilakukan melalui staf Prodi Bisnis Digital, lalu diteruskan ke bagian akademik. Pengajuan administrasi diakses melalui https://siak.upi.edu/sias. Persyaratannya:",
@@ -404,6 +445,11 @@ export const knowledgeBase = [
       "Apakah perlu membawa konsumsi saat sidang?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa jumlah dosen penguji sidang?",
+      "Apakah perlu membawa konsumsi saat sidang?",
+      "Apa saja kategori hasil ujian sidang?",
+    ],
     keywords: ["pelaksanaan sidang", "penguji", "majelis", "gratifikasi", "konsumsi", "sidang"],
     lead: "Ketentuan pelaksanaan ujian sidang:",
     points: [
@@ -436,6 +482,11 @@ export const knowledgeBase = [
       "Bagaimana pelaksanaan ujian sidang?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa lama waktu revisi setelah sidang?",
+      "Apa saja kategori hasil ujian sidang?",
+      "Bagaimana proses revisi skripsi?",
+    ],
     keywords: ["hasil sidang", "kelulusan", "yudisium", "revisi", "perbaikan", "lulus", "gagal"],
     lead: "Yudisium adalah prosesi peresmian kelulusan mahasiswa dalam menempuh sidang. Hasil ujian dikategorikan menjadi:",
     points: [
@@ -466,6 +517,11 @@ export const knowledgeBase = [
       "Apa saja persyaratan wisuda?",
       "Bagaimana proses pengecekan format?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Apa warna hardcover skripsi?",
+      "Berapa rangkap skripsi yang harus diserahkan?",
+      "Bagaimana proses pengecekan format?",
     ],
     keywords: ["cetak", "percetakan", "jilid", "hardcover", "format", "penggandaan", "skripsi"],
     lead: "Setelah revisi disahkan, skripsi melalui pengecekan format dan percetakan:",
@@ -498,6 +554,11 @@ export const knowledgeBase = [
       "Apa itu yudisium?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Ke mana skripsi dan CD diserahkan?",
+      "Bagaimana cara mendaftar wisuda?",
+      "Kapan jadwal wisuda UPI tahun 2026?",
+    ],
     keywords: ["wisuda", "pemberkasan", "wisudawan", "cd", "perpustakaan", "sias"],
     lead: "Pemberkasan wisuda dilakukan setelah skripsi disahkan:",
     points: [
@@ -527,6 +588,11 @@ export const knowledgeBase = [
       "Apa jenis artikel yang diakui?",
       "Bagaimana cara memeriksa akreditasi jurnal?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Jurnal apa yang diakui untuk jalur artikel?",
+      "Apa jenis artikel yang diakui?",
+      "Apa saja syarat sidang jalur artikel?",
     ],
     keywords: ["artikel", "jalur artikel", "jurnal", "sinta", "scopus", "internasional bereputasi", "setara skripsi"],
     lead: "Artikel ilmiah dapat diakui setara skripsi apabila memenuhi ketentuan berikut:",
@@ -562,6 +628,11 @@ export const knowledgeBase = [
       "Jurnal apa yang diakui?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Apakah literature review bisa dijadikan tugas akhir?",
+      "Apa jenis artikel yang diakui?",
+      "Jurnal apa yang diakui untuk jalur artikel?",
+    ],
     keywords: ["jenis artikel", "original research", "literature review", "kajian literatur", "penelitian empirik"],
     lead: "Mahasiswa dapat memilih salah satu dari dua jenis artikel ilmiah:",
     points: [
@@ -589,6 +660,11 @@ export const knowledgeBase = [
       "Berapa skor TESOL minimal?",
       "Bagaimana pelaksanaan ujian sidang?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Berapa kali bimbingan minimal untuk sidang jalur artikel?",
+      "Berapa skor TESOL minimal?",
+      "Apa saja syarat sidang jalur artikel?",
     ],
     keywords: ["sidang artikel", "syarat sidang", "jalur artikel", "loa", "bimbingan", "tesol"],
     lead: "Persyaratan ujian sidang bagi mahasiswa jalur artikel ilmiah:",
@@ -621,6 +697,12 @@ export const knowledgeBase = [
       "Berapa lama durasi presentasi seminar hasil?",
       "Di mana mendaftar seminar hasil?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan pendaftaran seminar hasil jalur artikel?",
+      "Berapa lama durasi presentasi seminar hasil?",
+      "Di mana mendaftar seminar hasil?",
+      "Apa saja berkas untuk seminar hasil?",
     ],
     keywords: ["seminar hasil", "semhas", "artikel", "pendaftaran", "jadwal", "sias", "dokumen"],
     lead: "Ketentuan pelaksanaan Seminar Hasil (Semhas) Tugas Akhir Jalur Artikel Ilmiah:",
@@ -659,6 +741,11 @@ export const knowledgeBase = [
       "Dokumen apa saja untuk seminar hasil?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Pakaian apa yang dikenakan saat semhas?",
+      "Kapan pendaftaran seminar hasil?",
+      "Berapa lama durasi presentasi seminar hasil?",
+    ],
     keywords: ["pakaian", "berpakaian", "seminar hasil", "semhas", "jas almamater", "dasi", "jilbab"],
     lead: "Ketentuan berpakaian pada Seminar Hasil Tugas Akhir Jalur Artikel:",
     points: [
@@ -686,6 +773,11 @@ export const knowledgeBase = [
       "Bagaimana cara mengajukan tugas akhir jalur TTG?",
       "Bagaimana penilaian karya TTG?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Karya seperti apa yang diakui sebagai TTG?",
+      "Bagaimana penilaian karya TTG?",
+      "Apa saja syarat sidang jalur TTG?",
     ],
     keywords: ["ttg", "teknologi tepat guna", "pkm", "lomba", "juara", "inovasi"],
     lead: "Karya Teknologi Tepat Guna adalah teknologi yang dirancang untuk masyarakat tertentu dengan memperhatikan aspek lingkungan, etika, budaya, sosial, politik, dan ekonomi. Karya yang diakui setara skripsi yaitu:",
@@ -716,6 +808,11 @@ export const knowledgeBase = [
       "Apa saja syarat sidang jalur TTG?",
       "Bagaimana penilaian karya TTG?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Berapa kali bimbingan jalur Teknologi Tepat Guna?",
+      "Bagaimana cara mengajukan tugas akhir jalur TTG?",
+      "Bagaimana penilaian karya TTG?",
     ],
     keywords: ["ttg", "pengajuan", "teknologi tepat guna", "bimbingan", "logbook", "verifikasi tema"],
     lead: "Mekanisme pengajuan dan pembimbingan tugas akhir jalur Teknologi Tepat Guna:",
@@ -749,6 +846,11 @@ export const knowledgeBase = [
       "Bagaimana penilaian karya TTG?",
       "Berapa skor TESOL minimal?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Apa saja berkas untuk sidang Teknologi Tepat Guna?",
+      "Berapa skor TESOL minimal?",
+      "Apa saja syarat sidang jalur TTG?",
     ],
     keywords: ["sidang ttg", "teknologi tepat guna", "syarat sidang", "laporan", "jurnal pengabdian"],
     lead: "Persyaratan ujian sidang jalur Teknologi Tepat Guna:",
@@ -784,6 +886,11 @@ export const knowledgeBase = [
       "Apakah karya TTG perlu HKI?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Apa kriteria penilaian Teknologi Tepat Guna?",
+      "Apakah karya TTG perlu HKI?",
+      "Apa saja syarat sidang jalur TTG?",
+    ],
     keywords: ["penilaian ttg", "kriteria", "hki", "invensi", "inovasi", "teknologi tepat guna"],
     lead: "Kriteria penilaian karya Teknologi Tepat Guna yang diakui setara skripsi:",
     points: [
@@ -816,6 +923,11 @@ export const knowledgeBase = [
       "Bagaimana ketentuan penjilidan skripsi?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa ukuran margin dan font skripsi?",
+      "Berapa ukuran kertas skripsi?",
+      "Bagaimana aturan penggunaan AI?",
+    ],
     keywords: ["format", "font", "margin", "spasi", "kertas", "times new roman", "a4", "penulisan"],
     lead: "Aturan teknis penulisan skripsi, tesis, dan disertasi di lingkungan UPI:",
     points: [
@@ -847,6 +959,11 @@ export const knowledgeBase = [
       "Apa saja persyaratan pendaftaran sidang?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Berapa persen kemiripan Turnitin yang diperbolehkan?",
+      "Apa sanksi tindakan plagiat?",
+      "Apa itu uji similaritas?",
+    ],
     keywords: ["similaritas", "kemiripan", "turnitin", "plagiat", "plagiarisme", "persen", "ithenticate"],
     lead: "Perlu diperhatikan: dua dokumen resmi menyebut angka yang berbeda, jadi pastikan dulu mana yang diberlakukan untuk jalurmu.",
     points: [
@@ -877,6 +994,11 @@ export const knowledgeBase = [
       "Apa sanksi tindakan plagiat?",
       "Bagaimana cara menyatakan penggunaan AI?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Apakah boleh pakai ChatGPT untuk tugas akhir?",
+      "Bagaimana cara menyatakan penggunaan AI?",
+      "Apa sanksi tindakan plagiat?",
     ],
     keywords: ["ai", "chatgpt", "kecerdasan buatan", "parafrase", "quillbot", "logbook", "orisinalitas"],
     lead: "Karya tulis ilmiah di UPI boleh berbantuan AI dengan ketentuan berikut:",
@@ -911,6 +1033,11 @@ export const knowledgeBase = [
       "Apa itu uji similaritas?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Apa hukuman jika terbukti plagiarisme?",
+      "Berapa batas maksimal similarity?",
+      "Bagaimana aturan penggunaan AI?",
+    ],
     keywords: ["sanksi", "plagiat", "plagiarisme", "hukuman", "permendiknas", "teguran"],
     lead: "UPI merujuk pada Permendiknas Nomor 17 Tahun 2010 tentang Pencegahan dan Penanggulangan Plagiat di Perguruan Tinggi.",
     points: [
@@ -940,6 +1067,11 @@ export const knowledgeBase = [
       "Siapa yang mengeluarkan ketentuan ini?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Siapa yang harus mengikuti pelatihan kewirausahaan?",
+      "Semester berapa wajib mengikuti pelatihan?",
+      "Apa saja persyaratan pendaftaran sidang?",
+    ],
     keywords: ["kewirausahaan", "pelatihan", "wajib", "syarat sidang", "penyelesaian studi", "imbauan"],
     lead: "Berdasarkan Edaran Direktur Nomor 5572 Tahun 2025 tentang Pengaturan Pelaksanaan Program Wajib Mahasiswa Sarjana sebagai Syarat Ujian Sidang dan Penyelesaian Studi:",
     points: [
@@ -968,6 +1100,13 @@ export const knowledgeBase = [
       "Kapan pengisian IRS dan perwalian?",
       "Kapan awal perkuliahan?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan batas pembayaran UKT mahasiswa lama?",
+      "Kapan kuliah umum dan pra perkuliahan?",
+      "Kapan masa perubahan rencana studi?",
+      "Kapan verifikasi data mahasiswa baru?",
+      "Kapan pengisian IRS dan perwalian?",
     ],
     keywords: ["kalender akademik", "registrasi", "ukt", "pembayaran", "verifikasi data", "mahasiswa baru", "prs", "perubahan rencana studi", "kuliah umum", "pra perkuliahan"],
     lead: "Jadwal registrasi menurut Kalender Akademik UPI 2026/2027 (semester ganjil / genap):",
@@ -1013,6 +1152,13 @@ export const knowledgeBase = [
       "Kapan jadwal registrasi?",
       "Kapan semester antara?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan UTS semester genap?",
+      "Kapan nilai UAS dimasukkan ke sistem?",
+      "Kapan perkuliahan semester genap dimulai?",
+      "Kapan nilai ujian ulang dimasukkan?",
+      "Kapan akhir perkuliahan semester ganjil?",
     ],
     keywords: ["kalender akademik", "awal perkuliahan", "akhir perkuliahan", "uts", "uas", "ujian tengah semester", "ujian akhir semester", "ujian ulang", "remedial", "pemasukan nilai", "jadwal ujian"],
     lead: "Jadwal perkuliahan dan ujian menurut Kalender Akademik UPI 2026/2027 (semester ganjil / genap):",
@@ -1060,6 +1206,12 @@ export const knowledgeBase = [
       "Kapan ujian akhir semester antara?",
       "Kapan jadwal UAS semester ganjil?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan pendaftaran semester antara?",
+      "Kapan pembayaran uang kuliah semester antara?",
+      "Kapan ujian akhir semester antara?",
+      "Kapan awal perkuliahan semester antara?",
     ],
     keywords: ["semester antara", "semester padat", "pendaftaran", "uang kuliah", "kalender akademik", "isian rencana studi"],
     lead: "Jadwal Semester Antara/Padat menurut Kalender Akademik UPI 2026/2027 (tahun 2026 / tahun 2027):",
@@ -1109,6 +1261,12 @@ export const knowledgeBase = [
       "Kapan jadwal sidang?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Kapan wisuda gelombang berikutnya?",
+      "Kapan Dies Natalis UPI?",
+      "Kapan pengukuhan guru besar?",
+      "Berkas apa saja untuk pemberkasan wisuda?",
+    ],
     keywords: ["jadwal wisuda", "gelombang", "wisuda", "dies natalis", "pengukuhan guru besar", "kalender akademik"],
     lead: "Jadwal wisuda, pengukuhan guru besar, dan Dies Natalis menurut Kalender Akademik UPI 2026/2027:",
     points: [
@@ -1142,6 +1300,12 @@ export const knowledgeBase = [
       "Kapan jadwal registrasi?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Kapan pendaftaran SNBT UPI?",
+      "Kapan pengumuman seleksi mandiri?",
+      "Kapan pengumuman SNBP?",
+      "Kapan UTBK dilaksanakan?",
+    ],
     keywords: ["penerimaan mahasiswa baru", "snbp", "snbt", "utbk", "seleksi mandiri", "pdss", "pengumuman kelulusan", "kalender akademik"],
     lead: "Jadwal penerimaan mahasiswa baru jenjang S1 menurut Kalender Akademik UPI 2026/2027:",
     points: [
@@ -1172,6 +1336,11 @@ export const knowledgeBase = [
       "Kapan pengajuan cuti akademik?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Kapan pembayaran BPP mahasiswa lama?",
+      "Kapan pengajuan cuti akademik?",
+      "Kapan pengisian IRS dan perwalian?",
+    ],
     keywords: ["ukt", "bpp", "pembayaran", "mahasiswa lama", "semester ganjil", "biaya pendidikan", "cuti akademik", "surat edaran 48"],
     lead: "Berdasarkan Surat Edaran Nomor 48 Tahun 2026 untuk semester ganjil tahun akademik 2026/2027:",
     points: [
@@ -1200,6 +1369,12 @@ export const knowledgeBase = [
       "Kapan masa Perubahan Rencana Studi?",
       "Kapan pembayaran UKT?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Di mana mengisi IRS dan perwalian daring?",
+      "Bagaimana kalau saya terlambat mengisi IRS?",
+      "Kapan masa Perubahan Rencana Studi?",
+      "Mata kuliah apa yang bisa dikontrak?",
     ],
     keywords: ["irs", "isian rencana studi", "perwalian", "daring", "siakku", "dosen pa", "pembimbing akademik", "prs", "angkatan", "kontrak kuliah"],
     lead: "Berdasarkan Surat Edaran Nomor 48 Tahun 2026, pengisian IRS dan perwalian daring semester ganjil 2026/2027 berlangsung 20 Juli–10 Agustus 2026:",
@@ -1245,7 +1420,12 @@ export const knowledgeBase = [
       "Kapan jadwal IRS dan perwalian?",
       "Siapa yang harus saya hubungi?",
     ],
-    keywords: ["irs", "kontrak mata kuliah", "kelas gabungan", "pendidikan agama", "dosen pa", "perwalian", "t-150"],
+    hints: [
+      "Apa itu menu kelas gabungan?",
+      "Bagaimana kontrak mata kuliah pendidikan agama non-Islam?",
+      "Kapan jadwal IRS dan perwalian?",
+    ],
+    keywords: ["irs", "kontrak mata kuliah", "mk", "kelas gabungan", "pendidikan agama", "dosen pa", "perwalian", "t-150"],
     lead: "Berdasarkan Pengumuman T-150 Program Studi Bisnis Digital tentang IRS dan perwalian daring:",
     points: [
       "Pengisian IRS dan perwalian daring dilaksanakan 20 Juli–10 Agustus 2026 melalui https://student.upi.edu/.",
@@ -1275,7 +1455,12 @@ export const knowledgeBase = [
       "Kapan jadwal IRS angkatan saya?",
       "Siapa yang harus saya hubungi?",
     ],
-    keywords: ["mata kuliah", "sks", "angkatan", "semester ganjil", "daftar mata kuliah", "kontrak", "kurikulum", "irs", "skripsi"],
+    hints: [
+      "Mata kuliah apa untuk angkatan 2023?",
+      "Berapa total SKS yang dikontrak angkatan saya?",
+      "Bagaimana cara mengontrak mata kuliah agama?",
+    ],
+    keywords: ["mata kuliah", "mk", "sks", "angkatan", "semester ganjil", "daftar mata kuliah", "kontrak", "kurikulum", "irs", "skripsi"],
     lead: "Daftar mata kuliah yang dapat dikontrak pada IRS semester ganjil 2026/2027 (Pengumuman T-150, tertanggal 14 Juli 2026):",
     points: [
       "Angkatan 2026 (20 SKS): Manajemen Keuangan (BD112, 4), Kewirausahaan Digital (BD113, 4), Landasan Pendidikan (DK300, 2), Sistem Informasi Bisnis Digital (BD229, 4), Pendidikan Pancasila (KU110, 2), Olahraga dan Kebugaran (KU108, 2), serta satu mata kuliah Pendidikan Agama (2).",
@@ -1319,6 +1504,11 @@ export const knowledgeBase = [
       "Siapa yang boleh mengajukan cuti?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Bagaimana kalau saya belum bayar UKT dan tidak mengajukan cuti?",
+      "Apa yang terjadi kalau tidak mengajukan cuti akademik?",
+      "Kapan batas pembayaran UKT?",
+    ],
     keywords: ["cuti akademik", "cuti", "batas akhir", "ukt", "mengundurkan diri", "status kemahasiswaan", "surat edaran 68", "masa studi"],
     lead: "Berdasarkan Surat Edaran Nomor 68 Tahun 2026 (ditetapkan 26 Agustus 2026):",
     points: [
@@ -1348,6 +1538,12 @@ export const knowledgeBase = [
       "Bagaimana kalau tidak ada kesepakatan dengan calon pembimbing?",
       "Bagaimana mendapatkan buku bimbingan?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan periode pengajuan dosen pembimbing angkatan 2023?",
+      "Berapa lama surat keterangan calon dosen pembimbing berlaku?",
+      "Bagaimana mendapatkan buku bimbingan?",
+      "Draf apa yang harus disiapkan untuk jalur artikel?",
     ],
     keywords: ["pengajuan pembimbing", "angkatan 2023", "surat keterangan", "buku bimbingan", "periode pengajuan", "dosen pa"],
     lead: "Berdasarkan Pengumuman T-45 (23 Februari 2026) untuk mahasiswa Prodi Bisnis Digital angkatan 2023:",
@@ -1383,6 +1579,11 @@ export const knowledgeBase = [
       "Apa kewajiban peserta magang setelah MSIB?",
       "Siapa yang harus saya hubungi?",
     ],
+    hints: [
+      "Bagaimana ketentuan dokumen PKS dan IA?",
+      "Apa kewajiban peserta magang setelah MSIB?",
+      "Bagaimana penilaian mentor MSIB?",
+    ],
     keywords: ["msib", "magang", "studi independen", "laporan msib", "logbook", "pks", "ia", "implementation of agreement", "penilaian mentor", "angkatan 2022"],
     lead: "Berdasarkan Surat Edaran Nomor 092 Tahun 2025 untuk mahasiswa Prodi Bisnis Digital angkatan 2022 (berlaku untuk MSIB Batch 8):",
     points: [
@@ -1414,6 +1615,11 @@ export const knowledgeBase = [
       "Bagaimana cara mencari jurnal untuk artikel tugas akhir?",
       "Berapa minimal referensi dari artikel jurnal?",
       "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Bagaimana cara mencari jurnal untuk artikel tugas akhir?",
+      "Berapa minimal referensi dari artikel jurnal?",
+      "Apakah mahasiswa UPI bisa mengakses Scopus AI?",
     ],
     keywords: ["scopus", "scopus ai", "database jurnal", "sitasi", "riset", "publikasi", "akses", "poster", "qr code"],
     lead: "Berdasarkan pengumuman untuk sivitas akademika UPI:",

@@ -300,3 +300,15 @@ test("new abbreviations from the 2026 documents find their topics", () => {
     assert.equal(result.best.entry.id, id, query);
   }
 });
+
+test("MK and IA are understood as mata kuliah and Implementation of Agreement", () => {
+  for (const [query, id] of [
+    ["mk apa saja untuk angkatan 2025", "mata-kuliah-ganjil-2026"],
+    ["bagaimana kontrak mk agama", "irs-prosedur-prodi"],
+    ["apa itu dokumen IA magang", "msib-laporan-akhir"],
+  ]) {
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.notEqual(result.status, "none", query);
+    assert.equal(result.best.entry.id, id, query);
+  }
+});

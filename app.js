@@ -7,6 +7,7 @@ import { createViewer } from "./viewer.js";
 import { createOwner } from "./owner.js";
 import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
 import { MAX_RECORD_MS, startRecording } from "./lib/recorder.js";
+import { pickSuggestion } from "./lib/suggest.js";
 
 /* ============================================================
    PRIMITIF
@@ -119,6 +120,7 @@ const state = {
   sessionChats: [], // percakapan sesi ini bagi yang belum masuk (tidak disimpan)
   activeLocalChat: null,
   scopeDocumentId: null,
+  suggestedQuestion: null, // pertanyaan lanjutan dari topik yang sedang dibahas, ditampilkan sebagai placeholder
   latestRequestId: 0,
   settingsSection: "profile",
   filesTab: "suggested",
@@ -605,7 +607,7 @@ function feedbackRow(response) {
   return row;
 }
 
-function fillCard(card, response, { feedback = false } = {}) {
+function fillCard(card, response, { feedback = false, question = "" } = {}) {
   const head = card.querySelector(".bot-head");
   const body = card.querySelector(".bot-body");
   head.querySelector(".pill")?.remove();
@@ -645,7 +647,10 @@ function fillCard(card, response, { feedback = false } = {}) {
     if (entry) renderReferences(entry, body, response.citation);
     else renderContactOnly(body, null); // Gemini menjawab tanpa satu topik kurasi yang jelas — tetap wajib ada kontak.
     followUps = renderFollowUps(response.followUpQuestions);
+    // Placeholder kotak ketik mengikuti topik yang sedang dibahas, bukan kalimat tetap.
+    setSuggestedQuestion(suggestionFor(entry, question));
   } else if (response.type === "suggestions") {
+    setSuggestedQuestion(null);
     body.append(paragraph(response.message));
     const list = make("div", "result-list");
     for (const suggestion of response.suggestions) {
@@ -658,6 +663,7 @@ function fillCard(card, response, { feedback = false } = {}) {
     body.append(list);
     renderContactOnly(body, null); // Beberapa topik cocok sekaligus: belum ada satu entri untuk dirujuk, tapi kontak tetap wajib ada.
   } else if (response.type === "fallback") {
+    setSuggestedQuestion(null);
     head.append(pill("Belum ada di dokumen"));
     body.append(paragraph(response.message));
     const box = make("div", "refs");
@@ -803,7 +809,7 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   if (requestId !== state.latestRequestId) return;
 
-  fillCard(card, response, { feedback: true });
+  fillCard(card, response, { feedback: true, question });
   scrollToEnd();
 
   trackLocalChat(question, response);
@@ -815,6 +821,7 @@ function resetChat() {
   state.latestRequestId += 1; // buang jawaban yang masih dalam perjalanan
   state.conversationId = null;
   state.activeLocalChat = null;
+  state.suggestedQuestion = null;
   clearScope();
   refs.chatLog.replaceChildren();
   refs.question.value = "";
@@ -838,9 +845,23 @@ function placeholderText() {
   if (state.scopeDocumentId) {
     return NARROW.matches ? "Tanyakan dokumen ini..." : "Tanyakan sesuatu tentang dokumen ini...";
   }
+  if (state.suggestedQuestion) {
+    return NARROW.matches ? state.suggestedQuestion : `Coba tanya: ${state.suggestedQuestion}`;
+  }
   return NARROW.matches
     ? "Tanyakan seputar pedoman..."
     : "Tanyakan informasi KRS, Jadwal, atau Pedoman Akademik...";
+}
+
+/** Saran pertanyaan untuk topik ini yang paling dekat dengan yang baru ditanyakan (lihat lib/suggest.js). */
+function suggestionFor(entry, asked) {
+  const local = knowledgeBase.find((e) => e.id === entry?.id) ?? entry;
+  return pickSuggestion(local, asked, { lang: getLang() });
+}
+
+function setSuggestedQuestion(question) {
+  state.suggestedQuestion = question;
+  refs.question.placeholder = placeholderText();
 }
 
 function setScope(documentId) {
@@ -888,18 +909,20 @@ function openLocalChat(localId) {
 
   state.latestRequestId += 1;
   state.activeLocalChat = localId;
+  setSuggestedQuestion(null);
   refs.chatLog.replaceChildren();
   showView("chat");
 
   for (const turn of chat.turns) {
     appendUserMessage(turn.question, turn.documentId);
     const { card } = createBotCard();
-    fillCard(card, turn.response);
+    fillCard(card, turn.response, { question: turn.question });
   }
   scrollToEnd();
 }
 
 async function openConversation(id) {
+  setSuggestedQuestion(null);
   try {
     const sentToken = state.sessionToken;
     const response = await fetch(`${API_URL}/conversations/${id}`, { headers: authHeaders() });
