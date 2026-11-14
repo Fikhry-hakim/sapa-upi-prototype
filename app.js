@@ -6,6 +6,7 @@ import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { createOwner } from "./owner.js";
 import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
+import { MAX_RECORD_MS, startRecording } from "./lib/recorder.js";
 
 /* ============================================================
    PRIMITIF
@@ -1994,7 +1995,81 @@ function stopVoice() {
   }
 }
 
+/* ---- Dikte lewat server: rekam di browser, ubah jadi teks lewat Worker (Whisper) ---- */
+
+/** Dikte Google tidak tersedia di browser Electron (termasuk panel aplikasi desktop) dan beberapa browser lain. */
+let serverVoice = !SpeechRecognition || /Electron|Claude\//.test(navigator.userAgent);
+let recorder = null;
+let recordTimer = null;
+
+const RECORD_ERRORS = {
+  NotAllowedError: "Akses mikrofon ditolak. Izinkan mikrofon untuk situs ini di pengaturan browser.",
+  NotFoundError: "Mikrofon tidak terdeteksi. Periksa apakah mikrofon terpasang dan tidak dipakai aplikasi lain.",
+};
+
+async function toggleServerVoice() {
+  if (recorder) {
+    await finishServerVoice();
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showToast("Browser ini belum mendukung dikte suara. Pakai Chrome atau Edge (versi desktop).");
+    return;
+  }
+  try {
+    recorder = await startRecording();
+  } catch (error) {
+    recorder = null;
+    showToast(RECORD_ERRORS[error?.name] ?? "Mikrofon belum bisa dipakai. Coba lagi sebentar.");
+    return;
+  }
+  refs.voiceButton.setAttribute("aria-pressed", "true");
+  showToast("Merekam... tekan mikrofon lagi kalau sudah selesai.");
+  recordTimer = setTimeout(finishServerVoice, MAX_RECORD_MS);
+}
+
+async function finishServerVoice() {
+  const active = recorder;
+  if (!active) return;
+  recorder = null;
+  clearTimeout(recordTimer);
+  refs.voiceButton.setAttribute("aria-pressed", "false");
+  const base = refs.question.value.trim();
+  try {
+    const { wav, peak } = await active.stop();
+    if (peak < 0.01) {
+      showToast("Suara tidak terdengar. Tekan mikrofon lagi dan bicara lebih dekat.");
+      return;
+    }
+    showToast("Mengubah suara jadi teks...");
+    const response = await fetch(`${API_URL}/transcribe?lang=${getLang()}`, {
+      method: "POST",
+      headers: { "content-type": "audio/wav" },
+      body: wav,
+      signal: AbortSignal.timeout(20_000),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      showToast(data.error || "Dikte suara gagal. Coba lagi.");
+      return;
+    }
+    if (!data.text) {
+      showToast("Suara tidak terdengar. Tekan mikrofon lagi dan bicara lebih dekat.");
+      return;
+    }
+    refs.question.value = [base, data.text].filter(Boolean).join(" ").slice(0, refs.question.maxLength);
+    resizeComposer();
+    refs.question.focus();
+  } catch {
+    showToast("Dikte suara gagal. Periksa koneksimu, lalu coba lagi.");
+  }
+}
+
 function toggleVoice() {
+  if (recorder || (serverVoice && API_URL)) {
+    toggleServerVoice();
+    return;
+  }
   if (recognition) {
     stopVoice();
     return;
@@ -2009,7 +2084,7 @@ function toggleVoice() {
   }
 
   const session = new SpeechRecognition();
-  session.lang = "id-ID";
+  session.lang = getLang() === "en" ? "en-US" : "id-ID";
   session.interimResults = true;
   session.continuous = false;
   session.maxAlternatives = 1;
@@ -2026,6 +2101,15 @@ function toggleVoice() {
   });
   session.addEventListener("error", (event) => {
     if (event.error === "aborted") return;
+    // Browser berbasis Electron (termasuk panel browser aplikasi desktop) tidak punya akses ke layanan
+    // suara Google, jadi kesalahannya selalu "network" walau internet lancar.
+    // Layanan suara Google tidak terjangkau: pindah ke dikte lewat server dan langsung mulai merekam.
+    if ((event.error === "network" || event.error === "service-not-allowed") && API_URL) {
+      serverVoice = true;
+      if (recognition === session) stopVoice();
+      toggleServerVoice();
+      return;
+    }
     showToast(VOICE_ERRORS[event.error] ?? `Input suara gagal (${event.error}). Coba lagi.`);
     if (recognition === session) stopVoice();
   });

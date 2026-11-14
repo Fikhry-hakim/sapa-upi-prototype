@@ -30,6 +30,7 @@ import {
   verifyPassword,
 } from "./password.js";
 import { checkFeedback, recordFeedback } from "./feedback.js";
+import { handleTranscribe } from "./transcribe.js";
 import { clientKey, hit } from "./rate-limit.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
@@ -579,6 +580,7 @@ export default {
       return json({ error: "Gunakan POST" }, { status: 405, headers: cors });
     }
     if (path === "/feedback") return handleFeedback(request, env, cors);
+    if (path === "/transcribe") return handleTranscribe(request, env, cors, json);
     return handleAsk(request, env, cors, ctx);
   },
 };

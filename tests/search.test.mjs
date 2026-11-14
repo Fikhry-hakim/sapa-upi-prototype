@@ -281,3 +281,22 @@ test("content search keeps finding the right topic for the knowledge base's own 
   assert.ok(anywhere / total >= 0.95, `topik benar ada di hasil hanya ${((100 * anywhere) / total).toFixed(1)}%`);
 });
 
+
+test("new abbreviations from the 2026 documents find their topics", () => {
+  const cases = [
+    ["kapan UTS", "kalender-perkuliahan-ujian"],
+    ["jadwal UAS semester ganjil", "kalender-perkuliahan-ujian"],
+    ["kapan PRS", "kalender-registrasi"], // both it and irs-perwalian-jadwal list the PRS dates
+    ["batas bayar UKT", "ukt-pembayaran-ganjil"],
+    ["kapan isi IRS angkatan 2024", "irs-perwalian-jadwal"],
+    ["kapan pengisian KRS", "irs-perwalian-jadwal"],
+    ["laporan akhir MSIB apa saja", "msib-laporan-akhir"],
+    ["format PKS dan IA", "msib-laporan-akhir"],
+    ["kapan SNBT", "kalender-penerimaan-s1"],
+  ];
+  for (const [query, id] of cases) {
+    const result = searchKnowledgeBase(query, knowledgeBase);
+    assert.notEqual(result.status, "none", query);
+    assert.equal(result.best.entry.id, id, query);
+  }
+});
