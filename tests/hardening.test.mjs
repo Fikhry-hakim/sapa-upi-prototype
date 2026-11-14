@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import worker from "../worker/src/index.js";
+import { passageEntryFor } from "../worker/src/documents.js";
 
 const env = (db = null) => ({ sapa_upi_kb: db, ALLOWED_ORIGINS: "https://app.example" });
 const call = (path, init, db) => worker.fetch(new Request(`https://api.example${path}`, init), env(db), {});
@@ -163,3 +164,35 @@ test("a flooding client is stopped before the database is touched; a broken gate
   assert.equal((await get(withGate(async () => { throw new Error("gerbang error"); }))).status, 200, "gerbang rusak harus fail-open");
   assert.equal((await get(env(db))).status, 200, "tanpa binding, gerbang dilewati");
 });
+
+/* ---------- klik-angka pada jawaban dari dokumen unggahan ---------- */
+
+function passageDb(rows, doc) {
+  return {
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        first: async () => (/FROM passages/.test(sql) ? rows.find((r) => r.document_id === args[0] && r.page === args[1]) ?? null : null),
+      }),
+      all: async () => ({ results: doc ? [doc] : [] }),
+    }),
+  };
+}
+
+test("a pinned passage id returns that page for an active document, and nothing for anything else", async () => {
+  const db = passageDb([{ document_id: "pedoman-aaa111", page: 3, body: "Isi halaman tiga yang cukup panjang untuk dibaca." }], docRow("pedoman-aaa111", "ready"));
+
+  const entry = await passageEntryFor(db, "p:pedoman-aaa111:3", { origin: "https://api.example" });
+  assert.equal(entry.id, "p:pedoman-aaa111:3");
+  assert.equal(entry.passage.page, 3);
+  assert.equal(entry.sourceUrl, "https://api.example/files/pedoman-aaa111");
+
+  assert.equal(await passageEntryFor(db, "p:pedoman-aaa111:4"), null, "halaman yang tidak ada");
+  assert.equal(await passageEntryFor(db, "p:lain-bbb222:3"), null, "dokumen yang tidak ada");
+  for (const bad of ["sidang-syarat-skripsi", "p:../../etc/passwd:3", "p:pedoman-aaa111:3; DROP TABLE documents", "p:pedoman-aaa111:x", "", null, 42]) {
+    assert.equal(await passageEntryFor(db, bad), null, `harus ditolak: ${bad}`);
+  }
+
+  const inactive = passageDb([{ document_id: "pedoman-aaa111", page: 3, body: "x".repeat(30) }], docRow("pedoman-aaa111", "expired"));
+  assert.equal(await passageEntryFor(inactive, "p:pedoman-aaa111:3"), null, "dokumen tidak berlaku tidak boleh dipakai menjawab");
+});
+

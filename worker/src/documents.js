@@ -387,6 +387,53 @@ export function publicEntry(entry) {
   return rest;
 }
 
+/** Entri sementara dari satu halaman dokumen unggahan, bentuknya sama dengan topik biasa. */
+function toPassageEntry(doc, row, origin) {
+  return {
+    id: `p:${doc.id}:${row.page}`,
+    category: "Dokumen",
+    title: `${doc.title}, hal. ${row.page}`,
+    questions: [],
+    keywords: [],
+    followUps: [],
+    points: [],
+    lead: "",
+    closing: "",
+    answer: row.body.slice(0, 1800),
+    sourceTitle: doc.title,
+    sourceOwner: doc.owner,
+    validPeriod: doc.period,
+    updatedAt: doc.updatedAt,
+    sourceRef: doc.reference,
+    sourceUrl: doc.file?.startsWith("/") ? `${origin}${doc.file}` : doc.file,
+    escalation: "Hubungi pengelola dokumen untuk memastikan isi dan masa berlakunya.",
+    passage: { documentId: doc.id, page: row.page, highlight: highlightFor(row.body), document: doc },
+  };
+}
+
+/**
+ * Halaman yang dituju sebuah id "p:<dokumen>:<halaman>", untuk klik-angka pada jawaban yang
+ * berasal dari dokumen unggahan: penjelasannya harus kembali ke halaman yang sama. Hanya
+ * dokumen yang sedang dipakai menjawab yang diterima; id yang bentuknya tidak sah, atau
+ * dokumen yang dimatikan, dianggap tidak ada.
+ */
+export async function passageEntryFor(db, topicId, { origin = "" } = {}) {
+  const match = /^p:([\w-]+):(\d{1,5})$/.exec(String(topicId ?? ""));
+  if (!db || !match) return null;
+  try {
+    const doc = (await listDocuments(db)).find((item) => item.id === match[1] && isUsable(item));
+    if (!doc) return null;
+    const row = await db
+      .prepare("SELECT document_id, page, body FROM passages WHERE document_id = ? AND page = ?")
+      .bind(doc.id, Number(match[2]))
+      .first();
+    return row ? toPassageEntry(doc, row, origin) : null;
+  } catch (error) {
+    console.warn("passages: gagal membaca halaman —", error.message);
+    return null;
+  }
+}
+
 /**
  * Halaman dokumen unggahan yang paling cocok dengan pertanyaan, dalam bentuk
  * topik sementara yang bisa dipakai pembangun prompt seperti topik biasa.
@@ -421,26 +468,7 @@ export async function searchPassages(db, question, { limit = 3, origin = "" } = 
     if (!doc || seen.has(key)) continue;
     seen.add(key);
 
-    entries.push({
-      id: `p:${key}`,
-      category: "Dokumen",
-      title: `${doc.title}, hal. ${row.page}`,
-      questions: [],
-      keywords: [],
-      followUps: [],
-      points: [],
-      lead: "",
-      closing: "",
-      answer: row.body.slice(0, 1800),
-      sourceTitle: doc.title,
-      sourceOwner: doc.owner,
-      validPeriod: doc.period,
-      updatedAt: doc.updatedAt,
-      sourceRef: doc.reference,
-      sourceUrl: doc.file?.startsWith("/") ? `${origin}${doc.file}` : doc.file,
-      escalation: "Hubungi pengelola dokumen untuk memastikan isi dan masa berlakunya.",
-      passage: { documentId: doc.id, page: row.page, highlight: highlightFor(row.body), document: doc },
-    });
+    entries.push(toPassageEntry(doc, row, origin));
     if (entries.length >= limit) break;
   }
   return entries;

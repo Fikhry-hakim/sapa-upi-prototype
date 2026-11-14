@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { knowledgeBase } from "../data/knowledge-base.js";
-import { normalizeText, searchKnowledgeBase, stem } from "../lib/search.js";
+import { normalizeText, searchByContent, searchKnowledgeBase, stem } from "../lib/search.js";
+import { clarifyQuestion, isClarifiable, splitSentences } from "../lib/clarify.js";
 
 test("normalizeText removes punctuation, casing, and repeated whitespace", () => {
   assert.equal(
@@ -239,3 +240,43 @@ test("a known limitation: a typo and a missing space together still defeat the m
   // Covered here, not silently "fixed" by guessing at fuzzy matching tonight.
   assert.equal(searchKnowledgeBase("apakah pedoma Karyatulis sudah ada di file sapa", knowledgeBase).status, "none");
 });
+
+/* ---------- kalimat jawaban yang diklik: dicari lewat isi entri ---------- */
+
+test("a sentence from an answer is traced back to the topic whose text contains it", () => {
+  const ids = (sentence) => searchByContent(sentence, knowledgeBase).map((entry) => entry.id);
+
+  // Kalimat yang dulu terseret ke "skripsi-syarat-mengambil" oleh kata-kata umum.
+  assert.ok(ids("Transkrip dengan jumlah SKS 144 sampai 152 dan tidak ada mata kuliah bernilai E").includes("sidang-syarat-skripsi"));
+  // Parafrase AI, bukan kalimat persis dari knowledge base.
+  assert.ok(ids("Mengajukan diri kepada dosen pembimbing akademik dengan membawa deskripsi singkat invensi atau ide kamu.").includes("ttg-pengajuan"));
+  assert.ok(ids("Font yang dipakai adalah Times New Roman ukuran 12 untuk isi utama").includes("format-penulisan"));
+});
+
+test("a sentence too short or unrelated to any topic finds nothing, so the caller falls back", () => {
+  assert.deepEqual(searchByContent("Persyaratannya:", knowledgeBase), []);
+  assert.deepEqual(searchByContent("", knowledgeBase), []);
+  assert.deepEqual(searchByContent("Besok cuaca cerah dan langit biru sekali", knowledgeBase), []);
+  assert.deepEqual(searchByContent("kalimat apa saja", []), []);
+});
+
+test("content search keeps finding the right topic for the knowledge base's own sentences", () => {
+  // Penjaga akurasi: kalau mengedit knowledge base atau mesin pencarian membuat angka ini
+  // turun jauh, klik-angka mulai nyasar ke topik lain lagi. Cara lama hanya ~49%.
+  let total = 0;
+  let first = 0;
+  let anywhere = 0;
+  for (const entry of knowledgeBase) {
+    const sentences = [entry.lead, ...(entry.points ?? [])].flatMap((text) => splitSentences(text)).filter(isClarifiable);
+    for (const sentence of sentences) {
+      total += 1;
+      const hits = searchByContent(sentence, knowledgeBase);
+      if (hits[0]?.id === entry.id) first += 1;
+      if (hits.some((hit) => hit.id === entry.id)) anywhere += 1;
+    }
+  }
+  assert.ok(total > 100, `terlalu sedikit kalimat untuk diuji: ${total}`);
+  assert.ok(first / total >= 0.85, `topik benar di peringkat 1 hanya ${((100 * first) / total).toFixed(1)}%`);
+  assert.ok(anywhere / total >= 0.95, `topik benar ada di hasil hanya ${((100 * anywhere) / total).toFixed(1)}%`);
+});
+

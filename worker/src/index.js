@@ -1,11 +1,11 @@
 import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base.js";
-import { searchKnowledgeBase } from "../../lib/search.js";
+import { searchByContent, searchKnowledgeBase } from "../../lib/search.js";
 import { clarifiedSentence, prioritizeTopic } from "../../lib/clarify.js";
 import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
 import { classifyOutcome, recordEvent } from "./events.js";
-import { publicEntry, searchPassages, unusableFiles } from "./documents.js";
+import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import {
   authenticate,
@@ -78,12 +78,19 @@ function json(body, { status = 200, headers = {} } = {}) {
  * Mengembalikan juga status dan skor pencocokan, karena dashboard perlu tahu
  * apakah rujukannya kuat, tipis, atau berimbang antara beberapa topik.
  */
-function retrieve(question, knowledgeBase, { scope = null, excluded = new Set() } = {}) {
+function retrieve(question, knowledgeBase, { scope = null, excluded = new Set(), byContent = false } = {}) {
   // A reader can ask about one document only. The scope narrows what may be
   // retrieved; it never adds to it, and nothing about the reader is involved.
   // Documents a manager switched off are excluded for everyone, the same way.
   let pool = knowledgeBase.filter((entry) => !entry.sourceUrl || !excluded.has(entry.sourceUrl));
   if (scope) pool = pool.filter((entry) => entry.sourceUrl === scope);
+
+  // Kalimat jawaban yang diklik dicari lewat isi entri lebih dulu; pencarian pertanyaan
+  // biasa hanya cadangan kalau tidak ada isi yang cukup cocok.
+  if (byContent) {
+    const hits = searchByContent(question, pool);
+    if (hits.length) return { entries: hits.slice(0, MAX_CONTEXT_ENTRIES), status: "match", score: null };
+  }
 
   const result = searchKnowledgeBase(question, pool);
   if (result.status === "empty" || result.status === "none") {
@@ -149,6 +156,7 @@ async function handleAsk(request, env, cors, ctx) {
   const found = retrieve(clicked ?? question, knowledgeBase, {
     scope: typeof scope === "string" ? scope : null,
     excluded,
+    byContent: Boolean(clicked),
   });
   let { entries } = found;
   let evidence = { status: found.status, score: found.score };
@@ -168,6 +176,15 @@ async function handleAsk(request, env, cors, ctx) {
   // Nothing in the curated topics: look through the pages of documents a
   // manager uploaded and validated. Curated topics always take precedence.
   let fromPassage = false;
+  // Klik-angka pada jawaban dari dokumen unggahan: kembali ke halaman yang sama.
+  if (clicked && typeof topic === "string" && topic.startsWith("p:")) {
+    const pinned = await passageEntryFor(db, topic.slice(0, 80), { origin: new URL(request.url).origin });
+    if (pinned) {
+      entries = [pinned, ...entries].slice(0, MAX_CONTEXT_ENTRIES);
+      fromPassage = true;
+      evidence = { status: "match", score: null };
+    }
+  }
   if (!entries.length && !scope) {
     entries = await searchPassages(db, question, { limit: MAX_CONTEXT_ENTRIES, origin: new URL(request.url).origin });
     fromPassage = entries.length > 0;

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { knowledgeBase } from "../data/knowledge-base.js";
 import { createChatResponse } from "../lib/chat-engine.js";
+import { clarifyQuestion } from "../lib/clarify.js";
 
 test("known question returns a sourced answer response", () => {
   const response = createChatResponse("Apa saja persyaratan pendaftaran sidang?", knowledgeBase);
@@ -58,3 +59,17 @@ test("empty input returns an empty response without generated content", () => {
     message: "Tuliskan pertanyaan terlebih dahulu.",
   });
 });
+
+test("the offline answer to a clicked sentence stays on the topic that sentence came from", () => {
+  const question = clarifyQuestion(7, "Transkrip dengan jumlah SKS 144 sampai 152 dan tidak ada mata kuliah bernilai E");
+
+  // Tanpa petunjuk: dicari lewat isi entrinya.
+  assert.equal(createChatResponse(question, knowledgeBase).entry.id, "sidang-syarat-skripsi");
+  // Dengan petunjuk topik jawaban yang dibaca, topik itu didahulukan walau kalimatnya ada di dua entri.
+  assert.equal(createChatResponse(question, knowledgeBase, { topic: "artikel-syarat-sidang" }).entry.id, "artikel-syarat-sidang");
+  // Kalimat generik yang tidak bisa dilacak: topik jawabannya dipakai, bukan "belum menemukan".
+  const generic = createChatResponse(clarifyQuestion(2, "Persyaratannya:"), knowledgeBase, { topic: "sidang-syarat-skripsi" });
+  assert.equal(generic.type, "answer");
+  assert.equal(generic.entry.id, "sidang-syarat-skripsi");
+});
+

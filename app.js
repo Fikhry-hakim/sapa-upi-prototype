@@ -351,9 +351,9 @@ function clarifyMarker(number, sentence, topic) {
   return button;
 }
 
-/** Id topik kurasi dari sebuah jawaban; topik dari dokumen unggahan (id "p:...") tidak dipakai. */
+/** Id topik sebuah jawaban (topik kurasi, atau "p:<dokumen>:<halaman>" untuk dokumen unggahan), dikirim saat angkanya diklik. */
 function topicOf(entry) {
-  return entry?.id && !String(entry.id).startsWith("p:") ? entry.id : null;
+  return entry?.id ? String(entry.id) : null;
 }
 
 /** Teks dengan tautan, tiap kalimatnya diikuti nomor yang bisa diklik. Penghitung dipakai bersama satu jawaban. */
@@ -795,7 +795,7 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   let answeredLocally = false;
   if (!response) {
-    response = createChatResponse(question, scopedEntries());
+    response = createChatResponse(question, scopedEntries(), { topic });
     answeredLocally = true;
   }
 
