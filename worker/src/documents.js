@@ -376,6 +376,18 @@ export function highlightFor(text) {
 }
 
 /**
+ * Entri dalam bentuk yang boleh dikirim ke pembaca mana pun. `passage` memuat
+ * objek dokumen utuh (termasuk email pengunggah dan pemvalidasi) dan hanya
+ * dipakai di server; rujukan untuk pembaca sudah dikirim terpisah lewat
+ * `citation`, yang isinya dipilih satu per satu.
+ */
+export function publicEntry(entry) {
+  if (!entry) return entry;
+  const { passage, ...rest } = entry;
+  return rest;
+}
+
+/**
  * Halaman dokumen unggahan yang paling cocok dengan pertanyaan, dalam bentuk
  * topik sementara yang bisa dipakai pembangun prompt seperti topik biasa.
  */

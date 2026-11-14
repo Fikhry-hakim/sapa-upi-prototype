@@ -1529,7 +1529,7 @@ function openPasswordDialog() {
     "modal-intro",
     account.hasPassword
       ? "Kosongkan kata sandi saat ini hanya jika kamu baru saja masuk dengan Google (dalam 10 menit terakhir)."
-      : "Dengan kata sandi, kamu bisa masuk memakai email UPI tanpa Google. Minimal 10 karakter.",
+      : "Dengan kata sandi, kamu bisa masuk memakai email UPI tanpa Google. Minimal 10 karakter. Kamu harus baru saja masuk dengan Google (dalam 10 menit terakhir); kalau belum, keluar lalu masuk lagi.",
   );
   const message = make("p", "modal-message");
   message.hidden = true;

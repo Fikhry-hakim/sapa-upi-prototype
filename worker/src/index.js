@@ -4,7 +4,7 @@ import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } fr
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
 import { classifyOutcome, recordEvent } from "./events.js";
-import { searchPassages, unusableFiles } from "./documents.js";
+import { publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import {
   authenticate,
@@ -44,6 +44,8 @@ const MAX_QUESTION_LENGTH = 300;
 const ASK_PER_MINUTE = 20;
 const LOGIN_PER_TEN_MINUTES = 30;
 const FEEDBACK_PER_TEN_MINUTES = 60;
+// Per pengguna, bukan per IP: banyak mahasiswa berbagi satu alamat di WiFi kampus.
+const RECORD_PER_MINUTE = 30;
 const MAX_ANSWER_LENGTH = 4000;
 const MAX_CONTEXT_ENTRIES = 3;
 
@@ -57,6 +59,8 @@ function corsHeaders(request, env) {
     "Access-Control-Allow-Headers": "content-type, authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     Vary: "Origin",
+    // Cegah browser menebak-nebak tipe isi (mis. menjalankan PDF/JSON sebagai HTML).
+    "X-Content-Type-Options": "nosniff",
   };
 }
 
@@ -216,7 +220,7 @@ async function handleAsk(request, env, cors, ctx) {
         source: "llm",
         answer,
         // Facts stay from the knowledge base so they can't be hallucinated.
-        entry: top,
+        entry: publicEntry(top),
         followUps: top?.followUps ?? [],
         conversationId: savedTo,
         citation: citation
@@ -305,6 +309,15 @@ async function handleAuth(request, env, cors, path) {
     // Sesi yang tertinggal di perangkat lain tidak cukup untuk mengambil alih.
     const existing = await storedHashFor(db, user.id);
     const fresh = await isFreshGoogleSession(db, request);
+    // Memasang kata sandi untuk pertama kali juga menuntut Google yang baru: sesi
+    // yang sudah lama (atau dicuri) tidak boleh dipakai menanam jalan masuk
+    // permanen yang tetap hidup setelah semua sesi dicabut.
+    if (!existing && !fresh) {
+      return json(
+        { error: "Untuk memasang kata sandi, keluar lalu masuk lagi dengan Google (maksimal 10 menit lalu), kemudian coba lagi." },
+        { status: 403, headers: cors },
+      );
+    }
     if (existing && !fresh) {
       const ip = await clientKey(request);
       if (await isLockedOut(db, user.email, ip)) {
@@ -393,6 +406,15 @@ async function handleConversations(request, env, cors, path) {
   // their own history and nobody else's; answer_source marks it as offline so
   // it is never mistaken for something the model wrote.
   if (path === "/conversations/record" && request.method === "POST") {
+    // Tanpa batas, satu akun bisa memenuhi basis data dengan tulisan tanpa henti.
+    const limited = await hit(db, `record:${user.id}`, { limit: RECORD_PER_MINUTE, windowMs: 60_000 });
+    if (!limited.allowed) {
+      return json(
+        { error: "Terlalu banyak permintaan. Coba lagi sebentar." },
+        { status: 429, headers: { ...cors, "Retry-After": String(limited.retryAfter) } },
+      );
+    }
+
     let body;
     try {
       body = await request.json();
@@ -482,7 +504,27 @@ export default {
     const cors = corsHeaders(request, env);
     const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
 
+    // Sesi, riwayat percakapan, dan data pengelola tidak boleh tersimpan di cache
+    // bersama (proxy, perangkat umum). Rute berkas mengatur cache-nya sendiri.
+    if (/^\/(auth|conversations|admin)(\/|$)/.test(path)) cors["Cache-Control"] = "no-store";
+
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+
+    // Banjir permintaan ditolak di sini, sebelum ada tulisan ke D1. Kalau gerbangnya
+    // tidak terpasang atau error, layanan jalan terus (fail-open), seperti rate-limit.js.
+    if (env.FLOOD_GATE?.limit) {
+      try {
+        const { success } = await env.FLOOD_GATE.limit({ key: await clientKey(request) });
+        if (!success) {
+          return json(
+            { error: "Terlalu banyak permintaan. Coba lagi sebentar." },
+            { status: 429, headers: { ...cors, "Retry-After": "60" } },
+          );
+        }
+      } catch (error) {
+        console.warn("flood-gate:", String(error).slice(0, 120));
+      }
+    }
 
     if (path.startsWith("/auth/")) return handleAuth(request, env, cors, path);
     if (path.startsWith("/conversations")) return handleConversations(request, env, cors, path);

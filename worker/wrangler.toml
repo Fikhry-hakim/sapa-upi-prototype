@@ -15,7 +15,9 @@ AI_FALLBACK_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
 
 
 # Origin yang boleh memanggil API ini (dipisah koma).
-ALLOWED_ORIGINS = "https://fikhry-hakim.github.io,http://localhost:4173"
+# Hanya situs produksi. Untuk uji lokal terhadap API ini, tambahkan sementara
+# ",http://localhost:4173" lalu deploy, dan buang lagi sesudahnya.
+ALLOWED_ORIGINS = "https://fikhry-hakim.github.io"
 
 # Masuk dengan akun Google. Client ID bukan rahasia; client secret adalah.
 # Kosongkan GOOGLE_CLIENT_ID untuk mematikan login sepenuhnya.
@@ -48,3 +50,16 @@ id = "f36a335dd00842fbb809ff3875f1e459"
 # Dipakai otomatis; hapus blok ini untuk mematikannya.
 [ai]
 binding = "AI"
+
+# Gerbang awal anti-banjir: menolak klien yang membanjiri sebelum menyentuh D1, sehingga
+# kuota tulis D1 (100 ribu/hari di akun gratis) tidak habis oleh penyerang. Dihitung per
+# lokasi Cloudflare dan per klien (hash IP), tanpa tulisan basis data. Angkanya sengaja
+# longgar karena mahasiswa berbagi satu IP WiFi kampus; ubah `limit` bila perlu
+# (period hanya boleh 10 atau 60). Tanpa blok ini, kode tetap jalan (gerbang dilewati).
+[[ratelimits]]
+name = "FLOOD_GATE"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 600
+  period = 60

@@ -20,6 +20,8 @@ import {
   highlightFor,
   isUsable,
   newDocumentId,
+  publicEntry,
+  searchPassages,
 } from "../worker/src/documents.js";
 import { can } from "../worker/src/auth.js";
 import { handleAdmin } from "../worker/src/admin.js";
@@ -420,4 +422,44 @@ test("a window with more rows than the limit says so instead of silently under-c
   assert.equal(s.truncated, true);
   assert.equal(s.total, SUMMARY_ROW_LIMIT);
   assert.equal((await summarize(fakeEventsDb([row], 0), w)).truncated, false);
+});
+
+/* ---------- apa yang boleh sampai ke pembaca ---------- */
+
+test("an answer built from an uploaded document never carries staff emails to the reader", async () => {
+  // Satu dokumen unggahan yang sudah tervalidasi, dengan email staf pada kolom internalnya.
+  const docRow = {
+    id: "pedoman-baru-abc123", title: "Pedoman Baru", owner: "Prodi BD", reference: "SK 1", period: "2026",
+    kind: "PDF", pages: 1, size_bytes: 100, file: "/files/pedoman-baru-abc123", bundled: 0, status: "ready",
+    rag_active: 1, uploaded_by: "dosen.rahasia@upi.edu", validated_by: "kaprodi@upi.edu",
+    created_at: "2026-11-01", updated_at: "2026-11-01", category: "Pengumuman", effective_date: null,
+    description: null, related_to: null, supersedes: null,
+  };
+  const db = {
+    prepare: (sql) => ({
+      bind() {
+        return this;
+      },
+      async all() {
+        return {
+          results: sql.includes("FROM passages")
+            ? [{ document_id: docRow.id, page: 1, body: "Mahasiswa wajib mengisi formulir pendaftaran sidang skripsi sebelum batas waktu." }]
+            : [docRow],
+        };
+      },
+    }),
+  };
+
+  const [entry] = await searchPassages(db, "pendaftaran sidang skripsi", { limit: 3, origin: "https://x" });
+  // Di server, rujukan masih butuh objek dokumennya...
+  assert.equal(entry.passage.documentId, docRow.id);
+  assert.equal(entry.passage.document.uploadedBy, "dosen.rahasia@upi.edu");
+
+  // ...tetapi bentuk yang dikirim ke pembaca tidak boleh memuat email siapa pun.
+  const sent = JSON.stringify(publicEntry(entry));
+  assert.ok(!sent.includes("dosen.rahasia@upi.edu"), "email pengunggah bocor");
+  assert.ok(!sent.includes("kaprodi@upi.edu"), "email pemvalidasi bocor");
+  assert.ok(!("passage" in publicEntry(entry)));
+  assert.equal(publicEntry(entry).sourceTitle, "Pedoman Baru", "isi jawaban tidak boleh ikut hilang");
+  assert.equal(publicEntry(null), null);
 });

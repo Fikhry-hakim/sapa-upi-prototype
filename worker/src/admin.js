@@ -55,8 +55,13 @@ export async function staffFrom(db, request) {
 
 const fileKey = (id) => `doc:${id}`;
 
-/** Dokumen yang boleh dibaca siapa pun: sudah tervalidasi atau sudah tidak berlaku. */
-const PUBLIC_STATUSES = new Set(["ready", "expired"]);
+/**
+ * Dokumen yang boleh dibaca siapa pun: hanya yang sedang berlaku. Dokumen yang
+ * sudah ditandai tidak berlaku tetap tersimpan, tetapi hanya terbuka bagi
+ * pengelola — supaya berkas yang ditarik (mis. salah unggah) tidak tetap bisa
+ * diunduh orang lain lewat alamatnya.
+ */
+const PUBLIC_STATUSES = new Set(["ready"]);
 
 /* ------------------------------------------------------------ /admin/* */
 
@@ -242,7 +247,7 @@ export async function handleAdmin(request, env, cors, path) {
 
 /* ------------------------------------------------------------ rute publik */
 
-/** Dokumen unggahan yang sudah tervalidasi, untuk halaman Files. */
+/** Dokumen unggahan yang sedang berlaku, untuk halaman Files. */
 export async function handlePublicDocuments(request, env, cors) {
   const docs = (await listDocuments(env.sapa_upi_kb)).filter((doc) => !doc.bundled && PUBLIC_STATUSES.has(doc.status));
   const origin = new URL(request.url).origin;
@@ -259,7 +264,6 @@ export async function handlePublicDocuments(request, env, cors) {
         pages: doc.pages,
         sizeBytes: doc.sizeBytes,
         updatedAt: doc.updatedAt,
-        expired: doc.status === "expired",
         file: `${origin}/files/${doc.id}`,
       })),
     },
@@ -268,8 +272,8 @@ export async function handlePublicDocuments(request, env, cors) {
 }
 
 /**
- * Isi sebuah berkas unggahan. Dokumen yang sudah tervalidasi terbuka untuk
- * siapa pun; draf yang belum divalidasi hanya terbuka bagi pengelola.
+ * Isi sebuah berkas unggahan. Dokumen yang sedang berlaku terbuka untuk siapa
+ * pun; draf dan dokumen yang tidak berlaku hanya terbuka bagi pengelola.
  */
 export async function handleFile(request, env, cors, id) {
   const db = env.sapa_upi_kb;

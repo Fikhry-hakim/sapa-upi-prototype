@@ -29,6 +29,8 @@ python3 -m http.server 4173
 
 Buka `http://localhost:4173`. Jangan buka `index.html` langsung — modul JavaScript butuh server HTTP.
 
+Halaman ini punya Content-Security-Policy lewat `<meta>` di `index.html`. Kalau menambah sumber eksternal baru (skrip, font, atau domain API lain), tambahkan juga di sana, kalau tidak browser akan memblokirnya.
+
 Menjalankan pengujian:
 
 ```bash
@@ -71,7 +73,8 @@ Diatur di `worker/wrangler.toml`:
 | Variabel | Fungsi |
 | --- | --- |
 | `GEMINI_MODEL` | Model yang dipakai. Default `gemini-3.5-flash-lite`. `gemini-3.8-flash` sempat dicoba dan ditolak dengan *"project has exceeded a quota"* pada akun free tier ini, jadi jangan diganti tanpa menaikkan tier dulu. |
-| `ALLOWED_ORIGINS` | Daftar origin yang boleh memanggil API, dipisah koma. Wajib diisi origin GitHub Pages kamu. |
+| `ALLOWED_ORIGINS` | Daftar origin yang boleh memanggil API, dipisah koma. Wajib diisi origin GitHub Pages kamu. `http://localhost:4173` sengaja **tidak** ada di produksi; untuk menguji halaman lokal terhadap API ini, tambahkan sementara lalu deploy, dan buang lagi sesudahnya. |
+| `FLOOD_GATE` | Binding Rate Limiting (bukan var, lihat `[[ratelimits]]` di `wrangler.toml`): menolak klien yang membanjiri sebelum menyentuh D1. Default 600 permintaan/menit per klien; `period` hanya boleh 10 atau 60. |
 | `GEMINI_API_KEY` | **Secret**, bukan var. Diisi lewat `wrangler secret put`. |
 
 Daftar model terbaru: https://ai.google.dev/gemini-api/docs/models — model lama seperti `gemini-2.0-flash` sudah dimatikan, jadi cek berkala kalau Worker tiba-tiba balas error.

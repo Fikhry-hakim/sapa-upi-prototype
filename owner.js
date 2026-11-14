@@ -1213,7 +1213,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         const file = doc.bundled ? new URL(absolute, window.location.href).href : absolute;
         openViewer(
           { file, title: doc.title, owner: doc.owner, reference: doc.reference, period: doc.period, pages: doc.pages },
-          { page: 1, headers: doc.status === "ready" || doc.status === "expired" || doc.bundled ? null : authHeaders() },
+          { page: 1, headers: doc.status === "ready" || doc.bundled ? null : authHeaders() },
         );
       });
       actions.append(view);
@@ -1245,9 +1245,9 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         // jelas ini aksi yang bisa diklik, bukan sekadar menyebut status.
         const expire = make("button", "link", "Nonaktifkan");
         expire.type = "button";
-        expire.title = "Menandai dokumen tidak berlaku. Dokumen tetap tersimpan untuk arsip, tidak dihapus.";
+        expire.title = "Menandai dokumen tidak berlaku. Berkasnya tetap tersimpan untuk arsip pengelola dan tidak bisa dibuka publik. Untuk menghapusnya permanen, gunakan Hapus.";
         expire.addEventListener("click", () => {
-          if (window.confirm(`Nonaktifkan "${doc.title}"? Dokumen akan berstatus Tidak Berlaku dan berhenti dipakai menjawab, tetapi tetap tersimpan (tidak dihapus).`)) {
+          if (window.confirm(`Nonaktifkan "${doc.title}"? Dokumen akan berstatus Tidak Berlaku dan berhenti dipakai menjawab. Berkasnya tetap tersimpan untuk arsip pengelola dan tidak bisa dibuka publik.${doc.bundled ? " Catatan: ini dokumen bawaan, salinan PDF-nya tetap ada di folder dokumen/ pada repositori situs." : ""}`)) {
             act(root, `/admin/documents/${doc.id}/expire`, {}, "Dokumen dinonaktifkan (Tidak Berlaku).");
           }
         });
