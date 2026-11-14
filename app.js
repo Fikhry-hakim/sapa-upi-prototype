@@ -5,6 +5,7 @@ import { clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet }
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { createOwner } from "./owner.js";
+import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
 
 /* ============================================================
    PRIMITIF
@@ -704,7 +705,7 @@ async function askBackend(question, topic = null) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId: state.conversationId, scope, ...(topic ? { topic } : {}) }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(topic ? { topic } : {}) }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -2050,7 +2051,19 @@ function toggleVoice() {
    INIT
 ============================================================ */
 
+function initLanguageSwitch() {
+  const buttons = { id: $("lang-id"), en: $("lang-en") };
+  const paint = (lang) => {
+    for (const [code, button] of Object.entries(buttons)) button.setAttribute("aria-pressed", String(code === lang));
+  };
+  for (const [code, button] of Object.entries(buttons)) button.addEventListener("click", () => setLang(code));
+  onLangChange(paint);
+  initLang();
+  paint(getLang());
+}
+
 function initialize() {
+  initLanguageSwitch();
   refs.composer.addEventListener("submit", (event) => {
     event.preventDefault();
     submitQuestion(refs.question.value);

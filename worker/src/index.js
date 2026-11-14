@@ -116,8 +116,10 @@ async function handleAsk(request, env, cors, ctx) {
   let conversationId = null;
   let scope = null;
   let topic = null;
+  let lang = "id";
   try {
-    ({ question = "", conversationId = null, scope = null, topic = null } = await request.json());
+    ({ question = "", conversationId = null, scope = null, topic = null, lang = "id" } = await request.json());
+    lang = lang === "en" ? "en" : "id";
   } catch {
     return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
   }
@@ -223,6 +225,7 @@ async function handleAsk(request, env, cors, ctx) {
       const geminiResult = await askWithFallback({
         question,
         entries,
+        lang,
         apiKey: env.GEMINI_API_KEY,
         models: [env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", env.GEMINI_FALLBACK_MODEL],
         totalMs: env.AI ? PRIMARY_BUDGET_MS : undefined,
@@ -233,7 +236,7 @@ async function handleAsk(request, env, cors, ctx) {
       if (!env.AI) throw geminiError;
       console.warn("gemini gagal, beralih ke Workers AI:", String(geminiError).slice(0, 200));
       const backupModel = env.AI_FALLBACK_MODEL || WORKERS_AI_MODEL;
-      answer = await askWorkersAI({ question, entries, ai: env.AI, model: backupModel });
+      answer = await askWorkersAI({ question, entries, lang, ai: env.AI, model: backupModel });
       console.warn(`dijawab oleh cadangan ${backupModel}`);
     }
     note(false);

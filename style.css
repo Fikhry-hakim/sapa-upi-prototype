@@ -1930,7 +1930,8 @@ button.ref-chip:hover {
   margin: 0;
 }
 
-.viewer-mode {
+.viewer-mode,
+.lang-switch {
   height: 28px;
   display: flex;
   align-items: center;
@@ -1941,7 +1942,8 @@ button.ref-chip:hover {
   border-radius: 8px;
 }
 
-.viewer-mode button {
+.viewer-mode button,
+.lang-switch button {
   height: 22px;
   padding: 0 10px;
   color: var(--muted);
@@ -1950,11 +1952,13 @@ button.ref-chip:hover {
   border-radius: 6px;
 }
 
-.viewer-mode button:hover {
+.viewer-mode button:hover,
+.lang-switch button:hover {
   color: var(--ink);
 }
 
-.viewer-mode button[aria-pressed="true"] {
+.viewer-mode button[aria-pressed="true"],
+.lang-switch button[aria-pressed="true"] {
   background: var(--red-soft);
   color: var(--red);
 }

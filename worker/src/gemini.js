@@ -54,8 +54,17 @@ export function buildContextBlock(entries) {
   return `KONTEKS PEDOMAN:\n${blocks.join("\n\n")}`;
 }
 
-export function buildInput(question, entries) {
-  return `${buildContextBlock(entries)}\n\nPERTANYAAN MAHASISWA: ${question}`;
+export const ENGLISH_NOTE =
+  "BAHASA JAWABAN: Tulis seluruh jawaban dalam bahasa Inggris yang sederhana. Terjemahkan isi konteks, tetapi biarkan nama dokumen resmi, nomor surat, nama sistem (SIAKKu, SIAS, SInNDo), dan singkatan seperti UKT, IRS, UTS, UAS tetap seperti aslinya. Semua aturan lain tetap berlaku.";
+
+/** Pilihan bahasa pembaca; selain "en" selalu bahasa Indonesia. */
+export function normalizeLang(lang) {
+  return lang === "en" ? "en" : "id";
+}
+
+export function buildInput(question, entries, lang = "id") {
+  const base = `${buildContextBlock(entries)}\n\nPERTANYAAN MAHASISWA: ${question}`;
+  return normalizeLang(lang) === "en" ? `${base}\n\n${ENGLISH_NOTE}` : base;
 }
 
 /**
@@ -117,6 +126,7 @@ export function generationConfigFor(model) {
 export async function askGemini({
   question,
   entries,
+  lang = "id",
   apiKey,
   model,
   fetchImpl = fetch,
@@ -128,7 +138,7 @@ export async function askGemini({
   const body = JSON.stringify({
     model,
     system_instruction: SYSTEM_INSTRUCTION,
-    input: buildInput(question, entries),
+    input: buildInput(question, entries, lang),
     // The same question must not get a differently worded answer depending on
     // who asked it. Nothing about the reader reaches the prompt, and a fixed
     // seed keeps the decoding reproducible too. The provider does not promise
@@ -242,6 +252,7 @@ export const WORKERS_AI_BUDGET_MS = TOTAL_BUDGET_MS - PRIMARY_BUDGET_MS;
 export async function askWorkersAI({
   question,
   entries,
+  lang = "id",
   ai,
   model = WORKERS_AI_MODEL,
   timeoutMs = WORKERS_AI_BUDGET_MS,
@@ -258,7 +269,7 @@ export async function askWorkersAI({
       ai.run(model, {
         messages: [
           { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user", content: buildInput(question, entries) },
+          { role: "user", content: buildInput(question, entries, lang) },
         ],
         max_tokens: 700,
         temperature: 0,
