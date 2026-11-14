@@ -796,7 +796,7 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   let answeredLocally = false;
   if (!response) {
-    response = createChatResponse(question, scopedEntries(), { topic });
+    response = createChatResponse(question, scopedEntries(), { topic, lang: getLang() });
     answeredLocally = true;
   }
 

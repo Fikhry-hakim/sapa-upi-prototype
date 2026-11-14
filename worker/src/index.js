@@ -1,6 +1,7 @@
 import { knowledgeBase as bundledKnowledgeBase } from "../../data/knowledge-base.js";
 import { searchByContent, searchKnowledgeBase } from "../../lib/search.js";
 import { clarifiedSentence, prioritizeTopic } from "../../lib/clarify.js";
+import { toIndonesianQuery } from "../../lib/en-terms.js";
 import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } from "./gemini.js";
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
@@ -155,7 +156,9 @@ async function handleAsk(request, env, cors, ctx) {
   // Pertanyaan klik-angka dicari lewat kalimatnya saja, dan topik dari jawaban yang sedang
   // dibaca didahulukan supaya penjelasannya bersumber dari dokumen yang sama.
   const clicked = clarifiedSentence(question);
-  const found = retrieve(clicked ?? question, knowledgeBase, {
+  // Pertanyaan berbahasa Inggris dicari lewat padanan kata Indonesianya; model tetap menerima aslinya.
+  const searchText = lang === "en" ? toIndonesianQuery(question) : question;
+  const found = retrieve(clicked ?? searchText, knowledgeBase, {
     scope: typeof scope === "string" ? scope : null,
     excluded,
     byContent: Boolean(clicked),
@@ -188,7 +191,7 @@ async function handleAsk(request, env, cors, ctx) {
     }
   }
   if (!entries.length && !scope) {
-    entries = await searchPassages(db, question, { limit: MAX_CONTEXT_ENTRIES, origin: new URL(request.url).origin });
+    entries = await searchPassages(db, searchText, { limit: MAX_CONTEXT_ENTRIES, origin: new URL(request.url).origin });
     fromPassage = entries.length > 0;
   }
 

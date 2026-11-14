@@ -33,3 +33,30 @@ test("the worker only switches to English when asked, and leaves the safety rule
   assert.ok(english.startsWith(indonesian));
   assert.ok(english.includes("bahasa Inggris") && english.includes("Semua aturan lain tetap berlaku"));
 });
+
+import { knowledgeBase } from "../data/knowledge-base.js";
+import { searchKnowledgeBase } from "../lib/search.js";
+import { toIndonesianQuery } from "../lib/en-terms.js";
+
+test("English questions find the same topics as their Indonesian versions", () => {
+  const cases = [
+    ["When is the deadline for academic leave this semester?", "cuti-akademik-batas"],
+    ["When are the midterm and final exams?", "kalender-perkuliahan-ujian"],
+    ["How do I access Scopus?", "scopus-akses"],
+    ["What is the dress code for the results seminar?", "semhas-pakaian"],
+    ["What is the similarity limit in Turnitin?", "uji-similaritas"],
+    ["When is the short semester?", "kalender-semester-antara"],
+    ["When does the semester start?", "kalender-perkuliahan-ujian"],
+    ["What courses does class of 2025 take?", "mata-kuliah-ganjil-2026"],
+  ];
+  for (const [question, id] of cases) {
+    const result = searchKnowledgeBase(toIndonesianQuery(question), knowledgeBase);
+    assert.notEqual(result.status, "none", question);
+    assert.equal(result.best.entry.id, id, question);
+  }
+});
+
+test("a question with no known English terms is left alone, and an unrelated one is still refused", () => {
+  assert.equal(toIndonesianQuery("Apa syarat sidang?"), "Apa syarat sidang?");
+  assert.equal(searchKnowledgeBase(toIndonesianQuery("What is the weather in Bandung?"), knowledgeBase).status, "none");
+});
