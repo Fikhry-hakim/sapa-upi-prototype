@@ -846,7 +846,7 @@ function placeholderText() {
     return NARROW.matches ? "Tanyakan dokumen ini..." : "Tanyakan sesuatu tentang dokumen ini...";
   }
   if (state.suggestedQuestion) {
-    return NARROW.matches ? state.suggestedQuestion : `Coba tanya: ${state.suggestedQuestion}`;
+    return state.suggestedQuestion;
   }
   return NARROW.matches
     ? "Tanyakan seputar pedoman..."
@@ -2180,16 +2180,6 @@ function initThemeSwitch() {
     } catch {
       /* penyimpanan diblokir: pilihan berlaku sampai halaman ditutup */
     }
-  });
-  // Selama belum memilih sendiri, ikuti pengaturan sistem kalau berubah.
-  window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
-    let chosen = null;
-    try {
-      chosen = localStorage.getItem(THEME_KEY);
-    } catch {
-      /* abaikan */
-    }
-    if (!chosen) applyTheme(event.matches ? "dark" : "light");
   });
 }
 

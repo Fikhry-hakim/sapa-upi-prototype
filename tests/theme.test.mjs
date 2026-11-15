@@ -24,7 +24,7 @@ test("the theme is applied before first paint by a script the CSP allows", () =>
   assert.match(html, /<script src="\.\/theme-init\.js"><\/script>\s*<link rel="stylesheet"/);
   assert.ok(!/<script>[^<]/.test(html), "no inline script, the CSP forbids it");
   const init = readFileSync(new URL("../theme-init.js", import.meta.url), "utf8");
-  assert.match(init, /prefers-color-scheme: dark/);
+  assert.ok(!/prefers-color-scheme/.test(init), "default is light, not the system setting");
   assert.match(init, /sapa-theme/);
 });
 

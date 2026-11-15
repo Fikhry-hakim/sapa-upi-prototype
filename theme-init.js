@@ -1,6 +1,6 @@
 /*
- * Pasang tema sebelum halaman digambar, supaya pengunjung mode gelap tidak
- * melihat kilat putih. Pilihan yang disimpan menang atas pengaturan sistem.
+ * Pasang tema sebelum halaman digambar, supaya pilihan gelap yang tersimpan
+ * tidak diawali kilat putih. Tanpa pilihan tersimpan, tampilan selalu terang.
  * Ditulis sebagai berkas terpisah karena CSP situs ini tidak mengizinkan skrip inline.
  */
 (() => {
@@ -8,10 +8,8 @@
   try {
     theme = localStorage.getItem("sapa-theme");
   } catch {
-    /* penyimpanan diblokir: ikuti sistem */
+    /* penyimpanan diblokir: tampil terang */
   }
-  if (theme !== "light" && theme !== "dark") {
-    theme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
+  if (theme !== "light" && theme !== "dark") theme = "light";
   document.documentElement.dataset.theme = theme;
 })();
