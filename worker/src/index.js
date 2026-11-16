@@ -9,7 +9,7 @@ import { classifyOutcome, recordEvent } from "./events.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import { sourceSet } from "../../lib/source-set.js";
-import { cleanHistory, contextQuery, mergeContext, needsContext, soundsLikeFollowUp, withAnchor } from "../../lib/followup.js";
+import { cleanHistory, contextQuery, mergeContext, needsContext, lastEntries, soundsLikeFollowUp, withAnchor } from "../../lib/followup.js";
 import {
   authenticate,
   createSession,
@@ -182,9 +182,7 @@ async function handleAsk(request, env, cors, ctx) {
       scope: typeof scope === "string" ? scope : null,
       excluded,
     });
-    const lastId = [...history].reverse().find((turn) => turn.entryId)?.entryId;
-    const last = knowledgeBase.find((entry) => entry.id === lastId && !excluded.has(entry.sourceUrl)) ?? null;
-    const merged = mergeContext(found, again, last);
+    const merged = mergeContext(found, again, lastEntries(history, knowledgeBase, excluded, 1)[0] ?? null);
     if (merged.length) {
       entries = merged;
       evidence = { status: again.entries.length ? again.status : "match", score: again.score };
@@ -194,9 +192,7 @@ async function handleAsk(request, env, cors, ctx) {
   // Model tetap diberi riwayatnya untuk pertanyaan yang terdengar seperti lanjutan.
   if (!askedBefore && history.length && !clicked && soundsLikeFollowUp(question)) {
     askedBefore = history;
-    const lastId = [...history].reverse().find((turn) => turn.entryId)?.entryId;
-    const last = knowledgeBase.find((entry) => entry.id === lastId && !excluded.has(entry.sourceUrl)) ?? null;
-    entries = withAnchor(entries, last);
+    entries = withAnchor(entries, lastEntries(history, knowledgeBase, excluded));
   }
   if (clicked && typeof topic === "string") {
     const prioritized = prioritizeTopic(entries, knowledgeBase, topic.slice(0, 80), {

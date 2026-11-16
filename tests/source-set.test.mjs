@@ -71,3 +71,13 @@ test("one generic shared word is not enough to count as the same matter", () => 
   assert.ok(!set.some((item) => item.entry.id === "ttg-pengajuan"), "a TTG page is not a source for a cuti question");
   assert.ok(set.some((item) => item.entry.id === "cuti-akademik-batas"));
 });
+
+test("a payment question is not turned into a cuti comparison just because both topics mention UKT", () => {
+  const set = sourceSet([se48, se68], "Pembayaran 9 Juni sampai 17 Juli 2026.", "kapan batas pembayaran ukt");
+  assert.deepEqual(set.map((item) => item.entry.id), ["ukt-pembayaran-ganjil"]);
+});
+
+test("an answer that names a document by its title instead of its number still lists it", () => {
+  const answer = "Menurut Surat Edaran Batas Akhir Pengajuan Cuti Akademik Semester Ganjil 2026/2027, batasnya 16 November.";
+  assert.ok(mentions(answer, se68));
+});

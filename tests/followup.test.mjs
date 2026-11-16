@@ -75,9 +75,22 @@ test("a follow-up with its own topic still gets the last answered topic as a sec
   const { withAnchor } = await import("../lib/followup.js");
   const last = knowledgeBase.find((entry) => entry.id === "cuti-akademik-batas");
   const own = retrieve("di kalender akademik kok berbeda").entries;
-  const withLast = withAnchor(own, last);
+  const withLast = withAnchor(own, [last]);
   assert.equal(withLast[0].id, own[0].id, "the topic of the new question stays first");
   assert.equal(withLast[1].id, "cuti-akademik-batas");
   assert.equal(withLast.length, 3);
   assert.deepEqual(withAnchor(own, null), own);
+});
+
+test("anchors come from the last two different topics, newest first", async () => {
+  const { lastEntries, withAnchor } = await import("../lib/followup.js");
+  const turns = cleanHistory([
+    { q: "a", entryId: "cuti-akademik-batas" },
+    { q: "b", entryId: "kalender-cuti-akademik" },
+    { q: "c", entryId: "kalender-cuti-akademik" },
+  ]);
+  const anchors = lastEntries(turns, knowledgeBase);
+  assert.deepEqual(anchors.map((entry) => entry.id), ["kalender-cuti-akademik", "cuti-akademik-batas"]);
+  const own = retrieve("di kalender akademik kok berbeda").entries;
+  assert.ok(withAnchor(own, anchors).some((entry) => entry.id === "cuti-akademik-batas"));
 });
