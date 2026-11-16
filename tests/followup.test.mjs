@@ -70,3 +70,14 @@ test("history from the browser is trimmed and cannot carry anything but text", (
   assert.equal(clean.at(-1).q, "d");
   assert.equal(cleanHistory(undefined, "pertanyaan lama")[0].q, "pertanyaan lama", "the older single-question field still works");
 });
+
+test("a follow-up with its own topic still gets the last answered topic as a second context entry", async () => {
+  const { withAnchor } = await import("../lib/followup.js");
+  const last = knowledgeBase.find((entry) => entry.id === "cuti-akademik-batas");
+  const own = retrieve("di kalender akademik kok berbeda").entries;
+  const withLast = withAnchor(own, last);
+  assert.equal(withLast[0].id, own[0].id, "the topic of the new question stays first");
+  assert.equal(withLast[1].id, "cuti-akademik-batas");
+  assert.equal(withLast.length, 3);
+  assert.deepEqual(withAnchor(own, null), own);
+});

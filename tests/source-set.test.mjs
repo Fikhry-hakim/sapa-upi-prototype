@@ -64,3 +64,10 @@ test("the calendar, the earlier circular and the newer circular all show for a c
   assert.equal(set[0].newest, true);
   assert.equal(set[2].citation.page, 5);
 });
+
+test("one generic shared word is not enough to count as the same matter", () => {
+  const calendar = byId("kalender-cuti-akademik");
+  const set = sourceSet([calendar, se68, byId("ttg-pengajuan")], "Batasnya 16 November 2026.", "pengajuan cuti sem ganjil sampai kapan untuk tahun ini");
+  assert.ok(!set.some((item) => item.entry.id === "ttg-pengajuan"), "a TTG page is not a source for a cuti question");
+  assert.ok(set.some((item) => item.entry.id === "cuti-akademik-batas"));
+});
