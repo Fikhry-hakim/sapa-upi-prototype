@@ -33,6 +33,7 @@ const cases = [
   // pertanyaan tanpa topik sendiri: harus nyambung ke yang sebelumnya
   ["pengajuan cuti sem ganjil sampai kapan untuk tahun ini", "berarti gua ikutin yang mana nii", "cuti-akademik-batas"],
   ["pengajuan cuti sem ganjil sampai kapan untuk tahun ini", "di kalender akademik kok berbeda", "kalender-cuti-akademik"],
+  ["pengajuan cuti sem ganjil sampai kapan untuk tahun ini", "di kalender akademik kok berbeda", "cuti-akademik-batas"],
   ["kapan batas pembayaran ukt", "kalau telat bayar gimana", "ukt-pembayaran-ganjil"],
   ["kapan batas pembayaran ukt", "kalau cuti sampai kapan", "cuti-akademik-batas"],
   ["kapan jadwal irs dan perwalian", "kalau angkatan 2023 kapan", "irs-perwalian-jadwal"],
