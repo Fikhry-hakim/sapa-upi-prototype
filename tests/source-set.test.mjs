@@ -43,3 +43,14 @@ test("a follow-up carries the earlier question to the model", () => {
   assert.ok(input.indexOf("PERTANYAAN SEBELUMNYA") < input.indexOf("PERTANYAAN MAHASISWA"));
   assert.ok(!/PERTANYAAN SEBELUMNYA/.test(buildInput("x", [se48], "id")));
 });
+
+test("the older document on the same matter is listed even when the answer never cites its number", () => {
+  const set = sourceSet([se68, byId("ttg-pengajuan"), se48], "Batasnya 16 November 2026.", "pengajuan cuti sem ganjil sampai kapan");
+  assert.deepEqual(set.map((item) => item.entry.id), ["cuti-akademik-batas", "ukt-pembayaran-ganjil"]);
+  assert.equal(set[0].newest, true);
+});
+
+test("an unrelated context entry is not pulled in just because it was retrieved", () => {
+  const set = sourceSet([se68, byId("ttg-pengajuan")], "Batasnya 16 November 2026.", "pengajuan cuti sem ganjil sampai kapan");
+  assert.equal(set.length, 1);
+});

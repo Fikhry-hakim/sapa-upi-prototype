@@ -285,7 +285,7 @@ async function handleAsk(request, env, cors, ctx) {
         followUps: top?.followUps ?? [],
         conversationId: savedTo,
         // Semua dokumen yang dipakai jawaban, yang terbaru lebih dulu dan bertanda `newest`.
-        citations: fromPassage ? [] : sourceSet(entries, answer).map(publicCitation),
+        citations: fromPassage ? [] : sourceSet(entries, answer, `${askedBefore ?? ""} ${searchText}`).map(publicCitation),
         citation: citation
           ? {
               documentId: citation.documentId,
