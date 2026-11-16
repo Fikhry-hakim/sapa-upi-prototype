@@ -177,14 +177,14 @@ test("TTG is found whether asked by its short or long form, on its own or inside
   }
 });
 
-test("a known limitation: a fully spelled-out English phrase (\"letter of acceptance\") still loses to its own filler words", () => {
-  // "LoA" alone already matches fine — the glossary appends it here too — but
-  // the existing relevance formula discounts a match by how much of the query
-  // it covers, and "letter", "of" and "acceptance" are English words this
-  // Indonesian-tuned scorer does not otherwise recognise. Covered here so a
-  // future fix to that formula has a test to turn green, not silently fixed.
+test("a fully spelled-out English phrase (\"letter of acceptance\") reaches the LoA topics", () => {
+  // It used to lose to its own filler words ("letter", "of", "acceptance") and match
+  // nothing. With the longer knowledge base the LoA entries now surface, but two of
+  // them tie, so the result is still ambiguous rather than a single decisive match.
   assert.equal(searchKnowledgeBase("loa", knowledgeBase).status, "ambiguous");
-  assert.equal(searchKnowledgeBase("letter of acceptance", knowledgeBase).status, "none");
+  const spelledOut = searchKnowledgeBase("letter of acceptance", knowledgeBase);
+  assert.equal(spelledOut.status, "ambiguous");
+  assert.match(spelledOut.best.entry.id, /artikel/);
 });
 
 test("asking whether a document 'is available' no longer loses to its own question words", () => {

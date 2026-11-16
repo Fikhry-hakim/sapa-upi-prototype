@@ -33,6 +33,15 @@ const PEDOMAN_TA = {
   sourceUrl: "./dokumen/buku-panduan-tugas-akhir-bisnis-digital.pdf",
 };
 
+const PERREK_70 = {
+  sourceTitle: "Peraturan Rektor UPI tentang Tugas Akhir, Ujian Sidang, dan Penetapan Kelulusan",
+  sourceOwner: "Rektor Universitas Pendidikan Indonesia",
+  validPeriod: "Berlaku sejak 6 November 2026",
+  updatedAt: "6 November 2026",
+  sourceRef: "Peraturan Rektor Nomor 70 Tahun 2026",
+  sourceUrl: "./dokumen/peraturan-rektor-70-2026-tugas-akhir-sidang-kelulusan.pdf",
+};
+
 const PEDOMAN_KTI = {
   sourceTitle: "Pedoman Penulisan Karya Ilmiah UPI (Edisi 2024)",
   sourceOwner: "Universitas Pendidikan Indonesia",
@@ -181,16 +190,17 @@ export const knowledgeBase = [
       "Bagaimana cara mengajukan topik skripsi?",
       "Berapa jumlah dosen pembimbing skripsi?",
     ],
-    keywords: ["mengambil skripsi", "kontrak skripsi", "mulai skripsi", "sks", "ipk", "metode penelitian", "110 sks"],
+    keywords: ["mengambil skripsi", "kontrak skripsi", "mulai skripsi", "sks", "ipk", "indeks prestasi kumulatif", "syarat ipk skripsi", "metode penelitian", "110 sks"],
     lead: "Ketentuan umum untuk dapat mengikuti penyelesaian skripsi:",
     points: [
       "Telah menyelesaikan minimal 110 SKS dengan IPK minimal 2,50.",
       "Sudah lulus mata kuliah Metode Penelitian.",
       "Mengontrak mata kuliah skripsi dan disetujui oleh dosen Pembimbing Akademik (PA).",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (6 November 2026) menetapkan batas minimum UPI paling sedikit 60% beban studi dan proposal paling cepat diajukan semester 6; syarat 110 SKS dan IPK 2,50 di Buku Panduan adalah ketentuan prodi yang lebih ketat dan belum diperbarui dalam dokumen yang tersedia.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan langkah pengajuan topik setelah syarat ini terpenuhi.",
     answer:
-      "Mahasiswa yang akan mengambil mata kuliah skripsi harus telah menyelesaikan minimal 110 SKS dengan IPK minimal 2,50, sudah lulus mata kuliah Metode Penelitian, serta mengontrak mata kuliah skripsi dengan persetujuan dosen Pembimbing Akademik.",
+      "Mahasiswa yang akan mengambil mata kuliah skripsi harus telah menyelesaikan minimal 110 SKS dengan IPK minimal 2,50, sudah lulus mata kuliah Metode Penelitian, serta mengontrak mata kuliah skripsi dengan persetujuan dosen Pembimbing Akademik. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (6 November 2026) menetapkan batas minimum UPI paling sedikit 60% beban studi dan proposal paling cepat diajukan semester 6; syarat 110 SKS dan IPK 2,50 di Buku Panduan adalah ketentuan prodi yang lebih ketat dan belum diperbarui dalam dokumen yang tersedia.",
     escalation:
       "Hubungi dosen Pembimbing Akademik untuk memeriksa pemenuhan SKS dan IPK pada transkrip terakhir.",
     ...PEDOMAN_TA,
@@ -233,6 +243,46 @@ export const knowledgeBase = [
     escalation:
       "Hubungi staf Program Studi Bisnis Digital untuk memverifikasi kelengkapan berkas seminar proposal.",
     ...PEDOMAN_TA,
+  },
+
+  {
+    id: "sempro-semhas-gform",
+    category: "Tugas Akhir",
+    title: "Formulir online pendaftaran seminar proposal / seminar hasil",
+    questions: [
+      "Di mana formulir pendaftaran seminar proposal?",
+      "Apa saja yang diisi di gform pendaftaran sempro?",
+    ],
+    followUps: [
+      "Template dokumen pendaftaran ada di mana?",
+      "Dokumen apa saja untuk seminar proposal?",
+    ],
+    hints: [
+      "Link gform pendaftaran sempro",
+      "Isian formulir pendaftaran sempro apa saja?",
+    ],
+    keywords: ["gform sempro", "formulir sempro", "link sempro", "daftar sempro online", "form seminar proposal", "form seminar hasil", "template sempro", "format sem"],
+    lead: "Pendaftaran seminar proposal dan seminar hasil tugas akhir dilakukan lewat Google Form (login dengan akun UPI):",
+    points: [
+      "Formulir: https://docs.google.com/forms/d/e/1FAIpQLSeOJ3Epo_ng3rQrbe23z0RPH0bhvrxYmkr8Bs13VRZlsMUTsg/viewform",
+      "Template kelengkapan dokumennya ada di https://bit.ly/Format-Template_admPenyelesaianStudi.",
+      "Data yang diisi: NIM, nama, program studi, tahun masuk, jalur masuk, nomor WA, NIK dan NKK, tempat dan tanggal lahir, alamat KTP, dan dosen pembimbing akademik.",
+      "Data tugas akhir: judul (huruf kapital di tiap kata, kecuali kata sambung), bidang keilmuan, calon dosen pembimbing 1 dan 2 (isi tanda minus kalau pembimbing tunggal), serta jalur atau bentuk tugas akhir.",
+      "Nomor WA, NIK, dan NKK diawali tanda petik satu (') supaya angka nolnya tidak hilang.",
+      "Formulir meminta unggah berkas, jadi siapkan dokumennya dalam format yang sesuai template sebelum mengisi.",
+    ],
+    closing: "Mau saya jelaskan dokumen apa saja yang perlu disiapkan untuk seminar proposal?",
+    answer:
+      "Pendaftaran seminar proposal dan seminar hasil tugas akhir lewat Google Form dengan akun UPI. Template kelengkapan dokumen tersedia di bit.ly/Format-Template_admPenyelesaianStudi. Formulir meminta data diri, data dosen pembimbing akademik, judul, bidang keilmuan, calon pembimbing 1 dan 2, serta jalur tugas akhir, dan juga meminta unggah berkas.",
+    escalation:
+      "Kalau formulir tidak bisa dibuka atau ada isian yang tidak jelas, hubungi staf Program Studi Bisnis Digital.",
+    sourceTitle: "Formulir Pendaftaran Seminar Proposal / Seminar Hasil Tugas Akhir",
+    sourceOwner: "Program Studi, Universitas Pendidikan Indonesia Kampus Daerah Tasikmalaya",
+    validPeriod: "Tahun Akademik 2026/2027",
+    updatedAt: "Tanggal terbit tidak tercantum pada formulir",
+    sourceRef: "Google Form Pendaftaran Seminar Proposal / Seminar Hasil Tugas Akhir",
+    // Berupa formulir daring (login akun UPI), bukan berkas PDF.
+    sourceUrl: null,
   },
 
   {
@@ -297,10 +347,11 @@ export const knowledgeBase = [
       "Masa pembimbingan 1 semester, dapat diperpanjang selama tidak melebihi masa studi.",
       "Perpanjangan SK pembimbing diperbarui otomatis oleh prodi pada semester berikutnya.",
       "Dosen pembimbing minimal memiliki jabatan akademik asisten ahli.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menyebut pembimbing sarjana minimal berkualifikasi magister atau berjabatan Lektor Kepala, jumlahnya 1 sampai 2 orang, dengan bimbingan paling sedikit 8 kali per semester; kalau berbeda dengan Buku Panduan, ikuti peraturan yang lebih baru.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan mekanisme penggantian pembimbing.",
     answer:
-      "Jumlah dosen pembimbing skripsi sebanyak-banyaknya 2 orang dan ditetapkan melalui SK Pembimbing. Masa pembimbingan berlangsung 1 semester dan dapat diperpanjang selama tidak melebihi masa studi yang ditetapkan; perpanjangan SK diperbarui otomatis oleh prodi pada semester berikutnya. Dosen pembimbing minimal berjabatan akademik asisten ahli.",
+      "Jumlah dosen pembimbing skripsi sebanyak-banyaknya 2 orang dan ditetapkan melalui SK Pembimbing. Masa pembimbingan berlangsung 1 semester dan dapat diperpanjang selama tidak melebihi masa studi yang ditetapkan; perpanjangan SK diperbarui otomatis oleh prodi pada semester berikutnya. Dosen pembimbing minimal berjabatan akademik asisten ahli. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menyebut pembimbing sarjana minimal berkualifikasi magister atau berjabatan Lektor Kepala, jumlahnya 1 sampai 2 orang, dengan bimbingan paling sedikit 8 kali per semester; kalau berbeda dengan Buku Panduan, ikuti peraturan yang lebih baru.",
     escalation:
       "Hubungi Tim Pertimbangan Skripsi (TPS) atau staf prodi terkait penetapan dan perpanjangan SK pembimbing.",
     ...PEDOMAN_TA,
@@ -409,6 +460,7 @@ export const knowledgeBase = [
       "Uji kemiripan melalui Turnitin maksimal 35%.",
       "Transkrip nilai lengkap terakhir dengan jumlah SKS 144 sampai 152.",
       "Tidak ada mata kuliah yang mendapat nilai E.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menetapkan kemiripan paling tinggi 25% (bukan 35% Turnitin) dan mewajibkan pernyataan penggunaan Generative AI; ketentuan lain yang bertentangan dengan Buku Panduan mengikuti peraturan yang lebih baru.",
     ],
     table: {
       title: "Ringkasan Persyaratan Ujian Sidang Jalur Skripsi",
@@ -425,7 +477,7 @@ export const knowledgeBase = [
     },
     closing: "Kalau kamu mau, saya bisa jelaskan pelaksanaan ujian sidangnya.",
     answer:
-      "Pendaftaran ujian sidang dilakukan melalui staf Prodi Bisnis Digital dan diteruskan ke bagian akademik, dengan pengajuan administrasi melalui laman https://siak.upi.edu/sias. Persyaratannya meliputi 3 eksemplar draf skripsi yang telah disahkan pembimbing dan ketua prodi, LoA publikasi artikel yang divalidasi Tim Pertimbangan Skripsi, TESOL UPI dengan skor minimal 400, sertifikasi kompetensi dari LSP atau sejenis, uji kemiripan Turnitin maksimal 35%, transkrip dengan jumlah SKS 144 sampai 152, dan tidak ada mata kuliah bernilai E. Petugas akademik memverifikasi persyaratan, lalu TPS dan petugas akademik menyusun jadwal ujian sidang.",
+      "Pendaftaran ujian sidang dilakukan melalui staf Prodi Bisnis Digital dan diteruskan ke bagian akademik, dengan pengajuan administrasi melalui laman https://siak.upi.edu/sias. Persyaratannya meliputi 3 eksemplar draf skripsi yang telah disahkan pembimbing dan ketua prodi, LoA publikasi artikel yang divalidasi Tim Pertimbangan Skripsi, TESOL UPI dengan skor minimal 400, sertifikasi kompetensi dari LSP atau sejenis, uji kemiripan Turnitin maksimal 35%, transkrip dengan jumlah SKS 144 sampai 152, dan tidak ada mata kuliah bernilai E. Petugas akademik memverifikasi persyaratan, lalu TPS dan petugas akademik menyusun jadwal ujian sidang. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menetapkan kemiripan paling tinggi 25% (bukan 35% Turnitin) dan mewajibkan pernyataan penggunaan Generative AI; ketentuan lain yang bertentangan dengan Buku Panduan mengikuti peraturan yang lebih baru.",
     escalation:
       "Hubungi staf Program Studi Bisnis Digital atau petugas akademik untuk memverifikasi kelengkapan berkas sidang.",
     ...PEDOMAN_TA,
@@ -459,10 +511,11 @@ export const knowledgeBase = [
       "Majelis sidang terdiri dari tim penguji dan tim pembimbing, dan membuat rekomendasi kelulusan.",
       "TPS berkoordinasi dengan ketua prodi untuk menentukan kelulusan.",
       "Prodi tidak mewajibkan mahasiswa membawa konsumsi atau segala bentuk gratifikasi selama proses pembimbingan sampai sidang akhir.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menetapkan tim penguji paling sedikit 3 orang, pembimbing boleh menjadi anggota tim penguji sesuai ketentuan prodi, pimpinan sidang bukan dari pembimbing, dan sidang program sarjana dilaksanakan tertutup.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan kategori hasil ujian sidangnya.",
     answer:
-      "Ujian sidang dilaksanakan dengan komposisi satu peserta yang diuji oleh 3 dosen penguji berjabatan akademik minimal asisten ahli, dan penguji bukan merupakan pembimbing mahasiswa tersebut. Majelis sidang yang terdiri dari tim penguji dan tim pembimbing membuat rekomendasi kelulusan, lalu TPS berkoordinasi dengan ketua prodi untuk menentukannya. Prodi tidak mewajibkan mahasiswa membawa konsumsi atau bentuk gratifikasi apa pun selama proses pembimbingan sampai sidang akhir.",
+      "Ujian sidang dilaksanakan dengan komposisi satu peserta yang diuji oleh 3 dosen penguji berjabatan akademik minimal asisten ahli, dan penguji bukan merupakan pembimbing mahasiswa tersebut. Majelis sidang yang terdiri dari tim penguji dan tim pembimbing membuat rekomendasi kelulusan, lalu TPS berkoordinasi dengan ketua prodi untuk menentukannya. Prodi tidak mewajibkan mahasiswa membawa konsumsi atau bentuk gratifikasi apa pun selama proses pembimbingan sampai sidang akhir. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) menetapkan tim penguji paling sedikit 3 orang, pembimbing boleh menjadi anggota tim penguji sesuai ketentuan prodi, pimpinan sidang bukan dari pembimbing, dan sidang program sarjana dilaksanakan tertutup.",
     escalation:
       "Hubungi Tim Pertimbangan Skripsi atau Ketua Program Studi untuk pertanyaan seputar pelaksanaan sidang.",
     ...PEDOMAN_TA,
@@ -495,10 +548,11 @@ export const knowledgeBase = [
       "Lulus dengan perbaikan besar/substansial — waktu perbaikan paling lama 30 hari sejak tanggal ujian, meliputi perubahan orientasi penelitian, analisis data, dan kerangka analisis.",
       "Gagal.",
       "Mahasiswa yang lulus dengan perbaikan melakukan revisi sesuai saran penguji bersama dosen pembimbing.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) membagi hasil sidang menjadi lulus tanpa perbaikan, lulus dengan perbaikan minor, perbaikan mayor dan ujian ulang, atau tidak lulus; ujian ulang paling banyak 1 kali, paling cepat 14 hari dan paling lambat 30 hari kalender setelah sidang sebelumnya.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan proses setelah revisi sampai pemberkasan wisuda.",
     answer:
-      "Hasil ujian sidang dikategorikan menjadi empat: lulus tanpa perbaikan; lulus dengan perbaikan kecil atau minor dengan waktu perbaikan paling lama 2 minggu sejak tanggal ujian yang meliputi judul, abstrak, daftar pustaka, dan kebahasaan; lulus dengan perbaikan besar atau substansial dengan waktu paling lama 30 hari yang meliputi perubahan orientasi penelitian, analisis data, dan kerangka analisis; serta gagal. Yudisium merupakan prosesi peresmian kelulusan mahasiswa.",
+      "Hasil ujian sidang dikategorikan menjadi empat: lulus tanpa perbaikan; lulus dengan perbaikan kecil atau minor dengan waktu perbaikan paling lama 2 minggu sejak tanggal ujian yang meliputi judul, abstrak, daftar pustaka, dan kebahasaan; lulus dengan perbaikan besar atau substansial dengan waktu paling lama 30 hari yang meliputi perubahan orientasi penelitian, analisis data, dan kerangka analisis; serta gagal. Yudisium merupakan prosesi peresmian kelulusan mahasiswa. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) membagi hasil sidang menjadi lulus tanpa perbaikan, lulus dengan perbaikan minor, perbaikan mayor dan ujian ulang, atau tidak lulus; ujian ulang paling banyak 1 kali, paling cepat 14 hari dan paling lambat 30 hari kalender setelah sidang sebelumnya.",
     escalation:
       "Hubungi dosen pembimbing untuk proses revisi, atau staf prodi untuk status yudisium.",
     ...PEDOMAN_TA,
@@ -566,10 +620,11 @@ export const knowledgeBase = [
       "Menyerahkan skripsi yang telah disahkan pembimbing dan ketua prodi.",
       "Menyerahkan skripsi dan CD ke Perpustakaan serta dosen pembimbing.",
       "Menyerahkan CD ke Program Studi.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mengatur wisuda setelah yudisium, dengan surat keterangan bebas pustaka di SIAS, dan tugas akhir yang lulus diunggah ke Repositori UPI.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan ketentuan penjilidan sebelum pemberkasan.",
     answer:
-      "Mahasiswa melakukan pembaruan data wisudawan melalui laman https://siak.upi.edu/sias. Persyaratan wisuda meliputi skripsi yang telah disahkan oleh pembimbing dan ketua prodi, penyerahan skripsi dan CD ke Perpustakaan dan dosen pembimbing, serta penyerahan CD ke Program Studi, di samping persyaratan lainnya.",
+      "Mahasiswa melakukan pembaruan data wisudawan melalui laman https://siak.upi.edu/sias. Persyaratan wisuda meliputi skripsi yang telah disahkan oleh pembimbing dan ketua prodi, penyerahan skripsi dan CD ke Perpustakaan dan dosen pembimbing, serta penyerahan CD ke Program Studi, di samping persyaratan lainnya. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mengatur wisuda setelah yudisium, dengan surat keterangan bebas pustaka di SIAS, dan tugas akhir yang lulus diunggah ke Repositori UPI.",
     escalation:
       "Hubungi staf Program Studi Bisnis Digital untuk memastikan kelengkapan berkas wisuda.",
     ...PEDOMAN_TA,
@@ -675,10 +730,11 @@ export const knowledgeBase = [
       "Tidak ada mata kuliah bernilai E pada transkrip nilai terakhir.",
       "Bukti bimbingan minimal 10 kali, berupa buku bimbingan yang ditandatangani pembimbing.",
       "Dosen pembimbing dan ketua prodi memvalidasi pengajuan melalui https://siak.upi.edu/sias.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mensyaratkan sertifikat bahasa Inggris atau bahasa asing dengan skor minimal sesuai Keputusan Rektor dan paling sedikit 1 sertifikat kompetensi, serta LoA bagi tugas akhir bentuk artikel ilmiah.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan pelaksanaan ujian sidangnya.",
     answer:
-      "Persyaratan ujian sidang jalur artikel meliputi 3 eksemplar artikel yang telah diterbitkan atau yang telah mendapatkan LoA beserta bukti bayar dengan LoA divalidasi Tim Pertimbangan Skripsi, TESOL dengan skor minimal 400, sertifikasi kompetensi dari LSP atau sejenis, tidak ada mata kuliah bernilai E pada transkrip terakhir, serta bukti bimbingan minimal 10 kali berupa buku bimbingan yang ditandatangani pembimbing. Dosen pembimbing dan ketua prodi memvalidasi pengajuan melalui laman https://siak.upi.edu/sias.",
+      "Persyaratan ujian sidang jalur artikel meliputi 3 eksemplar artikel yang telah diterbitkan atau yang telah mendapatkan LoA beserta bukti bayar dengan LoA divalidasi Tim Pertimbangan Skripsi, TESOL dengan skor minimal 400, sertifikasi kompetensi dari LSP atau sejenis, tidak ada mata kuliah bernilai E pada transkrip terakhir, serta bukti bimbingan minimal 10 kali berupa buku bimbingan yang ditandatangani pembimbing. Dosen pembimbing dan ketua prodi memvalidasi pengajuan melalui laman https://siak.upi.edu/sias. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mensyaratkan sertifikat bahasa Inggris atau bahasa asing dengan skor minimal sesuai Keputusan Rektor dan paling sedikit 1 sertifikat kompetensi, serta LoA bagi tugas akhir bentuk artikel ilmiah.",
     escalation:
       "Hubungi staf Program Studi Bisnis Digital atau petugas akademik untuk verifikasi persyaratan sidang.",
     ...PEDOMAN_TA,
@@ -972,10 +1028,11 @@ export const knowledgeBase = [
       "Pedoman UPI Edisi 2024: kemiripan di atas 40% wajib diperbaiki total dan tidak diizinkan untuk ujian sidang.",
       "Buku Panduan Tugas Akhir Prodi Bisnis Digital menyebut uji kemiripan Turnitin maksimal 35% sebagai syarat pendaftaran sidang.",
       "Alat uji yang disebutkan antara lain Turnitin, iThenticate, Grammarly, dan Quetext.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (6 November 2026, paling baru) menegaskan batas paling tinggi 25%, di atas 25% sampai 40% wajib memperbaiki bagian yang mirip, dan di atas 40% tidak bisa diajukan, sehingga batas 35% Turnitin di Buku Panduan April 2023 tidak berlaku lagi.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan sanksi atas tindakan plagiat.",
     answer:
-      "Dua dokumen resmi menyebutkan batas yang berbeda. Pedoman Penulisan Karya Ilmiah UPI Edisi 2024 menetapkan kemiripan di bawah 25% diizinkan untuk ujian sidang, kemiripan 25% sampai 40% wajib diperbaiki pada bagian yang mirip, dan kemiripan di atas 40% wajib diperbaiki total serta tidak diizinkan untuk ujian sidang. Sementara itu Buku Panduan Penyelesaian Tugas Akhir Prodi Bisnis Digital menyebut uji kemiripan melalui Turnitin maksimal 35% sebagai syarat pendaftaran sidang. Karena keduanya berbeda, mahasiswa perlu memastikan ketentuan mana yang diberlakukan pada jalurnya.",
+      "Dua dokumen resmi menyebutkan batas yang berbeda. Pedoman Penulisan Karya Ilmiah UPI Edisi 2024 menetapkan kemiripan di bawah 25% diizinkan untuk ujian sidang, kemiripan 25% sampai 40% wajib diperbaiki pada bagian yang mirip, dan kemiripan di atas 40% wajib diperbaiki total serta tidak diizinkan untuk ujian sidang. Sementara itu Buku Panduan Penyelesaian Tugas Akhir Prodi Bisnis Digital menyebut uji kemiripan melalui Turnitin maksimal 35% sebagai syarat pendaftaran sidang. Karena keduanya berbeda, mahasiswa perlu memastikan ketentuan mana yang diberlakukan pada jalurnya. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (6 November 2026, paling baru) menegaskan batas paling tinggi 25%, di atas 25% sampai 40% wajib memperbaiki bagian yang mirip, dan di atas 40% tidak bisa diajukan, sehingga batas 35% Turnitin di Buku Panduan April 2023 tidak berlaku lagi.",
     escalation:
       "Pastikan batas yang berlaku kepada Tim Pertimbangan Skripsi atau staf prodi sebelum mendaftar sidang, karena dua pedoman menyebut angka berbeda.",
     ...PEDOMAN_KTI,
@@ -1010,10 +1067,11 @@ export const knowledgeBase = [
       "Ide inti, argumen, analisis, dan kesimpulan harus hasil pemikiran penulis.",
       "Penulis wajib menyatakan penggunaan AI, dibuktikan dengan logbook berupa tangkapan layar pada semua bagian proses berbantuan AI, yang disertakan dalam lampiran.",
       "Karya tulis yang berbantuan AI maksimal 20%.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mewajibkan pernyataan penggunaan Generative AI yang transparan (platform, tujuan, dan bagian yang memakainya) dan verifikasi hasil AI oleh mahasiswa; peraturan itu tidak menyebut angka persentase batas penggunaan AI.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan ketentuan uji similaritas yang berkaitan.",
     answer:
-      "Karya tulis ilmiah di UPI dapat dibantu AI dengan ketentuan bahwa AI hanya menjadi alat bantu riset untuk masukan konsep, sementara akurasinya tetap harus berasal dari sumber dan referensi yang relevan. Penulis wajib menuliskan gagasannya dengan kalimat sendiri dan dilarang menyalin langsung hasil AI. AI boleh dipakai untuk merancang kerangka, memperbaiki parafrase, serta membantu tata bahasa dan struktur. Referensi yang diberikan AI wajib diverifikasi. Ide inti, argumen, analisis, dan kesimpulan harus merupakan hasil pemikiran penulis. Penulis wajib menyatakan penggunaan AI dengan melampirkan logbook berupa tangkapan layar pada semua bagian proses berbantuan AI, dan karya tulis yang berbantuan AI maksimal 20%.",
+      "Karya tulis ilmiah di UPI dapat dibantu AI dengan ketentuan bahwa AI hanya menjadi alat bantu riset untuk masukan konsep, sementara akurasinya tetap harus berasal dari sumber dan referensi yang relevan. Penulis wajib menuliskan gagasannya dengan kalimat sendiri dan dilarang menyalin langsung hasil AI. AI boleh dipakai untuk merancang kerangka, memperbaiki parafrase, serta membantu tata bahasa dan struktur. Referensi yang diberikan AI wajib diverifikasi. Ide inti, argumen, analisis, dan kesimpulan harus merupakan hasil pemikiran penulis. Penulis wajib menyatakan penggunaan AI dengan melampirkan logbook berupa tangkapan layar pada semua bagian proses berbantuan AI, dan karya tulis yang berbantuan AI maksimal 20%. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mewajibkan pernyataan penggunaan Generative AI yang transparan (platform, tujuan, dan bagian yang memakainya) dan verifikasi hasil AI oleh mahasiswa; peraturan itu tidak menyebut angka persentase batas penggunaan AI.",
     escalation:
       "Hubungi dosen pembimbing untuk memastikan bentuk pelaporan logbook penggunaan AI yang diterima.",
     ...PEDOMAN_KTI,
@@ -1078,10 +1136,11 @@ export const knowledgeBase = [
       "Seluruh mahasiswa program sarjana (S1) semester 3 dan 4 (Tingkat II) di lingkungan Kampus UPI Tasikmalaya diwajibkan mengikuti Program Pelatihan Intensif Kewirausahaan.",
       "Kewajiban ini juga berlaku bagi mahasiswa semester 5, 6, dan 7 (Tingkat III dan IV).",
       "Program ini merupakan syarat ujian sidang dan penyelesaian studi.",
+      "Catatan: Peraturan Rektor Nomor 70 Tahun 2026 mensyaratkan lulusan sarjana memiliki paling sedikit 1 sertifikat kewirausahaan atau MOOC/Micro Credential dan 100 poin kegiatan ekstrakurikuler.",
     ],
     closing: "Kalau kamu mau, saya bisa jelaskan persyaratan pendaftaran sidang lainnya.",
     answer:
-      "Berdasarkan Edaran Direktur Nomor 5572 Tahun 2025 tentang Pengaturan Pelaksanaan Program Wajib Mahasiswa Sarjana sebagai Syarat Ujian Sidang dan Penyelesaian Studi, seluruh mahasiswa program sarjana semester 3 dan 4 (Tingkat II), serta mahasiswa semester 5, 6, dan 7 (Tingkat III dan IV) di lingkungan Kampus UPI Tasikmalaya diwajibkan mengikuti Program Pelatihan Intensif Kewirausahaan. Program ini menjadi syarat ujian sidang dan penyelesaian studi.",
+      "Berdasarkan Edaran Direktur Nomor 5572 Tahun 2025 tentang Pengaturan Pelaksanaan Program Wajib Mahasiswa Sarjana sebagai Syarat Ujian Sidang dan Penyelesaian Studi, seluruh mahasiswa program sarjana semester 3 dan 4 (Tingkat II), serta mahasiswa semester 5, 6, dan 7 (Tingkat III dan IV) di lingkungan Kampus UPI Tasikmalaya diwajibkan mengikuti Program Pelatihan Intensif Kewirausahaan. Program ini menjadi syarat ujian sidang dan penyelesaian studi. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 mensyaratkan lulusan sarjana memiliki paling sedikit 1 sertifikat kewirausahaan atau MOOC/Micro Credential dan 100 poin kegiatan ekstrakurikuler.",
     escalation:
       "Hubungi Wakil Direktur Bidang Pendidikan, Kemahasiswaan dan Penjaminan Mutu Kampus UPI Tasikmalaya untuk jadwal dan bukti keikutsertaan pelatihan.",
     ...SURAT_KEWIRAUSAHAAN,
@@ -1668,5 +1727,268 @@ export const knowledgeBase = [
     escalation:
       "Hubungi perpustakaan atau unit layanan informasi UPI kalau akses Scopus bermasalah.",
     ...INFO_SCOPUS,
+  },
+
+  {
+    id: "perrek-syarat-ambil-ta",
+    category: "Tugas Akhir",
+    title: "Syarat mengambil tugas akhir dan mengajukan proposal (Peraturan Rektor 70/2026)",
+    questions: ["Apa syarat mengambil tugas akhir menurut Peraturan Rektor?", "Kapan paling cepat mengajukan proposal tugas akhir?"],
+    followUps: ["Apa saja isi proposal tugas akhir?", "Bagaimana proposal dinilai?"],
+    hints: ["Kapan paling cepat mengajukan proposal tugas akhir?", "Berapa persen SKS untuk mengambil tugas akhir?"],
+    keywords: ["peraturan rektor", "60% beban studi", "proposal paling cepat semester 6", "aturan rektor tugas akhir"],
+    lead: "Menurut Peraturan Rektor Nomor 70 Tahun 2026, syarat mengambil tugas akhir untuk program sarjana:",
+    points: [
+      "Sudah menempuh paling sedikit 60% dari total beban studi kurikulum.",
+      "Sudah lulus mata kuliah prasyarat yang relevan, baik metodologi penelitian maupun bidang atau tema tugas akhir.",
+      "Terdaftar sebagai mahasiswa aktif, tidak sedang cuti, sudah registrasi semester berjalan, dan mengontrak mata kuliah tugas akhir.",
+      "Proposal tugas akhir paling cepat diajukan pada semester 6.",
+      "Program studi boleh menetapkan ketentuan yang lebih spesifik, selama tidak menurunkan standar minimum UPI.",
+    ],
+    closing: "Kalau mau, saya jelaskan isi proposal dan cara penilaiannya.",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, mahasiswa program sarjana dapat mengambil tugas akhir setelah menempuh paling sedikit 60% dari total beban studi kurikulum, lulus mata kuliah prasyarat yang relevan (metodologi penelitian dan bidang atau tema tugas akhir), terdaftar aktif dan tidak cuti, sudah registrasi, serta mengontrak mata kuliah tugas akhir. Proposal paling cepat diajukan pada semester 6. Program studi boleh menetapkan syarat yang lebih spesifik selama tidak menurunkan standar minimum UPI.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-proposal",
+    category: "Tugas Akhir",
+    title: "Isi dan penilaian proposal tugas akhir (Peraturan Rektor 70/2026)",
+    questions: ["Apa saja isi proposal tugas akhir menurut Peraturan Rektor?", "Bagaimana hasil penilaian proposal tugas akhir?"],
+    followUps: ["Berapa lama perbaikan proposal?", "Apakah perbaikan proposal harus seminar ulang?"],
+    hints: ["Berapa lama perbaikan proposal setelah seminar?", "Berapa penelaah di seminar proposal?"],
+    keywords: ["peraturan rektor", "penelaah proposal", "hasil penilaian proposal", "perbaikan proposal"],
+    lead: "Isi dan penilaian proposal tugas akhir menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Proposal paling sedikit memuat judul atau tema, latar belakang dan rumusan masalah, tujuan dan manfaat, kajian pustaka, metode, serta rencana jadwal kegiatan.",
+      "Proposal dinilai lewat seminar dan/atau penelaahan oleh 2 sampai 4 penelaah untuk program sarjana, yang ditetapkan program studi.",
+      "Hasilnya salah satu dari: diterima tanpa perbaikan, diterima dengan perbaikan minor, diterima dengan perbaikan mayor, atau ditolak.",
+      "Perbaikan minor atau mayor wajib selesai paling lambat 10 hari kalender sejak hasil ditetapkan, diverifikasi prodi tanpa seminar proposal ulang.",
+      "Proposal yang ditolak diperbaiki sesuai rekomendasi penelaah dan diajukan lagi untuk seminar atau penelaahan ulang.",
+    ],
+    closing: "Mau saya jelaskan juga soal pembimbing tugas akhir?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, proposal tugas akhir memuat judul atau tema, latar belakang dan rumusan masalah, tujuan dan manfaat, kajian pustaka, metode, dan jadwal kegiatan. Proposal dinilai oleh 2 sampai 4 penelaah untuk program sarjana. Hasilnya diterima tanpa perbaikan, diterima dengan perbaikan minor atau mayor, atau ditolak. Perbaikan minor atau mayor harus selesai paling lambat 10 hari kalender tanpa seminar ulang, sedangkan proposal yang ditolak diajukan ulang.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-pembimbing",
+    category: "Tugas Akhir",
+    title: "Pembimbing tugas akhir dan bimbingan (Peraturan Rektor 70/2026)",
+    questions: ["Berapa pembimbing tugas akhir menurut Peraturan Rektor?", "Berapa kali minimal bimbingan tugas akhir dalam satu semester?"],
+    followUps: ["Kapan pembimbing bisa diganti?", "Siapa yang menetapkan pembimbing?"],
+    hints: ["Berapa kali minimal bimbingan dalam satu semester?", "Kapan pembimbing bisa diganti?"],
+    keywords: ["peraturan rektor", "bimbingan minimal 8 kali", "kualifikasi pembimbing", "penggantian pembimbing"],
+    lead: "Ketentuan pembimbing tugas akhir program sarjana menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Jumlah pembimbing paling sedikit 1 orang dan paling banyak 2 orang.",
+      "Pembimbing minimal berkualifikasi magister atau berjabatan akademik Lektor Kepala.",
+      "Pembimbing ditetapkan lewat Keputusan Dekan atau Direktur Kampus UPI di Daerah; prodi boleh mempertimbangkan usulan mahasiswa dan kesediaan dosen.",
+      "Bimbingan paling sedikit 8 kali dalam setiap semester, terdokumentasi, dan kemajuan dilaporkan lewat sistem informasi UPI.",
+      "Pembimbing dapat diganti, misalnya karena berhalangan tetap, bidang tugas akhir berubah, atau ada konflik kepentingan; usulan disampaikan ke prodi disertai alasan.",
+      "Hasil bimbingan sebelumnya tidak hilang ketika pembimbing diganti.",
+    ],
+    closing: "Kalau mau, saya jelaskan syarat mengikuti ujian sidang.",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, tugas akhir program sarjana dibimbing 1 sampai 2 dosen yang minimal bergelar magister atau berjabatan Lektor Kepala, ditetapkan lewat Keputusan Dekan atau Direktur Kampus UPI di Daerah. Bimbingan dilakukan paling sedikit 8 kali setiap semester dan didokumentasikan. Pembimbing dapat diganti atas alasan yang sah, seperti berhalangan tetap, perubahan bidang tugas akhir, atau konflik kepentingan.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-syarat-sidang",
+    category: "Tugas Akhir",
+    title: "Syarat mengikuti ujian sidang tugas akhir (Peraturan Rektor 70/2026)",
+    questions: ["Apa syarat mengikuti ujian sidang menurut Peraturan Rektor?", "Bagaimana mengajukan ujian sidang tugas akhir?"],
+    followUps: ["Berapa batas similaritas untuk sidang?", "Berapa penguji ujian sidang?"],
+    hints: ["Apa saja syarat sidang menurut Peraturan Rektor 70/2026?", "Siapa yang menetapkan jadwal ujian sidang?"],
+    keywords: ["peraturan rektor", "aturan rektor sidang", "sidang menurut peraturan rektor"],
+    lead: "Syarat dan pengajuan ujian sidang tugas akhir menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Akademik: tugas akhir dinyatakan layak oleh pembimbing, bimbingan sudah terpenuhi, kelengkapan produk terpenuhi, integritas akademik terpenuhi, dan publikasi ilmiah terpenuhi bila dipersyaratkan.",
+      "Administratif: mahasiswa aktif dan tidak cuti, sudah registrasi, serta mengontrak mata kuliah tugas akhir pada semester berjalan.",
+      "Pengajuan lewat SIAS atau sistem informasi yang ditetapkan UPI, dengan persetujuan pembimbing, bukti bimbingan, bukti integritas akademik, bukti publikasi, dan dokumen administratif.",
+      "Prodi memverifikasi kelengkapan; mahasiswa yang belum memenuhi syarat belum bisa ditetapkan mengikuti sidang.",
+      "Pelaksanaan sidang ditetapkan oleh Direktur Kampus UPI di Daerah, memuat waktu, tempat atau moda, tim penguji, dan pimpinan sidang.",
+    ],
+    closing: "Mau saya jelaskan batas similaritas dan aturan penggunaan AI sebelum sidang?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, mahasiswa bisa mengikuti ujian sidang setelah tugas akhirnya dinyatakan layak oleh pembimbing, bimbingan terpenuhi, kelengkapan produk dan integritas akademik terpenuhi, serta publikasi ilmiah terpenuhi bila dipersyaratkan. Mahasiswa juga harus aktif, tidak cuti, sudah registrasi, dan mengontrak mata kuliah tugas akhir. Pengajuan lewat SIAS dan diverifikasi prodi, lalu pelaksanaan sidang ditetapkan Direktur Kampus UPI di Daerah.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-similaritas-ai",
+    category: "Tugas Akhir",
+    title: "Batas similaritas dan penggunaan Generative AI sebelum sidang (Peraturan Rektor 70/2026)",
+    questions: ["Berapa batas similaritas untuk ujian sidang menurut Peraturan Rektor?", "Bagaimana aturan penggunaan AI di tugas akhir menurut Peraturan Rektor?"],
+    followUps: ["Apa yang harus dicantumkan kalau pakai AI?", "Apa yang terjadi kalau similaritas di atas 25%?"],
+    hints: ["Berapa batas similaritas untuk sidang?", "Apa yang wajib dicantumkan kalau memakai AI?"],
+    keywords: ["peraturan rektor", "batas similaritas", "generative ai", "pernyataan penggunaan ai"],
+    lead: "Ketentuan similaritas dan Generative AI untuk tugas akhir karya tulis ilmiah menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Wajib lolos uji similaritas dan pemeriksaan penggunaan Generative AI sebelum diajukan ke ujian sidang.",
+      "Kemiripan paling tinggi 25% agar boleh diajukan ke ujian sidang.",
+      "Kemiripan di atas 25% sampai 40%: wajib memperbaiki bagian yang mirip sebelum diajukan.",
+      "Kemiripan di atas 40%: wajib diperbaiki menyeluruh dan belum bisa diajukan.",
+      "Penggunaan Generative AI wajib dinyatakan dan didokumentasikan: nama atau jenis platform, tujuan dan bentuk penggunaan, serta bagian tugas akhir yang memakainya.",
+      "Hasil AI wajib diverifikasi mahasiswa, dan AI dilarang dipakai untuk plagiarisme, fabrikasi, falsifikasi, manipulasi data atau sitasi, atau menggantikan kontribusi intelektual mahasiswa.",
+      "Hasil deteksi AI hanya bukti pendukung, bukan satu-satunya dasar menyatakan pelanggaran.",
+    ],
+    closing: "Mau saya jelaskan syarat sidang secara lengkap?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, karya tulis ilmiah wajib lolos uji similaritas dan pemeriksaan penggunaan Generative AI sebelum sidang. Kemiripan paling tinggi 25% boleh diajukan; di atas 25% sampai 40% wajib memperbaiki bagian yang mirip; di atas 40% wajib diperbaiki menyeluruh dan tidak bisa diajukan. Penggunaan Generative AI wajib dinyatakan dan didokumentasikan (platform, tujuan, dan bagian yang memakainya), dan hasilnya wajib diverifikasi mahasiswa. Aturan ini lebih baru dari batas Turnitin 35% di Buku Panduan April 2023.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-sidang-hasil",
+    category: "Tugas Akhir",
+    title: "Pelaksanaan, hasil, dan ujian ulang sidang tugas akhir (Peraturan Rektor 70/2026)",
+    questions: ["Berapa penguji ujian sidang menurut Peraturan Rektor?", "Apa saja hasil ujian sidang dan bagaimana ujian ulang?"],
+    followUps: ["Berapa kali boleh ujian ulang?", "Bagaimana kalau tidak setuju dengan hasil sidang?"],
+    hints: ["Berapa kali boleh ujian sidang ulang?", "Bagaimana mengajukan keberatan atas hasil sidang?"],
+    keywords: ["peraturan rektor", "sidang ulang", "jumlah penguji sidang", "keberatan hasil sidang"],
+    lead: "Pelaksanaan dan hasil ujian sidang program sarjana menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Tim penguji paling sedikit 3 orang, boleh ditambah 1 orang untuk tugas akhir berupa produk, prototipe, proyek, atau portofolio.",
+      "Ujian sidang program sarjana dilaksanakan secara tertutup; pimpinan sidang tidak berasal dari pembimbing.",
+      "Mahasiswa wajib mempresentasikan tugas akhir, lalu menjalani tanya jawab dan pengujian.",
+      "Hasilnya: lulus tanpa perbaikan, lulus dengan perbaikan minor, perbaikan mayor dan ujian ulang, atau tidak lulus.",
+      "Yang tidak lulus atau perbaikan mayor boleh ujian ulang paling banyak 1 kali, paling cepat 14 hari dan paling lambat 30 hari kalender setelah sidang sebelumnya.",
+      "Mahasiswa yang tidak menyelesaikan perbaikan dalam batas waktu tidak dapat pengesahan tugas akhir, mengikuti yudisium, atau ditetapkan lulus.",
+      "Keberatan atas proses atau hasil diajukan tertulis ke Ketua Program Studi paling lambat 7 hari kerja sejak hasil diketahui.",
+    ],
+    closing: "Mau saya jelaskan syarat kelulusan setelah sidang?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, ujian sidang program sarjana diuji paling sedikit 3 penguji dan dilaksanakan tertutup. Hasilnya lulus tanpa perbaikan, lulus dengan perbaikan minor, perbaikan mayor dan ujian ulang, atau tidak lulus. Ujian ulang paling banyak 1 kali, paling cepat 14 hari dan paling lambat 30 hari kalender setelah sidang sebelumnya. Mahasiswa yang belum menyelesaikan perbaikan tidak dapat pengesahan, yudisium, atau ditetapkan lulus. Keberatan diajukan tertulis ke Ketua Program Studi paling lambat 7 hari kerja.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-syarat-kelulusan",
+    category: "Kelulusan",
+    title: "Syarat kelulusan program sarjana dan yudisium (Peraturan Rektor 70/2026)",
+    questions: ["Apa syarat kelulusan S1 menurut Peraturan Rektor?", "Apa syarat mengikuti yudisium?"],
+    followUps: ["Berapa poin ekstrakurikuler untuk lulus?", "Apa syarat publikasi untuk lulus?"],
+    hints: ["Berapa poin ekstrakurikuler untuk lulus?", "Apakah wajib sertifikat kewirausahaan untuk lulus?"],
+    keywords: ["peraturan rektor", "poin ekstrakurikuler", "sertifikat kewirausahaan", "yudisium"],
+    lead: "Syarat kelulusan program sarjana menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Akademik: seluruh beban studi selesai, tugas akhir lulus ujian sidang, memenuhi syarat nilai atau IPK kelulusan, dan tidak melebihi masa studi.",
+      "Kompetensi: sertifikat kemampuan bahasa Inggris atau bahasa asing lain dengan skor minimal dari Keputusan Rektor, dan paling sedikit 1 sertifikat kompetensi.",
+      "Publikasi ilmiah: antologi ilmiah, atau artikel ilmiah yang sudah mendapat LoA bagi yang memilih tugas akhir bentuk artikel ilmiah.",
+      "Pengembangan diri: paling sedikit 100 poin kegiatan ekstrakurikuler dan 1 sertifikat kewirausahaan atau MOOC/Micro Credential.",
+      "Administratif: surat keterangan bebas pustaka di SIAS dan persyaratan administratif lain.",
+      "Yudisium menetapkan kelulusan lewat Keputusan Dekan atau Direktur Kampus UPI di Daerah setelah perbaikan disahkan dan semua syarat terpenuhi.",
+      "Tugas akhir yang lulus diunggah ke Repositori UPI, dan lulusan bisa mengikuti wisuda.",
+    ],
+    closing: "Mau saya jelaskan predikat kelulusan (cum laude)?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, syarat kelulusan program sarjana meliputi: menyelesaikan seluruh beban studi dan lulus ujian sidang tugas akhir, tidak melebihi masa studi, sertifikat bahasa Inggris atau bahasa asing dan paling sedikit 1 sertifikat kompetensi, publikasi ilmiah (antologi atau artikel ber-LoA bagi tugas akhir bentuk artikel), paling sedikit 100 poin ekstrakurikuler dan 1 sertifikat kewirausahaan atau MOOC/Micro Credential, serta surat keterangan bebas pustaka di SIAS. Kelulusan ditetapkan lewat yudisium.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-predikat-kelulusan",
+    category: "Kelulusan",
+    title: "Predikat kelulusan program sarjana (Peraturan Rektor 70/2026)",
+    questions: ["Apa syarat predikat cum laude S1 menurut Peraturan Rektor?", "Apa syarat summa cum laude?"],
+    followUps: ["Apa syarat publikasi untuk cum laude?", "Bagaimana kalau tidak memenuhi syarat cum laude?"],
+    hints: ["Berapa nilai untuk cum laude?", "Apa syarat summa cum laude?"],
+    keywords: ["peraturan rektor", "predikat kelulusan", "cum laude", "summa cum laude", "magna cum laude"],
+    lead: "Predikat kelulusan program sarjana menurut Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Dengan pujian (Cum Laude): IPK dan nilai sidang 3,75 atau lebih, studi paling lama 8 semester, tidak mengulang mata kuliah untuk memperbaiki nilai, dan punya artikel terbit di jurnal nasional terakreditasi SINTA 4 atau di atasnya.",
+      "Dengan pujian tinggi (Magna Cum Laude): IPK dan nilai sidang 3,85 atau lebih, studi paling lama 7 semester, dan artikel di jurnal SINTA 3 atau di atasnya.",
+      "Dengan pujian tertinggi (Summa Cum Laude): IPK dan nilai sidang 3,90 atau lebih, studi paling lama 7 semester, dan artikel di jurnal SINTA 2 atau di atasnya.",
+      "Yang tidak memenuhi satu tingkat predikat bisa mendapat predikat di bawahnya selama memenuhi syaratnya.",
+      "Predikat yang tersedia: memuaskan, sangat memuaskan, cum laude, magna cum laude, dan summa cum laude.",
+    ],
+    closing: "Mau saya jelaskan syarat kelulusan lainnya?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 70 Tahun 2026, program sarjana: Cum Laude butuh IPK dan nilai sidang 3,75 atau lebih, studi paling lama 8 semester, tidak mengulang mata kuliah untuk memperbaiki nilai, dan artikel terbit di jurnal SINTA 4 atau di atasnya. Magna Cum Laude butuh IPK dan nilai sidang 3,85 atau lebih, studi paling lama 7 semester, dan jurnal SINTA 3 atau di atasnya. Summa Cum Laude butuh IPK dan nilai sidang 3,90 atau lebih, studi paling lama 7 semester, dan jurnal SINTA 2 atau di atasnya. Yang tidak memenuhi bisa mendapat predikat di bawahnya.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "perrek-berlaku-peralihan",
+    category: "Tugas Akhir",
+    title: "Mulai berlakunya Peraturan Rektor 70/2026 dan mahasiswa yang sedang menyusun tugas akhir",
+    questions: ["Sejak kapan Peraturan Rektor 70 Tahun 2026 berlaku?", "Apakah aturan baru berlaku untuk mahasiswa yang sudah menyusun tugas akhir?"],
+    followUps: ["Apakah aturan lama masih berlaku?", "Bagaimana kalau saya sudah sidang sebelum aturan baru?"],
+    hints: ["Sejak kapan Peraturan Rektor 70 Tahun 2026 berlaku?", "Apakah aturan lama masih berlaku?"],
+    keywords: ["peraturan rektor", "peraturan rektor 70", "aturan baru tugas akhir", "ketentuan peralihan"],
+    lead: "Keberlakuan Peraturan Rektor Nomor 70 Tahun 2026:",
+    points: [
+      "Ditetapkan di Bandung pada 6 November 2026 dan mulai berlaku pada tanggal ditetapkan.",
+      "Ketentuan tugas akhir yang bertentangan dengan peraturan ini dinyatakan tidak berlaku; yang tidak bertentangan tetap berlaku.",
+      "Mahasiswa yang judul atau topiknya sudah disetujui sebelum peraturan ini berlaku tetap menyelesaikan dengan ketentuan saat persetujuan, tetapi kalau melewati jangka waktunya, mengikuti peraturan ini.",
+      "Ketentuan integritas akademik dan pelindungan data langsung berlaku untuk semua.",
+      "Mahasiswa yang sudah sidang sebelum peraturan ini berlaku menyelesaikan perbaikan dan syarat kelulusan dengan ketentuan saat sidang.",
+      "Prodi boleh menetapkan ketentuan teknis yang lebih spesifik, selama tidak menurunkan standar minimum UPI.",
+    ],
+    closing: "Kalau mau, saya jelaskan isi aturan barunya, misalnya syarat sidang atau batas similaritas.",
+    answer:
+      "Peraturan Rektor Nomor 70 Tahun 2026 ditetapkan di Bandung pada 6 November 2026 dan berlaku sejak ditetapkan. Ketentuan tugas akhir yang bertentangan dengannya tidak berlaku lagi. Mahasiswa yang judul atau topiknya sudah disetujui sebelumnya tetap menyelesaikan dengan ketentuan saat persetujuan, kecuali melewati jangka waktu penyelesaian atau menyangkut integritas akademik dan pelindungan data. Mahasiswa yang sudah sidang menyelesaikan perbaikan dengan ketentuan saat sidang.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada ketentuan teknis yang belum jelas.",
+    ...PERREK_70,
+  },
+
+  {
+    id: "template-dokumen-administrasi",
+    category: "Tugas Akhir",
+    title: "Template dokumen seminar proposal, seminar hasil, dan sidang",
+    questions: ["Di mana template dokumen seminar proposal?", "Di mana format dokumen pendaftaran seminar hasil dan sidang?"],
+    followUps: ["Dokumen apa saja untuk seminar proposal?", "Di mana formulir pendaftaran seminar proposal?"],
+    hints: ["Di mana template dokumen sempro?", "Format lembar bimbingan proposal ada di mana?"],
+    keywords: ["template sempro", "template dokumen", "format sem", "format dokumen sempro", "unduh template", "lembar bimbingan", "kartu hadir seminar", "bukti keikutsertaan sempro", "daftar kelengkapan sidang", "template seminar hasil"],
+    lead: "Template dokumen administrasi tugas akhir yang tersedia (unduh langsung):",
+    points: [
+      "SEM 1 – Lembar Bimbingan Proposal Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-1-lembar-bimbingan-proposal-tugas-akhir.docx",
+      "SEM 2 – Permohonan Seminar Proposal Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-2-permohonan-seminar-proposal-tugas-akhir.docx",
+      "SEM 3 – Kartu Hadir Partisipan Seminar Proposal: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-3-kartu-hadir-partisipan-seminar-proposal.docx",
+      "SEM 4 – Daftar Hadir Dosen Penguji dan Mahasiswa Seminar Proposal: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-4-daftar-hadir-dosen-penguji-dan-mahasiswa-sempro.docx",
+      "SEM 5 – Penilaian Seminar Proposal Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-5-penilaian-seminar-proposal-tugas-akhir.docx",
+      "SEM 6 – Pernyataan Kesediaan Membimbing Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-6-pernyataan-kesediaan-membimbing-tugas-akhir.docx",
+      "SEM 7 – Keterangan Publikasi Karya Ilmiah: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-7-keterangan-publikasi-karya-ilmiah.docx",
+      "SEM 8 – Berita Acara Uji Kemiripan (Similarity): https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-8-berita-acara-uji-kemiripan-similarity.docx",
+      "SEM 9 – Laporan Hasil Penelitian (Seminar Hasil): https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-9-laporan-hasil-penelitian-seminar-hasil.docx",
+      "SEM 10 – Persetujuan Submit Artikel dari Dosen Pembimbing: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-10-persetujuan-submit-artikel-dosen-pembimbing.docx",
+      "Format 11 – Lembar Pernyataan Perbaikan Besar/Substansial: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/format-11-lembar-pernyataan-perbaikan-besar-substansial.docx",
+      "Format 12 – Persetujuan Seminar Hasil: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/format-12-persetujuan-seminar-hasil.docx",
+      "Daftar Kelengkapan Persyaratan Ujian Sidang Tugas Akhir S1: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/daftar-kelengkapan-persyaratan-ujian-sidang-s1.docx",
+      "Bukti Keikutsertaan Seminar Proposal (10 kali partisipan): https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/bukti-keikutsertaan-sempro.pdf",
+    ],
+    closing: "Template resmi lengkapnya juga ada di https://bit.ly/Format-Template_admPenyelesaianStudi. Mau saya jelaskan dokumen apa saja yang perlu untuk seminar proposal?",
+    answer:
+      "Template dokumen untuk seminar proposal, seminar hasil, dan sidang tersedia sebagai berkas unduhan: SEM 1 sampai SEM 10 (lembar bimbingan, permohonan seminar proposal, kartu hadir, daftar hadir penguji, penilaian, kesediaan membimbing, keterangan publikasi, berita acara uji kemiripan, laporan hasil penelitian, persetujuan submit artikel), Format 11 dan 12, daftar kelengkapan sidang S1, serta bukti keikutsertaan seminar proposal. Semuanya juga ada di https://bit.ly/Format-Template_admPenyelesaianStudi.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau template tidak bisa dibuka atau butuh versi terbaru.",
+    sourceTitle: "Template dokumen administrasi penyelesaian studi (Format SEM 1–12 dan daftar kelengkapan sidang)",
+    sourceOwner: "Program Studi, Universitas Pendidikan Indonesia Kampus Daerah Tasikmalaya",
+    validPeriod: "Tahun Akademik 2026/2027",
+    updatedAt: "Tanggal terbit tidak tercantum pada template",
+    sourceRef: "Template kelengkapan dokumen pendaftaran seminar proposal, seminar hasil, dan ujian sidang (bit.ly/Format-Template_admPenyelesaianStudi)",
+    // Berupa berkas template (docx), bukan PDF yang bisa dibuka di pembaca dokumen.
+    sourceUrl: null,
   },
 ];
