@@ -9,6 +9,7 @@ import { classifyOutcome, recordEvent } from "./events.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import { sourceSet } from "../../lib/source-set.js";
+import { cleanHistory, contextQuery, mergeContext, needsContext, soundsLikeFollowUp } from "../../lib/followup.js";
 import {
   authenticate,
   createSession,
@@ -120,10 +121,12 @@ async function handleAsk(request, env, cors, ctx) {
   let scope = null;
   let topic = null;
   let lang = "id";
-  let previous = null;
+  let history = [];
   try {
-    ({ question = "", conversationId = null, scope = null, topic = null, lang = "id", previous = null } = await request.json());
-    previous = typeof previous === "string" && previous.trim() ? previous.trim().slice(0, MAX_QUESTION_LENGTH) : null;
+    const body = await request.json();
+    ({ question = "", conversationId = null, scope = null, topic = null, lang = "id" } = body);
+    // Giliran sebelumnya di chat yang sama; `previous` dari browser lama tetap dimengerti.
+    history = cleanHistory(body.history, body.previous);
     lang = lang === "en" ? "en" : "id";
   } catch {
     return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
@@ -169,21 +172,27 @@ async function handleAsk(request, env, cors, ctx) {
   });
   let { entries } = found;
   let evidence = { status: found.status, score: found.score };
-  // Pertanyaan lanjutan seperti "berarti aku ikut yang mana?" tidak memuat topiknya sendiri:
-  // kalau tidak ada yang cocok, cari lagi bersama pertanyaan sebelumnya dan teruskan ke model.
+  // Percakapan yang nyambung: pertanyaan lanjutan ("berarti aku ikut yang mana?") tidak memuat
+  // topiknya sendiri, jadi dicari bersama giliran sebelumnya. Pertanyaan yang jelas topiknya
+  // sendiri tetap dicari sendiri, supaya ganti topik tidak terseret topik sebelumnya.
   let askedBefore = null;
-  if (!entries.length && !clicked && previous) {
-    const prevText = lang === "en" ? toIndonesianQuery(previous) : previous;
-    const again = retrieve(`${prevText} ${searchText}`, knowledgeBase, {
+  if (!clicked && history.length && needsContext(searchText, found, history)) {
+    const translate = (text) => (lang === "en" ? toIndonesianQuery(text) : text);
+    const again = retrieve(contextQuery(searchText, history, translate), knowledgeBase, {
       scope: typeof scope === "string" ? scope : null,
       excluded,
     });
-    if (again.entries.length) {
-      entries = again.entries;
-      evidence = { status: again.status, score: again.score };
-      askedBefore = previous;
+    const lastId = [...history].reverse().find((turn) => turn.entryId)?.entryId;
+    const last = knowledgeBase.find((entry) => entry.id === lastId && !excluded.has(entry.sourceUrl)) ?? null;
+    const merged = mergeContext(found, again, last);
+    if (merged.length) {
+      entries = merged;
+      evidence = { status: again.entries.length ? again.status : "match", score: again.score };
+      askedBefore = history;
     }
   }
+  // Model tetap diberi riwayatnya untuk pertanyaan yang terdengar seperti lanjutan.
+  if (!askedBefore && history.length && !clicked && soundsLikeFollowUp(question)) askedBefore = history;
   if (clicked && typeof topic === "string") {
     const prioritized = prioritizeTopic(entries, knowledgeBase, topic.slice(0, 80), {
       scope: typeof scope === "string" ? scope : null,
@@ -248,7 +257,7 @@ async function handleAsk(request, env, cors, ctx) {
         question,
         entries,
         lang,
-        previous: askedBefore,
+        history: askedBefore ?? [],
         apiKey: env.GEMINI_API_KEY,
         models: [env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", env.GEMINI_FALLBACK_MODEL],
         totalMs: env.AI ? PRIMARY_BUDGET_MS : undefined,
@@ -259,7 +268,7 @@ async function handleAsk(request, env, cors, ctx) {
       if (!env.AI) throw geminiError;
       console.warn("gemini gagal, beralih ke Workers AI:", String(geminiError).slice(0, 200));
       const backupModel = env.AI_FALLBACK_MODEL || WORKERS_AI_MODEL;
-      answer = await askWorkersAI({ question, entries, lang, previous: askedBefore, ai: env.AI, model: backupModel });
+      answer = await askWorkersAI({ question, entries, lang, history: askedBefore ?? [], ai: env.AI, model: backupModel });
       console.warn(`dijawab oleh cadangan ${backupModel}`);
     }
     note(false);
@@ -285,7 +294,7 @@ async function handleAsk(request, env, cors, ctx) {
         followUps: top?.followUps ?? [],
         conversationId: savedTo,
         // Semua dokumen yang dipakai jawaban, yang terbaru lebih dulu dan bertanda `newest`.
-        citations: fromPassage ? [] : sourceSet(entries, answer, `${askedBefore ?? ""} ${searchText}`).map(publicCitation),
+        citations: fromPassage ? [] : sourceSet(entries, answer, `${(askedBefore ?? []).map((turn) => turn.q).join(" ")} ${searchText}`).map(publicCitation),
         citation: citation
           ? {
               documentId: citation.documentId,

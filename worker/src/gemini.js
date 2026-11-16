@@ -15,6 +15,8 @@ ATURAN ISI YANG WAJIB DIPATUHI:
 8. Kalau pertanyaannya diawali "Jelaskan lebih detail poin" lalu mengutip sebuah kalimat, mulailah langsung dengan menjelaskan maksud kalimat itu memakai kata yang lebih sederhana dan isi konteks, tanpa diawali permintaan maaf. Beri contoh kalau konteksnya memuat contoh. Hanya kalau konteks sama sekali tidak punya tambahan, tutup dengan satu kalimat bahwa informasi di dokumen hanya sebatas itu dan sarankan menghubungi tenaga administrasi program studi. Jangan menjawab bahwa kamu "tidak punya rujukan" untuk kalimat itu.
 9. Kalau pertanyaannya apakah sebuah dokumen ada atau tersedia, dan dokumen itu muncul pada "Sumber:" di konteks, jawab bahwa dokumennya ada dan bisa dibuka lewat kartu sumber di bawah jawaban, lalu sebut isinya secara singkat. Jangan mengatakan dokumen itu tidak ada kalau ia tercantum sebagai sumber.
 
+10. Kamu ikut membaca "RIWAYAT PERCAKAPAN" kalau ada. Pertanyaan terbaru sering melanjutkan pembicaraan itu ("berarti aku ikut yang mana?", "kalau telat gimana?", "kok beda?"). Pahami kata seperti "itu", "tadi", "yang mana", atau "kalau begitu" dari riwayat, lalu jawab pertanyaan terbaru dengan isi KONTEKS PEDOMAN. Jangan menjawab "belum menemukan" hanya karena pertanyaan terbarunya pendek, kalau riwayat dan konteks cukup untuk menjawabnya. Kalau pertanyaan terbaru jelas berganti topik, abaikan riwayat. Jangan mengulang isi jawaban sebelumnya kecuali perlu untuk menjawab, dan jangan mengutip riwayat sebagai sumber: sumber tetap dokumen di konteks.
+
 GAYA BAHASA:
 - Pakai Bahasa Indonesia sehari-hari yang sopan dan hangat, seperti staf prodi yang ramah. Panggil penanya "kamu" dan sebut dirimu "saya".
 - Kalimat pendek, satu gagasan per kalimat. Jangan pakai heading, huruf tebal, atau tabel.
@@ -62,8 +64,16 @@ export function normalizeLang(lang) {
   return lang === "en" ? "en" : "id";
 }
 
-export function buildInput(question, entries, lang = "id", previous = null) {
-  const before = previous ? `\n\nPERTANYAAN SEBELUMNYA DARI MAHASISWA YANG SAMA: ${previous}\n(Pertanyaan di bawah melanjutkan itu.)` : "";
+/** Giliran sebelumnya dalam chat yang sama, supaya pertanyaan lanjutan bisa dipahami. */
+export function buildHistoryBlock(history) {
+  const turns = (Array.isArray(history) ? history : []).filter((turn) => turn?.q);
+  if (!turns.length) return "";
+  const lines = turns.map((turn) => `Mahasiswa: ${turn.q}${turn.a ? `\nSAPA: ${turn.a}` : ""}`);
+  return `\n\nRIWAYAT PERCAKAPAN (dari yang lama; hanya untuk memahami pertanyaan terbaru):\n${lines.join("\n")}`;
+}
+
+export function buildInput(question, entries, lang = "id", history = []) {
+  const before = buildHistoryBlock(history);
   const base = `${buildContextBlock(entries)}${before}\n\nPERTANYAAN MAHASISWA: ${question}`;
   return normalizeLang(lang) === "en" ? `${base}\n\n${ENGLISH_NOTE}` : base;
 }
@@ -128,7 +138,7 @@ export async function askGemini({
   question,
   entries,
   lang = "id",
-  previous = null,
+  history = [],
   apiKey,
   model,
   fetchImpl = fetch,
@@ -140,7 +150,7 @@ export async function askGemini({
   const body = JSON.stringify({
     model,
     system_instruction: SYSTEM_INSTRUCTION,
-    input: buildInput(question, entries, lang, previous),
+    input: buildInput(question, entries, lang, history),
     // The same question must not get a differently worded answer depending on
     // who asked it. Nothing about the reader reaches the prompt, and a fixed
     // seed keeps the decoding reproducible too. The provider does not promise
@@ -255,7 +265,7 @@ export async function askWorkersAI({
   question,
   entries,
   lang = "id",
-  previous = null,
+  history = [],
   ai,
   model = WORKERS_AI_MODEL,
   timeoutMs = WORKERS_AI_BUDGET_MS,
@@ -272,7 +282,7 @@ export async function askWorkersAI({
       ai.run(model, {
         messages: [
           { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user", content: buildInput(question, entries, lang, previous) },
+          { role: "user", content: buildInput(question, entries, lang, history) },
         ],
         max_tokens: 700,
         temperature: 0,

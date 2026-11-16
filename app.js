@@ -116,7 +116,7 @@ const state = {
   loginEnabled: Boolean(API_URL),
   sessionToken: null,
   conversationId: null, // percakapan yang sedang dibuka (id dari server)
-  lastQuestion: null, // pertanyaan terakhir di chat ini, dikirim supaya pertanyaan lanjutan paham topiknya
+  history: [], // giliran sebelumnya di chat ini ({ q, a, entryId }), dikirim supaya pertanyaan lanjutan nyambung
   conversations: [], // riwayat tersimpan milik pengguna
   sessionChats: [], // percakapan sesi ini bagi yang belum masuk (tidak disimpan)
   activeLocalChat: null,
@@ -751,7 +751,7 @@ async function askBackend(question, topic = null) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(state.lastQuestion ? { previous: state.lastQuestion } : {}), ...(topic ? { topic } : {}) }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(state.history.length ? { history: state.history.slice(-3) } : {}), ...(topic ? { topic } : {}) }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -851,8 +851,11 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   fillCard(card, response, { feedback: true, question });
   scrollToEnd();
-  // Untuk pertanyaan lanjutan; klik-angka bukan pertanyaan baru, jadi tidak menggantinya.
-  if (!clarifiedSentence(question)) state.lastQuestion = question;
+  // Untuk pertanyaan lanjutan; klik-angka bukan pertanyaan baru, jadi tidak ikut dicatat.
+  if (!clarifiedSentence(question) && response.type === "answer") {
+    state.history.push({ q: question, a: answerText(response).slice(0, 500), entryId: response.entry?.id ?? null });
+    state.history = state.history.slice(-3);
+  }
 
   trackLocalChat(question, response);
   if (answeredLocally) await recordLocalAnswer(question, response);
@@ -864,7 +867,7 @@ function resetChat() {
   state.conversationId = null;
   state.activeLocalChat = null;
   state.suggestedQuestion = null;
-  state.lastQuestion = null;
+  state.history = [];
   clearScope();
   refs.chatLog.replaceChildren();
   refs.question.value = "";
@@ -997,6 +1000,17 @@ async function openConversation(id) {
         });
       }
     }
+    // Percakapan yang dibuka bisa dilanjutkan: tiga giliran terakhirnya jadi riwayat.
+    state.history = [];
+    let pendingQuestion = null;
+    for (const message of conversation.messages) {
+      if (message.role === "user") pendingQuestion = message.content;
+      else if (pendingQuestion) {
+        state.history.push({ q: pendingQuestion, a: String(message.content).slice(0, 500), entryId: message.entry_id ?? null });
+        pendingQuestion = null;
+      }
+    }
+    state.history = state.history.slice(-3);
     scrollToEnd();
   } catch (error) {
     console.warn("Tidak bisa membuka percakapan:", error);
@@ -1692,6 +1706,7 @@ async function deleteAllHistory() {
     if (!response.ok) throw new Error(`delete ${response.status}`);
     state.conversations = [];
     state.conversationId = null;
+    state.history = [];
     renderRecent();
     showToast("Semua riwayat dihapus.");
   } catch (error) {
@@ -2027,6 +2042,7 @@ function signOutLocally(message, { keepScreen = false } = {}) {
   state.account = null;
   state.conversations = [];
   state.conversationId = null;
+  state.history = [];
   if (!keepScreen) refs.chatLog.replaceChildren();
   renderAccount();
   if (!keepScreen) showView("home");

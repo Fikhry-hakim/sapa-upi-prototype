@@ -154,6 +154,7 @@ export const citations = {
   "irs-perwalian-jadwal": { page: 1, highlight: "Pengisian IRS dan perwalian daring mulai tanggal 20 Juli – 10 Agustus 2026." },
   "irs-prosedur-prodi": { page: 1, highlight: "Dosen Pembimbing Akademik memeriksa kembali kesesuaian mata kuliah yang dikontrak" },
   "mata-kuliah-ganjil-2026": { page: 1, highlight: "Daftar mata kuliah yang dapat dikontrak." },
+  "kalender-cuti-akademik": { page: 5, highlight: "Pengajuan 27 Juli - 21 Agustus 2026" },
   "cuti-akademik-batas": { page: 1, highlight: "paling lambat tanggal 16 November 2026" },
   "ta-artikel-ttg-angkatan-2023": { page: 1, highlight: "Pengajuan dilaksanakan dalam dua periode" },
   "msib-laporan-akhir": { page: 1, highlight: "Mahasiswa melaksanakan kegiatan MSIB di tempat yang sudah ditentukan" },

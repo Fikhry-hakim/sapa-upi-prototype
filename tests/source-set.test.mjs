@@ -38,10 +38,12 @@ test("the top entry is always a source, even when the answer does not quote its 
 });
 
 test("a follow-up carries the earlier question to the model", () => {
-  const input = buildInput("berarti aku ikut yang mana?", [se48, se68], "id", "pengajuan cuti sampai kapan");
-  assert.match(input, /PERTANYAAN SEBELUMNYA[^\n]*: pengajuan cuti sampai kapan/);
-  assert.ok(input.indexOf("PERTANYAAN SEBELUMNYA") < input.indexOf("PERTANYAAN MAHASISWA"));
-  assert.ok(!/PERTANYAAN SEBELUMNYA/.test(buildInput("x", [se48], "id")));
+  const history = [{ q: "pengajuan cuti sampai kapan", a: "Batasnya 16 November 2026." }];
+  const input = buildInput("berarti aku ikut yang mana?", [se48, se68], "id", history);
+  assert.match(input, /RIWAYAT PERCAKAPAN/);
+  assert.match(input, /Mahasiswa: pengajuan cuti sampai kapan\nSAPA: Batasnya 16 November 2026\./);
+  assert.ok(input.indexOf("RIWAYAT PERCAKAPAN") < input.indexOf("PERTANYAAN MAHASISWA"));
+  assert.ok(!/RIWAYAT PERCAKAPAN/.test(buildInput("x", [se48], "id")));
 });
 
 test("the older document on the same matter is listed even when the answer never cites its number", () => {
@@ -53,4 +55,12 @@ test("the older document on the same matter is listed even when the answer never
 test("an unrelated context entry is not pulled in just because it was retrieved", () => {
   const set = sourceSet([se68, byId("ttg-pengajuan")], "Batasnya 16 November 2026.", "pengajuan cuti sem ganjil sampai kapan");
   assert.equal(set.length, 1);
+});
+
+test("the calendar, the earlier circular and the newer circular all show for a cuti question, newest in force", () => {
+  const calendar = byId("kalender-cuti-akademik");
+  const set = sourceSet([calendar, se68, se48], "Kalender menyebut 27 Juli–21 Agustus.", "pengajuan cuti sem ganjil di kalender akademik kok berbeda");
+  assert.deepEqual(set.map((item) => item.entry.id), ["cuti-akademik-batas", "ukt-pembayaran-ganjil", "kalender-cuti-akademik"]);
+  assert.equal(set[0].newest, true);
+  assert.equal(set[2].citation.page, 5);
 });

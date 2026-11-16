@@ -1193,6 +1193,40 @@ export const knowledgeBase = [
   },
 
   {
+    id: "kalender-cuti-akademik",
+    category: "Kalender Akademik",
+    title: "Jadwal pengajuan cuti akademik menurut Kalender Akademik 2026/2027",
+    questions: [
+      "Kapan jadwal pengajuan cuti akademik di kalender akademik?",
+      "Kenapa jadwal cuti di kalender akademik berbeda dengan surat edaran?",
+      "Kapan pengajuan cuti akademik semester genap 2027?",
+    ],
+    followUps: [
+      "Kapan batas akhir pengajuan cuti akademik semester ganjil 2026/2027?",
+      "Kapan batas pembayaran UKT?",
+      "Siapa yang harus saya hubungi?",
+    ],
+    hints: [
+      "Kapan pengajuan cuti akademik semester genap?",
+      "Kapan batas akhir pengajuan cuti akademik semester ganjil 2026/2027?",
+      "Kapan batas pembayaran UKT?",
+    ],
+    keywords: ["kalender akademik", "cuti akademik", "cuti", "pengajuan cuti", "berbeda", "semester genap", "semester ganjil"],
+    lead: "Menurut Kalender Akademik UPI 2026/2027, jadwal pengajuan cuti akademik adalah:",
+    points: [
+      "Semester ganjil: pengajuan 27 Juli–21 Agustus 2026.",
+      "Semester genap: pengajuan 26 Juli–16 Agustus 2027.",
+      "Kalender ini ditetapkan 7 Januari 2026. Untuk mahasiswa yang belum membayar UKT semester ganjil 2026/2027, Surat Edaran Nomor 68 Tahun 2026 (26 Agustus 2026) menetapkan batas akhir pengajuan cuti 16 November 2026. Karena lebih baru, surat edaran itu yang diikuti.",
+    ],
+    closing: "Kalau kamu mau, saya bisa jelaskan batas akhir cuti menurut surat edaran terbaru.",
+    answer:
+      "Menurut Kalender Akademik UPI 2026/2027, pengajuan cuti akademik semester ganjil berlangsung 27 Juli sampai 21 Agustus 2026, dan semester genap 26 Juli sampai 16 Agustus 2027. Kalender ini ditetapkan 7 Januari 2026. Untuk mahasiswa yang belum membayar UKT semester ganjil 2026/2027, Surat Edaran Nomor 68 Tahun 2026 (26 Agustus 2026) menetapkan batas akhir pengajuan cuti 16 November 2026. Karena surat edaran itu lebih baru, itulah yang diikuti kalau ada perbedaan dengan kalender.",
+    escalation:
+      "Segera hubungi staf Program Studi Bisnis Digital atau petugas akademik untuk proses pengajuan cuti.",
+    ...KALENDER_UPI,
+  },
+
+  {
     id: "kalender-semester-antara",
     category: "Kalender Akademik",
     title: "Jadwal semester antara (semester padat) 2026 dan 2027",
