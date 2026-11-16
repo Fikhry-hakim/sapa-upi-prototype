@@ -1,7 +1,7 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { documents, citationFor } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
-import { clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
+import { clarifiedSentence, clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { createOwner } from "./owner.js";
@@ -116,6 +116,7 @@ const state = {
   loginEnabled: Boolean(API_URL),
   sessionToken: null,
   conversationId: null, // percakapan yang sedang dibuka (id dari server)
+  lastQuestion: null, // pertanyaan terakhir di chat ini, dikirim supaya pertanyaan lanjutan paham topiknya
   conversations: [], // riwayat tersimpan milik pengguna
   sessionChats: [], // percakapan sesi ini bagi yang belum masuk (tidak disimpan)
   activeLocalChat: null,
@@ -493,7 +494,9 @@ function renderTable(table, parent) {
   parent.append(wrap);
 }
 
-function renderReferences(entry, parent, served = null) {
+function renderReferences(entry, parent, served = null, many = []) {
+  // Beberapa dokumen: semuanya ditampilkan, yang terbaru paling atas dan bertanda.
+  if (many?.length > 1) return renderManyReferences(entry, parent, many);
   // Jawaban dari dokumen unggahan membawa rujukannya sendiri dari Worker.
   const citation = served ?? citationFor(entry);
   const box = make("div", "refs");
@@ -501,14 +504,7 @@ function renderReferences(entry, parent, served = null) {
   const list = make("div", "refs-list");
 
   if (citation) {
-    const chip = make("button", "ref-chip");
-    chip.type = "button";
-    chip.innerHTML = ICON.file;
-    chip.append(`${citation.document.title}, hal. ${citation.page}`);
-    chip.addEventListener("click", () =>
-      viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
-    );
-    list.append(chip);
+    list.append(sourceChip(citation));
   } else {
     const chip = make("span", "ref-chip ref-chip-muted");
     chip.innerHTML = ICON.file;
@@ -518,6 +514,49 @@ function renderReferences(entry, parent, served = null) {
   box.append(list);
 
   if (!citation) box.append(make("p", "ref-note", "Dokumen ini belum bisa dibuka di SAPA."));
+  box.append(make("p", "ref-note escalation-note", contactNote(entry)));
+  box.append(ultNote());
+  parent.append(box);
+}
+
+function sourceChip(citation) {
+  const chip = make("button", "ref-chip");
+  chip.type = "button";
+  chip.innerHTML = ICON.file;
+  chip.append(`${citation.document.title}, hal. ${citation.page}`);
+  chip.addEventListener("click", () =>
+    viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
+  );
+  return chip;
+}
+
+/** Dua dokumen atau lebih: yang terbaru ditonjolkan sebagai yang berlaku. */
+function renderManyReferences(entry, parent, citations) {
+  const box = make("div", "refs refs-many");
+  box.append(make("p", "refs-label", "SUMBER DOKUMEN RESMI"));
+  const list = make("div", "refs-stack");
+  const newest = citations.find((item) => item.newest);
+
+  for (const item of citations) {
+    const row = make("div", item.newest ? "ref-row ref-row-newest" : "ref-row");
+    const head = make("div", "ref-row-head");
+    if (item.newest) head.append(make("span", "ref-badge", "Terbaru · berlaku"));
+    else if (newest) head.append(make("span", "ref-badge ref-badge-old", "Sebelumnya"));
+    if (item.updatedAt) head.append(make("span", "ref-date", item.updatedAt));
+    row.append(head, sourceChip(item));
+    list.append(row);
+  }
+  box.append(list);
+
+  if (newest) {
+    box.append(
+      make(
+        "p",
+        "ref-note ref-newest-note",
+        `Kalau ada perbedaan, ikuti dokumen terbaru: ${newest.document.reference || newest.document.title} (${newest.updatedAt}).`,
+      ),
+    );
+  }
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
   box.append(ultNote());
   parent.append(box);
@@ -644,7 +683,7 @@ function fillCard(card, response, { feedback = false, question = "" } = {}) {
     if (counter.n > 0) body.append(make("p", "clarify-hint", "Mau penjelasan lebih lanjut? Klik angka di ujung kalimat."));
 
     if (entry?.table) renderTable(entry.table, body);
-    if (entry) renderReferences(entry, body, response.citation);
+    if (entry) renderReferences(entry, body, response.citation, response.citations);
     else renderContactOnly(body, null); // Gemini menjawab tanpa satu topik kurasi yang jelas — tetap wajib ada kontak.
     followUps = renderFollowUps(response.followUpQuestions);
     // Placeholder kotak ketik mengikuti topik yang sedang dibahas, bukan kalimat tetap.
@@ -712,7 +751,7 @@ async function askBackend(question, topic = null) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(topic ? { topic } : {}) }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(state.lastQuestion ? { previous: state.lastQuestion } : {}), ...(topic ? { topic } : {}) }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -725,6 +764,7 @@ async function askBackend(question, topic = null) {
     message: data.answer,
     entry: data.entry,
     citation: data.citation ?? null,
+    citations: data.citations ?? [],
     followUpQuestions: data.followUps ?? [],
   };
 }
@@ -811,6 +851,8 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   fillCard(card, response, { feedback: true, question });
   scrollToEnd();
+  // Untuk pertanyaan lanjutan; klik-angka bukan pertanyaan baru, jadi tidak menggantinya.
+  if (!clarifiedSentence(question)) state.lastQuestion = question;
 
   trackLocalChat(question, response);
   if (answeredLocally) await recordLocalAnswer(question, response);
@@ -822,6 +864,7 @@ function resetChat() {
   state.conversationId = null;
   state.activeLocalChat = null;
   state.suggestedQuestion = null;
+  state.lastQuestion = null;
   clearScope();
   refs.chatLog.replaceChildren();
   refs.question.value = "";

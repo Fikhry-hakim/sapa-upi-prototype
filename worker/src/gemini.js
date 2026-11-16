@@ -10,7 +10,7 @@ ATURAN ISI YANG WAJIB DIPATUHI:
 3. Jangan pernah mengarang angka, tanggal, nomor SK, nominal biaya, atau tenggat waktu. Kalau angkanya tidak ada di konteks, bilang belum tersedia.
 4. Kalau mahasiswa menanyakan sesuatu yang terdengar seperti keputusan final (kelulusan, nilai, kelayakan sidang), ingatkan bahwa keputusan resmi tetap ada pada program studi dan sarankan memastikannya ke tenaga administrasi.
 5. Jangan menyebut jawabanmu sebagai "data contoh". Konteks berasal dari dokumen resmi yang disebutkan pada sumbernya.
-6. Kalau konteks memuat dua ketentuan yang berbeda untuk hal yang sama, sebutkan keduanya beserta dokumen asalnya, jangan memilih salah satu.
+6. Kalau konteks memuat dua dokumen untuk hal yang sama dan isinya berbeda, sebutkan keduanya beserta nomor dokumen dan tanggal "diperbarui"-nya. Dokumen dengan tanggal paling baru adalah yang berlaku dan harus diikuti; tulis dokumen terbaru itu lebih dulu, lalu jelaskan singkat bahwa dokumen yang lebih lama sudah diperbarui olehnya. Kalau tanggalnya tidak bisa dibandingkan, sebutkan keduanya dan minta mahasiswa memastikan ke tenaga administrasi.
 7. Kalau menjelaskan sebuah singkatan, pakai kepanjangan dari "GLOSARIUM ISTILAH" di bawah kalau ada. Kalau singkatannya tidak ada di glosarium maupun di KONTEKS PEDOMAN, bilang kamu tidak tahu kepanjangannya. Jangan pernah menebak kepanjangan singkatan.
 8. Kalau pertanyaannya diawali "Jelaskan lebih detail poin" lalu mengutip sebuah kalimat, mulailah langsung dengan menjelaskan maksud kalimat itu memakai kata yang lebih sederhana dan isi konteks, tanpa diawali permintaan maaf. Beri contoh kalau konteksnya memuat contoh. Hanya kalau konteks sama sekali tidak punya tambahan, tutup dengan satu kalimat bahwa informasi di dokumen hanya sebatas itu dan sarankan menghubungi tenaga administrasi program studi. Jangan menjawab bahwa kamu "tidak punya rujukan" untuk kalimat itu.
 9. Kalau pertanyaannya apakah sebuah dokumen ada atau tersedia, dan dokumen itu muncul pada "Sumber:" di konteks, jawab bahwa dokumennya ada dan bisa dibuka lewat kartu sumber di bawah jawaban, lalu sebut isinya secara singkat. Jangan mengatakan dokumen itu tidak ada kalau ia tercantum sebagai sumber.
@@ -31,7 +31,7 @@ Sesuaikan menurut jenis pertanyaan:
 - Syarat atau daftar: kalimat pembuka, lalu satu syarat per butir dengan angka persis seperti di dokumen, lalu penutup kalau ada langkah berikutnya.
 - Cara atau prosedur: kalimat pembuka, lalu langkah bernomor berurutan, lalu penutup kalau dokumen menyebut tempat atau kontak untuk bertanya.
 - Pertanyaan "apakah": cukup satu baris, dimulai dengan "Ya," atau "Tidak," atau "Belum ada informasinya," lalu alasannya dalam kalimat yang sama. Tanpa daftar. Kalau yang ditanyakan adalah ada tidaknya sebuah dokumen dan dokumen itu tercantum sebagai sumber, tulis "Ya, dokumennya ada dan bisa dibuka lewat kartu sumber di bawah jawaban," lalu sebut isinya dalam beberapa kata.
-- Angka, tanggal, atau batas: baris 1 berisi angkanya dan dokumen asalnya, tanpa daftar. Daftar hanya kalau ada dua ketentuan berbeda: tulis masing-masing satu butir beserta dokumennya, lalu penutup untuk meminta konfirmasi.
+- Angka, tanggal, atau batas: baris 1 berisi angkanya dan dokumen asalnya, tanpa daftar. Daftar hanya kalau ada dua ketentuan berbeda: butir pertama dokumen terbaru (tandai sebagai yang berlaku), butir kedua dokumen yang lebih lama, lalu penutup yang menegaskan agar mengikuti dokumen terbaru.
 - Arti istilah atau singkatan: artinya dalam satu kalimat sederhana, ditambah satu contoh atau kegunaannya dari dokumen kalau ada. Tanpa daftar dan tanpa penutup.
 - Informasinya tidak ada: "Maaf, saya belum menemukan [hal yang ditanya] di dokumen yang tersedia." Kalau ada informasi yang berkaitan, sebut itu dulu, lalu sarankan menghubungi tenaga administrasi program studi.
 Jangan mengulang isi baris 1 di dalam daftar. Daftar minimal 2 butir; kalau hanya ada satu rincian, gabungkan ke baris 1 atau tulis sebagai kalimat biasa. Kalau jawabannya cukup satu atau dua kalimat, tulis itu saja tanpa daftar. Jangan menambah butir hanya supaya terlihat lengkap.
@@ -62,8 +62,9 @@ export function normalizeLang(lang) {
   return lang === "en" ? "en" : "id";
 }
 
-export function buildInput(question, entries, lang = "id") {
-  const base = `${buildContextBlock(entries)}\n\nPERTANYAAN MAHASISWA: ${question}`;
+export function buildInput(question, entries, lang = "id", previous = null) {
+  const before = previous ? `\n\nPERTANYAAN SEBELUMNYA DARI MAHASISWA YANG SAMA: ${previous}\n(Pertanyaan di bawah melanjutkan itu.)` : "";
+  const base = `${buildContextBlock(entries)}${before}\n\nPERTANYAAN MAHASISWA: ${question}`;
   return normalizeLang(lang) === "en" ? `${base}\n\n${ENGLISH_NOTE}` : base;
 }
 
@@ -127,6 +128,7 @@ export async function askGemini({
   question,
   entries,
   lang = "id",
+  previous = null,
   apiKey,
   model,
   fetchImpl = fetch,
@@ -138,7 +140,7 @@ export async function askGemini({
   const body = JSON.stringify({
     model,
     system_instruction: SYSTEM_INSTRUCTION,
-    input: buildInput(question, entries, lang),
+    input: buildInput(question, entries, lang, previous),
     // The same question must not get a differently worded answer depending on
     // who asked it. Nothing about the reader reaches the prompt, and a fixed
     // seed keeps the decoding reproducible too. The provider does not promise
@@ -253,6 +255,7 @@ export async function askWorkersAI({
   question,
   entries,
   lang = "id",
+  previous = null,
   ai,
   model = WORKERS_AI_MODEL,
   timeoutMs = WORKERS_AI_BUDGET_MS,
@@ -269,7 +272,7 @@ export async function askWorkersAI({
       ai.run(model, {
         messages: [
           { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user", content: buildInput(question, entries, lang) },
+          { role: "user", content: buildInput(question, entries, lang, previous) },
         ],
         max_tokens: 700,
         temperature: 0,

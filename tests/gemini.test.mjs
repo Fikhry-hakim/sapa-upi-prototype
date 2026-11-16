@@ -28,7 +28,9 @@ test("the model is told not to call real documents sample data", () => {
   // The knowledge base used to be invented, and the instruction said so. It is
   // now four real documents, so that disclaimer would be a false one.
   assert.match(SYSTEM_INSTRUCTION, /Jangan menyebut jawabanmu sebagai "data contoh"/);
-  assert.match(SYSTEM_INSTRUCTION, /dua ketentuan yang berbeda/);
+  // Dua dokumen yang berbeda: keduanya disebut, yang terbaru dinyatakan berlaku.
+  assert.match(SYSTEM_INSTRUCTION, /dua dokumen untuk hal yang sama/);
+  assert.match(SYSTEM_INSTRUCTION, /tanggal paling baru adalah yang berlaku/);
 });
 
 test("the system instruction carries the glossary and forbids guessing an abbreviation outside it", () => {

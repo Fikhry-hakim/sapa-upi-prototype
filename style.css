@@ -1082,6 +1082,65 @@ button.ref-chip:hover {
   border-style: dashed;
 }
 
+.refs-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.ref-row {
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.ref-row-newest {
+  border-color: var(--red-line);
+  box-shadow: inset 3px 0 0 var(--red);
+}
+
+.ref-row .ref-chip {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ref-row-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ref-badge {
+  padding: 2px 8px;
+  background: var(--red);
+  border-radius: 999px;
+  color: var(--on-accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ref-badge-old {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ref-date {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ref-newest-note {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
 .ref-note {
   margin: 8px 0 0;
   color: var(--muted);

@@ -216,7 +216,7 @@ test("every real answer shows a contact line, with a generic fallback when no si
   // topic (no curated entry, or several topics tied) still call a contact
   // renderer, not just the citation box that assumes an entry exists.
   const fillCard = app.slice(app.indexOf("function fillCard"), app.indexOf("/** Teks jawaban, apa adanya"));
-  assert.match(fillCard, /if \(entry\) renderReferences\(entry, body, response\.citation\);\s*\n\s*else renderContactOnly/);
+  assert.match(fillCard, /if \(entry\) renderReferences\(entry, body, response\.citation, response\.citations\);\s*\n\s*else renderContactOnly/);
   assert.match(
     fillCard.slice(fillCard.indexOf('"suggestions"'), fillCard.indexOf('"fallback"')),
     /renderContactOnly\(body, null\)/,
