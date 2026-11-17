@@ -3238,13 +3238,14 @@ button.ref-chip:hover {
     left: 0;
     z-index: 50;
     width: min(84vw, 260px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
+  /* Bayangan hanya saat laci terbuka; kalau tidak, ia bocor sebagai bayangan abu-abu di tepi kiri layar. */
   .sidebar.is-open {
     transform: translateX(0);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
   }
 
   .sb-collapse,
@@ -5018,3 +5019,31 @@ button.ref-chip:hover {
 .shared-log { width: 100%; padding: 0; }
 .shared-missing { margin: 0; color: var(--muted); }
 .shared-foot { display: flex; justify-content: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line-soft); }
+
+/* Menu yang melayang tidak boleh lebih tinggi dari layar: isinya bisa digulir (daftar dokumen panjang). */
+.pop-menu { max-height: min(70vh, 520px); max-height: min(70dvh, 520px); overflow-y: auto; overscroll-behavior: contain; }
+.pop-menu-up { max-height: min(60vh, 460px); max-height: min(60dvh, 460px); }
+.pop-menu-label, .pop-menu-note { flex: none; }
+
+/* Chip sumber: ikon tetap, teks (dan tautan di dalamnya) membungkus di ruang yang tersisa. */
+.ref-chip .file-ico { flex: none; }
+.ref-chip-text { min-width: 0; overflow-wrap: anywhere; }
+
+/* Tabel pengelola di layar sempit: setiap baris menjadi kartu, kolomnya menjadi pasangan label dan nilai. */
+@media (max-width: 760px) {
+  .table-scroll { overflow-x: visible; }
+  .owner-table, .owner-table tbody, .owner-table tr, .owner-table td { display: block; width: 100%; }
+  .owner-table thead { display: none; }
+  .owner-table tbody tr { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+  .owner-table tbody tr:last-child { border-bottom: 0; }
+  .owner-table td { padding: 5px 0; border: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; text-align: right; overflow-wrap: anywhere; }
+  .owner-table td::before { content: attr(data-label); flex: 0 0 40%; max-width: 40%; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-align: left; text-transform: uppercase; }
+  .owner-table td[data-label=""]::before { display: none; }
+  .owner-table td[data-label=""] { justify-content: flex-start; text-align: left; }
+  .owner-table td.doc-name, .owner-table td.metric-name { padding-bottom: 8px; }
+  .owner-table td.metric-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .owner-table td.metric-no { display: none; }
+  .doc-kind { flex: none; white-space: nowrap; }
+  .owner-table td > * { max-width: 100%; }
+  .owner-table td small { text-align: inherit; }
+}

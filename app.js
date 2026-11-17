@@ -176,6 +176,19 @@ function toggleMenu(menu, trigger, build) {
   build?.();
   menu.hidden = false;
   trigger.setAttribute("aria-expanded", "true");
+  fitMenu(menu, trigger);
+}
+
+/**
+ * Menu melayang dibatasi ke ruang yang tersedia di atas atau di bawah tombolnya, supaya tidak
+ * pernah keluar dari layar (layar pendek, ponsel). Isi yang lebih panjang digulir di dalam menu.
+ */
+function fitMenu(menu, trigger) {
+  menu.style.maxHeight = "";
+  const rect = trigger.getBoundingClientRect();
+  const above = menu.classList.contains("pop-menu-up") || getComputedStyle(menu).bottom !== "auto";
+  const room = above ? rect.top - 20 : window.innerHeight - rect.bottom - 20;
+  menu.style.maxHeight = `${Math.max(140, Math.min(room, 520))}px`;
 }
 
 async function copyText(text, success) {
@@ -384,7 +397,9 @@ function appendRichText(parent, text) {
     // Template yang ada di situs ini dibuka di pembaca dokumen (pratinjau + tombol unduh).
     const templateDoc = templateFor(match[0]);
     if (templateDoc) {
-      link.title = "Klik untuk melihat pratinjau, lalu unduh";
+      // Alamat berkas yang panjang diganti label pendek (alamatnya tetap di title dan href).
+      link.title = match[0];
+      link.textContent = "Buka & unduh";
       link.addEventListener("click", (event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         event.preventDefault();
@@ -603,7 +618,10 @@ function renderReferences(entry, parent, served = null, many = []) {
   } else {
     const chip = make("span", "ref-chip ref-chip-muted");
     chip.innerHTML = ICON.file;
-    appendRichText(chip, entry.sourceRef || entry.sourceTitle);
+    // Teks dibungkus satu elemen: tanpa itu, teks dan tautan di dalamnya menjadi kolom flex terpisah yang menyempit.
+    const label = make("span", "ref-chip-text");
+    appendRichText(label, entry.sourceRef || entry.sourceTitle);
+    chip.append(label);
     list.append(chip);
   }
   box.append(list);
@@ -620,7 +638,7 @@ function sourceChip(citation) {
   chip.innerHTML = ICON.file;
   chip.dataset.kind = citation.document.kind;
   // Template satu halaman: "hal. 1" tidak berarti apa-apa.
-  chip.append(citation.document.pages > 1 ? `${citation.document.title}, hal. ${citation.page}` : citation.document.title);
+  chip.append(make("span", "ref-chip-text", citation.document.pages > 1 ? `${citation.document.title}, hal. ${citation.page}` : citation.document.title));
   chip.addEventListener("click", () =>
     viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
   );
@@ -1044,6 +1062,8 @@ function buildAttachMenu() {
   for (const [id, doc] of Object.entries(documents)) {
     // Pembatasan dokumen bekerja pada topik yang sudah dikurasi; dokumen unggahan belum.
     if (doc.uploaded) continue;
+    // Template formulir bukan bahan untuk ditanyai; daftar ini hanya untuk dokumen berisi aturan dan panduan.
+    if (id.startsWith("template-")) continue;
     const button = make("button", "menu-doc");
     button.type = "button";
     button.setAttribute("role", "menuitem");

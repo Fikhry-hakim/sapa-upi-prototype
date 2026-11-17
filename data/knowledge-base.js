@@ -2813,7 +2813,7 @@ export const knowledgeBase = [
     followUps: ["Template dokumen apa saja yang tersedia?", "Dokumen apa saja untuk seminar proposal?"],
     hints: ["Di mana template laporan hasil penelitian?", "Di mana SEM 9 (laporan hasil penelitian)?"],
     keywords: ["sem 9", "format sem 9", "template sem 9", "template laporan hasil penelitian", "format sem 9 laporan hasil penelitian", "template seminar hasil artikel"],
-    lead: "Templat laporan hasil penelitian untuk seminar hasil jalur artikel ilmiah, Program Studi Bisnis Digital.",
+    lead: "Template laporan hasil penelitian untuk seminar hasil jalur artikel ilmiah, Program Studi Bisnis Digital.",
     points: [
       "Berisi halaman judul (disusun sebagai bahan seminar hasil jalur artikel ilmiah) dan sistematika laporan.",
       "Panjang laporan 8.000–10.000 kata, di luar daftar pustaka dan lampiran.",
@@ -2822,7 +2822,7 @@ export const knowledgeBase = [
     ],
     closing: "Mau saya tunjukkan template lain atau dokumen yang perlu disiapkan?",
     answer:
-      "Templat laporan hasil penelitian untuk seminar hasil jalur artikel ilmiah, Program Studi Bisnis Digital. Berisi halaman judul (disusun sebagai bahan seminar hasil jalur artikel ilmiah) dan sistematika laporan. Panjang laporan 8.000–10.000 kata, di luar daftar pustaka dan lampiran. Dipakai untuk mendaftar seminar hasil jalur artikel. Berkasnya bisa dilihat pratinjaunya dan diunduh dari tautan di bawah.",
+      "Template laporan hasil penelitian untuk seminar hasil jalur artikel ilmiah, Program Studi Bisnis Digital. Berisi halaman judul (disusun sebagai bahan seminar hasil jalur artikel ilmiah) dan sistematika laporan. Panjang laporan 8.000–10.000 kata, di luar daftar pustaka dan lampiran. Dipakai untuk mendaftar seminar hasil jalur artikel. Berkasnya bisa dilihat pratinjaunya dan diunduh dari tautan di bawah.",
     escalation:
       "Hubungi staf Program Studi Bisnis Digital kalau berkas tidak bisa dibuka atau butuh versi terbaru.",
     sourceTitle: "Template: SEM 9 – Laporan hasil penelitian",

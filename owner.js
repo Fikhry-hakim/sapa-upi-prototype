@@ -240,6 +240,21 @@ function createCombobox({ placeholder = "Pilih...", emptyLabel = "Tidak ada pili
    FABRIK
 ============================================================ */
 
+/**
+ * Tiap sel mendapat label kolomnya (data-label). Di layar sempit tabel berubah menjadi kartu bertumpuk
+ * dan label itulah yang menjelaskan nilai di dalamnya; di layar lebar label tidak terlihat.
+ * Sel nama (dokumen atau KPI) tidak diberi label: ia sudah menjadi judul kartunya.
+ */
+function stackLabels(thead, tbody) {
+  const headers = [...thead.querySelectorAll("th")].map((th) => th.textContent.trim());
+  for (const row of tbody.querySelectorAll("tr")) {
+    [...row.children].forEach((cell, index) => {
+      if (cell.classList.contains("doc-name") || cell.classList.contains("metric-name")) cell.dataset.label = "";
+      else if (headers[index]) cell.dataset.label = headers[index];
+    });
+  }
+}
+
 export function createOwner({ api, getAccount, showToast, openViewer, authHeaders }) {
   const roleOf = () => getAccount()?.role ?? null;
   const canUpload = () => ["upload", "admin"].includes(roleOf());
@@ -706,6 +721,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       );
       tbody.append(tr);
     }
+    stackLabels(thead, tbody);
     table.append(thead, tbody);
     const scroll = make("div", "table-scroll");
     scroll.append(table);
@@ -1015,7 +1031,8 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         );
         tbody.append(tr);
       });
-      table.append(thead, tbody);
+      stackLabels(thead, tbody);
+    table.append(thead, tbody);
 
       const card = make("section", "panel-card table-card");
       const scroll = make("div", "table-scroll");
@@ -1290,6 +1307,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       tr.append(name, make("td", "", doc.type ?? doc.kind), status, make("td", "", doc.period), rag, actions);
       tbody.append(tr);
     }
+    stackLabels(thead, tbody);
     table.append(thead, tbody);
     const scroll = make("div", "table-scroll");
     scroll.append(table);
