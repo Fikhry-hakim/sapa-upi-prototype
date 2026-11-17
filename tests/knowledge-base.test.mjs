@@ -13,6 +13,8 @@ const requiredCategories = [
   "Administrasi",
   // Backed by the Rector's Academic Calendar 2026/2027 (dokumen/kalender-akademik-upi-2026-2027.pdf).
   "Kalender Akademik",
+  // Glosarium istilah dari definisi di Peraturan Rektor dan Pedoman Tugas Akhir.
+  "Glosarium",
 ];
 
 const requiredFields = [

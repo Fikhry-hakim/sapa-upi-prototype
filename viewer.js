@@ -23,7 +23,12 @@ const PDFJS_INTEGRITY = {
   worker: "sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2",
 };
 
-export const ZOOM_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2];
+/** Berkas Word dibuka dengan pembaca sendiri, bukan PDF.js. */
+export function isDocx(file) {
+  return /\.docx(\?.*)?$/i.test(String(file ?? ""));
+}
+
+export const ZOOM_STEPS =[0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2];
 
 /** Huruf dan angka saja, huruf kecil — tahan terhadap spasi dan tanda baca yang berbeda. */
 export function squash(text) {
@@ -163,6 +168,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
           <div class="textLayer" id="viewer-text"></div>
         </div>
         <div class="viewer-pages" id="viewer-pages" hidden></div>
+        <div class="viewer-docx" id="viewer-docx" hidden></div>
       </div>
       <footer class="viewer-foot" id="viewer-foot" hidden>
         <span class="viewer-foot-mark">${ICONS.check}Sumber Resmi Jawaban SAPA</span>
@@ -190,6 +196,7 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     status: $("viewer-status"),
     sheet: $("viewer-sheet"),
     pages: $("viewer-pages"),
+    docx: $("viewer-docx"),
     modeScroll: $("viewer-mode-scroll"),
     modePage: $("viewer-mode-page"),
     canvas: $("viewer-canvas"),
@@ -251,8 +258,9 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
   function setStatus(message) {
     ui.status.textContent = message ?? "";
     ui.status.hidden = !message;
-    ui.sheet.hidden = Boolean(message) || state.mode !== "page";
-    ui.pages.hidden = Boolean(message) || state.mode !== "scroll";
+    const word = root.classList.contains("is-docx");
+    ui.sheet.hidden = word || Boolean(message) || state.mode !== "page";
+    ui.pages.hidden = word || Boolean(message) || state.mode !== "scroll";
   }
 
   /** Gambar satu halaman beserta lapisan teksnya; null kalau sudah tidak relevan (isStale). */
@@ -500,18 +508,48 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     ui.title.textContent = doc.title;
     ui.sub.textContent = `${doc.period} • ${doc.owner}`;
     ui.pageTotal.textContent = String(doc.pages);
-    ui.download.href = doc.file;
+    // Template Word dipratinjau lewat salinan PDF-nya (doc.file), tetapi yang diunduh
+    // berkas aslinya (doc.download) supaya bisa diisi dan diedit.
+    const downloadFile = doc.download ?? doc.file;
+    ui.download.href = downloadFile;
     ui.download.hidden = Boolean(headers);
-    ui.download.setAttribute("download", doc.file.split("/").pop());
+    ui.download.setAttribute("download", downloadFile.split("/").pop());
+    ui.download.setAttribute("aria-label", doc.download ? "Unduh template (Word)" : "Unduh dokumen");
     ui.foot.hidden = true;
     teardownScroll();
     updateControls();
     setStatus("Memuat dokumen…");
 
+    // Berkas Word tidak lewat PDF.js: isinya dibaca dan digambar sendiri.
+    const isWord = isDocx(doc.file);
+    root.classList.toggle("is-docx", isWord);
+    ui.docx.hidden = true;
+    ui.docx.replaceChildren();
+    ui.foot.hidden = true;
+
     root.hidden = false;
     document.body.classList.add("viewer-open");
     requestAnimationFrame(() => root.classList.add("is-open"));
     root.querySelector(".viewer-esc").focus({ preventScroll: true });
+
+    if (isWord) {
+      try {
+        const response = await fetch(headers ? new Request(doc.file, { headers }) : doc.file);
+        if (!response.ok) throw new Error(`berkas ${response.status}`);
+        const { renderDocx } = await import("./lib/docx-preview.js");
+        ui.docx.replaceChildren(await renderDocx(await response.arrayBuffer()));
+        ui.docx.hidden = false;
+        setStatus("");
+        ui.stage.scrollTop = 0;
+        ui.footWhere.textContent = `${doc.reference} · pratinjau Word, unduh untuk mengisi`;
+        ui.foot.hidden = false;
+      } catch (error) {
+        console.warn("Pratinjau Word gagal:", error);
+        showOpenDirectly(doc);
+        onError(error);
+      }
+      return;
+    }
 
     try {
       const pdfjs = await loadPdfJs();
@@ -523,20 +561,26 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
       await showCurrentMode();
     } catch (error) {
       console.warn("Pembaca dokumen gagal:", error);
-      ui.status.innerHTML = "";
-      const message = document.createElement("span");
-      message.textContent = "Dokumen tidak bisa ditampilkan di sini. ";
-      const link = document.createElement("a");
-      link.href = doc.file;
-      link.target = "_blank";
-      link.rel = "noopener";
-      link.textContent = "Buka berkas langsung";
-      ui.status.append(message, link);
-      ui.status.hidden = false;
-      ui.sheet.hidden = true;
-      ui.pages.hidden = true;
+      showOpenDirectly(doc);
       onError(error);
     }
+  }
+
+  /** Pembaca gagal: sediakan tautan ke berkasnya langsung. */
+  function showOpenDirectly(doc) {
+    ui.status.innerHTML = "";
+    const message = document.createElement("span");
+    message.textContent = "Dokumen tidak bisa ditampilkan di sini. ";
+    const link = document.createElement("a");
+    link.href = doc.download ?? doc.file;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = isDocx(doc.file) ? "Unduh berkasnya" : "Buka berkas langsung";
+    ui.status.append(message, link);
+    ui.status.hidden = false;
+    ui.sheet.hidden = true;
+    ui.pages.hidden = true;
+    ui.docx.hidden = true;
   }
 
   function close() {

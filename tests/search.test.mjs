@@ -87,13 +87,13 @@ test("asking about starting the thesis lands on the Tugas Akhir topic", () => {
 });
 
 test("a question these documents do not cover is refused, not force-matched", () => {
-  // The source documents say nothing about attendance or scholarships. (Tuition
+  // The source documents say nothing about attendance or scholarships. (Tuition and program transfer
   // and academic leave used to be here too; the 2026 circulars now cover both.)
   // A weak coincidental overlap must not be served as an answer.
   for (const query of [
     "Berapa minimal kehadiran kuliah?",
     "jam buka kantin",
-    "cara pindah program studi",
+    "tarif parkir motor kampus",
     "beasiswa apa saja",
   ]) {
     const result = searchKnowledgeBase(query, knowledgeBase);

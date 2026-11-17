@@ -152,7 +152,98 @@ export const documents = {
     sizeLabel: "1,8 MB",
     dateLabel: "2026",
   },
+  "peraturan-rektor-38-2026": {
+    file: "./dokumen/peraturan-rektor-38-2026-penyelenggaraan-pendidikan.pdf",
+    title: "Peraturan Rektor UPI Nomor 38 Tahun 2026 tentang Penyelenggaraan Pendidikan",
+    owner: "Rektor Universitas Pendidikan Indonesia",
+    reference: "Peraturan Rektor Nomor 38 Tahun 2026",
+    period: "Berlaku sejak 20 Mei 2026",
+    kind: "PDF",
+    pages: 66,
+    sizeLabel: "1,2 MB",
+    dateLabel: "20 Mei 2026",
+  },
+  "panduan-simkatmawa-2026": {
+    file: "./dokumen/panduan-simkatmawa-2026.pdf",
+    title: "Panduan Pengakuan Pengalaman Belajar dan Prestasi Mahasiswa dalam Implementasi Kampus Berdampak (SIMKATMAWA)",
+    owner: "Kementerian Pendidikan Tinggi, Sains, dan Teknologi",
+    reference: "Edisi IV, 2026",
+    period: "Tahun 2026",
+    kind: "PDF",
+    pages: 52,
+    sizeLabel: "1,3 MB",
+    dateLabel: "2026",
+  },
+  "panduan-unggah-mandiri": {
+    file: "./dokumen/panduan-unggah-mandiri-sias.pdf",
+    title: "Panduan Unggah Mandiri Tugas Akhir melalui SIAS",
+    owner: "Perpustakaan UPI (UPI Central Library)",
+    reference: "Panduan Unggah Mandiri melalui SIAS",
+    period: "Mahasiswa yang mengajukan sidang",
+    kind: "PDF",
+    pages: 9,
+    sizeLabel: "9,5 MB",
+    dateLabel: "2026",
+  },
+  "panduan-bebas-pustaka": {
+    file: "./dokumen/panduan-bebas-pustaka-sias.pdf",
+    title: "Panduan Pengajuan Bebas Pustaka di SIAS",
+    owner: "Perpustakaan UPI (UPI Central Library)",
+    reference: "Panduan Pengajuan Bebas Pustaka",
+    period: "Mahasiswa yang mengajukan sidang",
+    kind: "PDF",
+    pages: 5,
+    sizeLabel: "0,6 MB",
+    dateLabel: "2026",
+  },
+  "buku-magang": {
+    file: "./dokumen/buku-magang.pdf",
+    title: "Buku Petunjuk Program Magang Profesional Bisnis Digital",
+    owner: "Program Studi Bisnis Digital, UPI Kampus Daerah Tasikmalaya",
+    reference: "Buku Petunjuk Program Magang Profesional",
+    period: "Mahasiswa Bisnis Digital",
+    kind: "PDF",
+    pages: 22,
+    sizeLabel: "2,6 MB",
+    dateLabel: "2026",
+  },
 };
+
+/**
+ * Template administrasi seminar dan sidang (dokumen/template). Berkas Word bisa
+ * dipratinjau di pembaca dokumen dan diunduh untuk diisi; id = "template-<nama berkas>".
+ */
+const TEMPLATES = [
+  ["SEM-1-lembar-bimbingan-proposal-tugas-akhir.docx", "SEM 1 – Lembar Bimbingan Proposal Tugas Akhir", "20 KB"],
+  ["SEM-2-permohonan-seminar-proposal-tugas-akhir.docx", "SEM 2 – Permohonan Seminar Proposal Tugas Akhir", "25 KB"],
+  ["SEM-3-kartu-hadir-partisipan-seminar-proposal.docx", "SEM 3 – Kartu Hadir Partisipan Seminar Proposal", "12 KB"],
+  ["SEM-4-daftar-hadir-dosen-penguji-dan-mahasiswa-sempro.docx", "SEM 4 – Daftar Hadir Dosen Penguji dan Mahasiswa Seminar Proposal", "14 KB"],
+  ["SEM-5-penilaian-seminar-proposal-tugas-akhir.docx", "SEM 5 – Penilaian Seminar Proposal Tugas Akhir", "13 KB"],
+  ["SEM-6-pernyataan-kesediaan-membimbing-tugas-akhir.docx", "SEM 6 – Pernyataan Kesediaan Membimbing Tugas Akhir", "18 KB"],
+  ["SEM-7-keterangan-publikasi-karya-ilmiah.docx", "SEM 7 – Keterangan Publikasi Karya Ilmiah", "12 KB"],
+  ["SEM-8-berita-acara-uji-kemiripan-similarity.docx", "SEM 8 – Berita Acara Uji Kemiripan (Similarity)", "16 KB"],
+  ["SEM-9-laporan-hasil-penelitian-seminar-hasil.docx", "SEM 9 – Laporan Hasil Penelitian (Seminar Hasil)", "30 KB"],
+  ["SEM-10-persetujuan-submit-artikel-dosen-pembimbing.docx", "SEM 10 – Persetujuan Submit Artikel dari Dosen Pembimbing", "205 KB"],
+  ["format-11-lembar-pernyataan-perbaikan-besar-substansial.docx", "Format 11 – Lembar Pernyataan Perbaikan Besar/Substansial", "51 KB"],
+  ["format-12-persetujuan-seminar-hasil.docx", "Format 12 – Persetujuan Seminar Hasil", "205 KB"],
+  ["daftar-kelengkapan-persyaratan-ujian-sidang-s1.docx", "Daftar Kelengkapan Persyaratan Ujian Sidang Tugas Akhir S1", "13 KB"],
+  ["daftar-kelengkapan-persyaratan-ujian-sidang-s2.docx", "Daftar Kelengkapan Persyaratan Ujian Sidang Tugas Akhir S2", "12 KB"],
+  ["bukti-keikutsertaan-sempro.pdf", "Bukti Keikutsertaan Seminar Proposal (10 kali partisipan)", "74 KB"],
+];
+
+for (const [name, title, sizeLabel] of TEMPLATES) {
+  documents[`template-${name.replace(/\.[a-z]+$/i, "").toLowerCase()}`] = {
+    file: `./dokumen/template/${name}`,
+    title: `Template: ${title}`,
+    owner: "Program Studi Bisnis Digital, UPI Kampus Daerah Tasikmalaya",
+    reference: "Template kelengkapan dokumen seminar dan sidang",
+    period: "Tahun Akademik 2026/2027",
+    kind: name.endsWith(".pdf") ? "PDF" : "DOCX",
+    pages: 1,
+    sizeLabel,
+    dateLabel: "2026",
+  };
+}
 
 const BY_FILE = Object.fromEntries(
   Object.entries(documents).map(([id, doc]) => [doc.file, id]),
@@ -211,6 +302,30 @@ export const citations = {
   "perrek-syarat-kelulusan": { page: 50, highlight: "paling sedikit 100 (seratus) poin" },
   "perrek-predikat-kelulusan": { page: 55, highlight: "memperoleh IPK minimal 3,75" },
   "perrek-berlaku-peralihan": { page: 66, highlight: "mulai berlaku pada tanggal" },
+
+  // Dokumen baru (Peraturan Rektor 38/2026, panduan perpustakaan, buku magang, SIMKATMAWA)
+  "perrek38-masa-studi": { page: 18, highlight: "paling lama 14 (empat belas)" },
+  "perrek38-status-kemahasiswaan": { page: 48, highlight: "semester keempat memperoleh IPK" },
+  "perrek38-pindah-prodi": { page: 13, highlight: "telah menempuh pendidikan paling sedikit 4" },
+  "perrek38-wisuda-ijazah": { page: 47, highlight: "paling lambat 1 (satu) bulan sebelum" },
+  "unggah-mandiri-sias": { page: 4, highlight: "Rekomendasi Publikasi" },
+  "bebas-pustaka-sias": { page: 4, highlight: "PENGAJUAN BEBAS PUSTAKA" },
+  "magang-bisnis-digital": { page: 7, highlight: "Magang akan dikonversi 20 sks oleh prodi" },
+  "magang-konversi-penilaian": { page: 18, highlight: "maksimal 20 sks" },
+  "simkatmawa-poin-kelulusan": { page: 50, highlight: "minimal 100 poin" },
+
+  "pelatihan-kewirausahaan": { page: 5, highlight: "Imbauan Pelatihan Kewirausahaan" },
+  "edaran-5572-program-wajib": { page: 5, highlight: "PENGATURAN PELAKSANAAN PROGRAM WAJIB" },
+  "pedoman-ta-jenis-s1": { page: 16, highlight: "Skripsi merupakan tugas akhir mahasiswa program sarjana" },
+  "pedoman-ta-produk-bisnis": { page: 35, highlight: "Persyaratan Proyek Produk Bisnis" },
+  "pedoman-ta-portofolio-prestasi": { page: 38, highlight: "Portofolio Pencapaian Prestasi dinyatakan memiliki kelayakan" },
+  "pedoman-ta-ujian-umum": { page: 49, highlight: "wajib diuji melalui Ujian Sidang Tugas Akhir" },
+  "perrek38-penilaian": { page: 35, highlight: "nilai huruf, angka, dan derajat mutu" },
+  "mandala-bebas-publikasi": { page: 2, highlight: "surat keterangan bebas publikasi" },
+  "mandala-similarity-check": { page: 17, highlight: "Ajukan Similarity Check" },
+  "simkatmawa-bentuk-kegiatan": { page: 18, highlight: "Program Pembinaan Mahasiswa Wirausaha (P2MW)" },
+  "glosarium-tugas-akhir": { page: 5, highlight: "Tim Pertimbangan Tugas Akhir yang selanjutnya disingkat TPTA" },
+  "glosarium-pedoman-ta": { page: 10, highlight: "Artikel ilmiah yang dimaksud pada pedoman ini" },
   "sanksi-plagiat": { page: 51, highlight: "Pelanggaran plagiarisme dalam karya ilmiah, pihak UPI akan melakukan tindakan tegas" },
 };
 

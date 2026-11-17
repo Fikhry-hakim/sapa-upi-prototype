@@ -42,3 +42,24 @@ test("the Gemini glossary context lists every noted term, and omits terms the se
   assert.match(context, /- SIAS: /);
   assert.ok(!/SIAS = /.test(context), "no invented expansion for an unconfirmed acronym");
 });
+
+test("every glossary term is listed once", () => {
+  const seen = new Set();
+  for (const item of GLOSSARY) {
+    assert.ok(!seen.has(item.abbr), `${item.abbr} is listed twice`);
+    seen.add(item.abbr);
+  }
+});
+
+test("terms from the 2026 regulations and guides reach the glossary the AI reads", () => {
+  const context = glossaryContext();
+  for (const term of ["TPTA", "SKPI", "SKKNI", "SIMKATMAWA", "MANDALA", "PDDIKTI", "SUMA", "SSO"]) {
+    assert.ok(context.includes(term), `${term} missing from the glossary context`);
+  }
+});
+
+test("SIAS is described from the library guide and still never guessed", () => {
+  const sias = GLOSSARY.find((item) => item.abbr === "sias");
+  assert.match(sias.note, /pengajuan sidang/i);
+  assert.match(sias.note, /jangan menebak/i);
+});

@@ -1,5 +1,5 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
-import { documents, citationFor } from "./data/sources.js";
+import { documents, citationFor, documentIdForFile } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
 import { clarifiedSentence, clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
@@ -318,6 +318,14 @@ function scrollToEnd() {
   });
 }
 
+/** Dokumen template bawaan untuk sebuah URL (di mana pun situs ini di-host), atau null. */
+function templateFor(url) {
+  const at = url.indexOf("/dokumen/template/");
+  if (at < 0) return null;
+  const id = documentIdForFile(`.${url.slice(at).split(/[?#]/)[0]}`);
+  return id ? documents[id] : null;
+}
+
 /** Teks biasa dengan tautan http(s) yang bisa diklik; tidak pernah memakai innerHTML. */
 function appendRichText(parent, text) {
   const pattern = /(https?:\/\/[^\s)]+[^\s).,;])/g;
@@ -329,6 +337,16 @@ function appendRichText(parent, text) {
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = match[0];
+    // Template yang ada di situs ini dibuka di pembaca dokumen (pratinjau + tombol unduh).
+    const templateDoc = templateFor(match[0]);
+    if (templateDoc) {
+      link.title = "Klik untuk melihat pratinjau, lalu unduh";
+      link.addEventListener("click", (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        event.preventDefault();
+        viewer.open(templateDoc, { page: 1 });
+      });
+    }
     parent.append(link);
     last = match.index + match[0].length;
   }

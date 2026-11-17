@@ -33,6 +33,51 @@ const PEDOMAN_TA = {
   sourceUrl: "./dokumen/buku-panduan-tugas-akhir-bisnis-digital.pdf",
 };
 
+const PERREK_38 = {
+  sourceTitle: "Peraturan Rektor UPI tentang Penyelenggaraan Pendidikan",
+  sourceOwner: "Rektor Universitas Pendidikan Indonesia",
+  validPeriod: "Berlaku sejak 20 Mei 2026",
+  updatedAt: "20 Mei 2026",
+  sourceRef: "Peraturan Rektor Nomor 38 Tahun 2026",
+  sourceUrl: "./dokumen/peraturan-rektor-38-2026-penyelenggaraan-pendidikan.pdf",
+};
+
+const PUSTAKA_UNGGAH = {
+  sourceTitle: "Panduan Unggah Mandiri Tugas Akhir melalui SIAS",
+  sourceOwner: "Perpustakaan UPI (UPI Central Library)",
+  validPeriod: "Berlaku untuk pengajuan sidang",
+  updatedAt: "Januari 2026",
+  sourceRef: "Panduan Unggah Mandiri melalui SIAS, Perpustakaan UPI",
+  sourceUrl: "./dokumen/panduan-unggah-mandiri-sias.pdf",
+};
+
+const PUSTAKA_BEBAS = {
+  sourceTitle: "Panduan Pengajuan Bebas Pustaka di SIAS",
+  sourceOwner: "Perpustakaan UPI (UPI Central Library)",
+  validPeriod: "Berlaku untuk pengajuan sidang",
+  updatedAt: "Januari 2026",
+  sourceRef: "Panduan Pengajuan Bebas Pustaka, Perpustakaan UPI",
+  sourceUrl: "./dokumen/panduan-bebas-pustaka-sias.pdf",
+};
+
+const BUKU_MAGANG = {
+  sourceTitle: "Buku Petunjuk Program Magang Profesional Bisnis Digital",
+  sourceOwner: "Tim Prodi Bisnis Digital, UPI Kampus Daerah Tasikmalaya",
+  validPeriod: "Berlaku sejak 2023",
+  updatedAt: "2023",
+  sourceRef: "Buku Petunjuk Program Magang Profesional Bisnis Digital",
+  sourceUrl: "./dokumen/buku-magang.pdf",
+};
+
+const SIMKATMAWA = {
+  sourceTitle: "Panduan Pengakuan Pengalaman Belajar dan Prestasi Mahasiswa dalam Implementasi Kampus Berdampak (SIMKATMAWA)",
+  sourceOwner: "Universitas Pendidikan Indonesia",
+  validPeriod: "Edisi IV, Januari 2026",
+  updatedAt: "Januari 2026",
+  sourceRef: "Panduan SIMKATMAWA Edisi IV, 2026",
+  sourceUrl: "./dokumen/panduan-simkatmawa-2026.pdf",
+};
+
 const PERREK_70 = {
   sourceTitle: "Peraturan Rektor UPI tentang Tugas Akhir, Ujian Sidang, dan Penetapan Kelulusan",
   sourceOwner: "Rektor Universitas Pendidikan Indonesia",
@@ -41,6 +86,45 @@ const PERREK_70 = {
   sourceRef: "Peraturan Rektor Nomor 70 Tahun 2026",
   sourceUrl: "./dokumen/peraturan-rektor-70-2026-tugas-akhir-sidang-kelulusan.pdf",
 };
+
+const PPT_EDARAN = {
+  sourceTitle: "Sosialisasi Syarat Kelulusan Mahasiswa (memuat Edaran Direktur Nomor 5572 Tahun 2025)",
+  sourceOwner: "Wakil Direktur Bidang Pendidikan, Kemahasiswaan dan Penjaminan Mutu, UPI Kampus Tasikmalaya",
+  validPeriod: "Berlaku sejak 8 September 2025",
+  updatedAt: "8 September 2025",
+  sourceRef: "Edaran Direktur Kampus UPI Tasikmalaya Nomor 5572 Tahun 2025",
+  sourceUrl: "./dokumen/ppt-sosialisasi-syarat-kelulusan-2025.pdf",
+};
+
+const PEDOMAN_2024 = {
+  sourceTitle: "Pedoman Penyusunan Tugas Akhir Mahasiswa UPI (Edisi 2024)",
+  sourceOwner: "Universitas Pendidikan Indonesia",
+  validPeriod: "Edisi November 2024",
+  updatedAt: "November 2024",
+  sourceRef: "Pedoman Penyusunan Tugas Akhir Mahasiswa UPI Edisi 2024",
+  sourceUrl: "./dokumen/pedoman-tugas-akhir-mahasiswa-2024.pdf",
+};
+
+const MANDALA = {
+  sourceTitle: "Panduan Penggunaan Aplikasi Mandala untuk Mahasiswa (S2 dan S3)",
+  sourceOwner: "DSTIPD, Universitas Pendidikan Indonesia",
+  validPeriod: "Mahasiswa magister dan doktor, 2026",
+  updatedAt: "2026",
+  sourceRef: "Panduan Penggunaan Aplikasi Mandala",
+  sourceUrl: "./dokumen/panduan-aplikasi-mandala-s2-s3.pdf",
+};
+
+const PERREK_70_GLOS = { ...PERREK_70, sourceRef: "Peraturan Rektor Nomor 70 Tahun 2026, Pasal 1 (definisi)" };
+const PEDOMAN_2024_GLOS = { ...PEDOMAN_2024, sourceRef: "Pedoman Penyusunan Tugas Akhir UPI 2024, Daftar Istilah" };
+const GLOS_UMUM = {
+  sourceTitle: "Glosarium SAPA UPI (dihimpun dari Panduan Perpustakaan, SIMKATMAWA, Buku Magang, dan Peraturan Rektor)",
+  sourceOwner: "SAPA UPI, Program Studi Bisnis Digital",
+  validPeriod: "Mengikuti dokumen sumber",
+  updatedAt: "2026",
+  sourceRef: "Dihimpun dari dokumen resmi UPI di folder dokumen",
+  sourceUrl: null,
+};
+
 
 const PEDOMAN_KTI = {
   sourceTitle: "Pedoman Penulisan Karya Ilmiah UPI (Edisi 2024)",
@@ -66,9 +150,8 @@ const SURAT_KEWIRAUSAHAAN = {
   validPeriod: "Berlaku sejak 10 September 2025",
   updatedAt: "10 September 2025",
   sourceRef: "Nomor B-5577/UN40.C3.1/TA.07.02/2025, merujuk Edaran Direktur Nomor 5572 Tahun 2025",
-  // Belum dipublikasikan: berkas sumbernya satu bundel dengan Perjanjian
-  // Kinerja Direktur dan Rektor beserta tanda tangan dan NIP mereka.
-  sourceUrl: null,
+  // Surat ini ada di halaman 5 bahan sosialisasi syarat kelulusan (pindaian).
+  sourceUrl: "./dokumen/ppt-sosialisasi-syarat-kelulusan-2025.pdf",
 };
 
 const KALENDER_UPI = {
@@ -1975,11 +2058,12 @@ export const knowledgeBase = [
       "Format 11 – Lembar Pernyataan Perbaikan Besar/Substansial: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/format-11-lembar-pernyataan-perbaikan-besar-substansial.docx",
       "Format 12 – Persetujuan Seminar Hasil: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/format-12-persetujuan-seminar-hasil.docx",
       "Daftar Kelengkapan Persyaratan Ujian Sidang Tugas Akhir S1: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/daftar-kelengkapan-persyaratan-ujian-sidang-s1.docx",
+      "Daftar Kelengkapan Persyaratan Ujian Sidang Tugas Akhir S2: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/daftar-kelengkapan-persyaratan-ujian-sidang-s2.docx",
       "Bukti Keikutsertaan Seminar Proposal (10 kali partisipan): https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/bukti-keikutsertaan-sempro.pdf",
     ],
     closing: "Template resmi lengkapnya juga ada di https://bit.ly/Format-Template_admPenyelesaianStudi. Mau saya jelaskan dokumen apa saja yang perlu untuk seminar proposal?",
     answer:
-      "Template dokumen untuk seminar proposal, seminar hasil, dan sidang tersedia sebagai berkas unduhan: SEM 1 sampai SEM 10 (lembar bimbingan, permohonan seminar proposal, kartu hadir, daftar hadir penguji, penilaian, kesediaan membimbing, keterangan publikasi, berita acara uji kemiripan, laporan hasil penelitian, persetujuan submit artikel), Format 11 dan 12, daftar kelengkapan sidang S1, serta bukti keikutsertaan seminar proposal. Semuanya juga ada di https://bit.ly/Format-Template_admPenyelesaianStudi.",
+      "Template dokumen untuk seminar proposal, seminar hasil, dan sidang tersedia sebagai berkas unduhan: SEM 1 sampai SEM 10 (lembar bimbingan, permohonan seminar proposal, kartu hadir, daftar hadir penguji, penilaian, kesediaan membimbing, keterangan publikasi, berita acara uji kemiripan, laporan hasil penelitian, persetujuan submit artikel), Format 11 dan 12, daftar kelengkapan sidang S1 dan S2, serta bukti keikutsertaan seminar proposal. Semuanya juga ada di https://bit.ly/Format-Template_admPenyelesaianStudi.",
     escalation:
       "Hubungi staf Program Studi Bisnis Digital kalau template tidak bisa dibuka atau butuh versi terbaru.",
     sourceTitle: "Template dokumen administrasi penyelesaian studi (Format SEM 1–12 dan daftar kelengkapan sidang)",
@@ -1989,5 +2073,517 @@ export const knowledgeBase = [
     sourceRef: "Template kelengkapan dokumen pendaftaran seminar proposal, seminar hasil, dan ujian sidang (bit.ly/Format-Template_admPenyelesaianStudi)",
     // Berupa berkas template (docx), bukan PDF yang bisa dibuka di pembaca dokumen.
     sourceUrl: null,
+  },
+
+  {
+    id: "perrek38-masa-studi",
+    category: "Administrasi",
+    title: "Masa studi, beban belajar, dan drop out program sarjana (Peraturan Rektor 38/2026)",
+    questions: ["Berapa lama masa studi maksimal S1 di UPI?", "Berapa SKS yang harus ditempuh mahasiswa sarjana?"],
+    followUps: ["Apa saja yang membuat status mahasiswa dibatalkan?", "Berapa semester cuti akademik yang dihitung dalam masa studi?"],
+    hints: ["Berapa batas masa studi S1?", "Kapan mahasiswa kena drop out?"],
+    keywords: ["masa studi maksimal", "batas masa studi", "drop out", "beban belajar sarjana", "14 semester"],
+    lead: "Ketentuan masa studi dan beban belajar program sarjana menurut Peraturan Rektor Nomor 38 Tahun 2026 tentang Penyelenggaraan Pendidikan:",
+    points: [
+      "Beban belajar program sarjana paling sedikit 144 SKS dan paling banyak 156 SKS.",
+      "Masa tempuh kurikulum dirancang 8 semester, dengan masa studi mahasiswa paling lama 14 semester, termasuk dua semester cuti akademik.",
+      "Mahasiswa yang tidak menyelesaikan studi dalam batas masa studi maksimum dinyatakan tidak dapat melanjutkan studi dan dikenai sanksi pemberhentian sebagai mahasiswa (drop out).",
+      "Sebagian beban belajar boleh ditempuh di luar program studi: di prodi lain dalam UPI paling lama 1 semester atau setara 20 SKS, dan di perguruan tinggi mitra atau program nasional paling lama 2 semester atau setara 40 SKS.",
+    ],
+    closing: "Mau saya jelaskan hal-hal yang membuat status kemahasiswaan dibatalkan?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 38 Tahun 2026, beban belajar program sarjana paling sedikit 144 dan paling banyak 156 SKS. Kurikulum dirancang 8 semester, dan masa studi paling lama 14 semester termasuk dua semester cuti akademik. Mahasiswa yang melewati batas itu dinyatakan tidak dapat melanjutkan studi dan dikenai drop out.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ingin memastikan sisa masa studi Anda.",
+    ...PERREK_38,
+  },
+  {
+    id: "perrek38-status-kemahasiswaan",
+    category: "Administrasi",
+    title: "Status kemahasiswaan, pengunduran diri, dan pembatalan status (Peraturan Rektor 38/2026)",
+    questions: ["Apa yang membuat status mahasiswa dibatalkan di UPI?", "Bagaimana cara mengundurkan diri sebagai mahasiswa UPI?"],
+    followUps: ["Berapa IPK minimal di semester 4?", "Berapa lama masa studi maksimal S1?"],
+    hints: ["Kapan status mahasiswa dibatalkan?", "Bagaimana prosedur mengundurkan diri?"],
+    keywords: ["pembatalan status kemahasiswaan", "status kemahasiswaan", "mengundurkan diri dari upi", "ipk semester empat", "kehilangan status mahasiswa"],
+    lead: "Menurut Peraturan Rektor Nomor 38 Tahun 2026, status kemahasiswaan dapat dibatalkan apabila mahasiswa:",
+    points: [
+      "tidak melakukan registrasi administrasi dan registrasi akademik serta tidak mengajukan cuti akademik sesuai ketentuan;",
+      "tidak memenuhi prestasi akademik yang dipersyaratkan, termasuk mahasiswa sarjana yang pada semester keempat memperoleh IPK kurang dari 2,00;",
+      "mengundurkan diri atau dinyatakan drop out;",
+      "melampaui batas masa studi;",
+      "terbukti melakukan pelanggaran akademik seperti plagiarisme atau memakai gelar sebelum dinyatakan lulus, pelanggaran moral dan etika berat (misalnya perundungan atau penyalahgunaan narkoba), atau dijatuhi pidana berkekuatan hukum tetap.",
+      "Pembatalan ditetapkan dengan Keputusan Rektor. Mahasiswa yang dibatalkan berhak atas transkrip mata kuliah yang sudah ditempuh, kecuali yang dikenai sanksi terorisme, pelanggaran akademik, pelanggaran moral dan etika, pelanggaran berat tata perilaku, atau melampaui masa studi.",
+      "Pengunduran diri atas permohonan sendiri diajukan tertulis kepada pimpinan fakultas atau kampus daerah, diproses UPI, dan ditetapkan dengan keputusan rektor. Yang mengundurkan diri boleh mendaftar kembali lewat jalur penerimaan yang berlaku.",
+    ],
+    closing: "Mau saya jelaskan batas masa studi sarjana?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 38 Tahun 2026, status kemahasiswaan dapat dibatalkan, antara lain bila mahasiswa tidak registrasi dan tidak cuti, IPK mahasiswa sarjana kurang dari 2,00 pada semester keempat, mengundurkan diri atau drop out, melampaui batas masa studi, atau melakukan pelanggaran akademik dan etika berat. Pembatalan ditetapkan dengan Keputusan Rektor. Pengunduran diri diajukan tertulis kepada pimpinan fakultas atau kampus daerah.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital untuk kasus yang spesifik.",
+    ...PERREK_38,
+  },
+  {
+    id: "perrek38-pindah-prodi",
+    category: "Administrasi",
+    title: "Syarat pindah program studi di UPI (Peraturan Rektor 38/2026)",
+    questions: ["Bagaimana syarat pindah program studi di UPI?", "Kapan mahasiswa boleh pindah prodi?"],
+    followUps: ["Apa yang membuat status mahasiswa dibatalkan?", "Berapa lama masa studi maksimal S1?"],
+    hints: ["Syarat pindah prodi apa saja?", "Berapa semester minimal sebelum pindah prodi?"],
+    keywords: ["pindah program studi", "pindah prodi", "perpindahan program studi", "surat pernyataan penerimaan"],
+    lead: "Syarat pindah program studi di lingkungan UPI menurut Peraturan Rektor Nomor 38 Tahun 2026:",
+    points: [
+      "Sudah menempuh pendidikan paling sedikit 4 semester di program studi asal.",
+      "Memenuhi persyaratan akademik yang ditetapkan program studi tujuan.",
+      "Mendapat persetujuan program studi tujuan yang dinyatakan lewat surat pernyataan penerimaan.",
+      "Program studi tujuan boleh menambah syarat, misalnya tes akademik atau wawancara.",
+      "Tata cara pengajuan, seleksi, dan penetapan diatur Direktorat Pendidikan.",
+    ],
+    closing: "Mau saya jelaskan hal lain tentang status kemahasiswaan?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 38 Tahun 2026, mahasiswa boleh pindah program studi di UPI bila sudah menempuh paling sedikit 4 semester di prodi asal, memenuhi syarat akademik prodi tujuan, dan mendapat surat pernyataan penerimaan dari prodi tujuan. Prodi tujuan boleh menambah syarat seperti tes atau wawancara.",
+    escalation:
+      "Hubungi Direktorat Pendidikan atau staf prodi untuk tata cara pengajuannya.",
+    ...PERREK_38,
+  },
+  {
+    id: "perrek38-wisuda-ijazah",
+    category: "Kelulusan",
+    title: "Pendaftaran wisuda dan syarat penyerahan ijazah (Peraturan Rektor 38/2026)",
+    questions: ["Kapan batas revisi sebelum daftar wisuda?", "Apa syarat mengambil ijazah?"],
+    followUps: ["Apa syarat kelulusan S1 menurut Peraturan Rektor?", "Bagaimana cara unggah mandiri tugas akhir?"],
+    hints: ["Syarat daftar wisuda apa saja?", "Apa syarat penyerahan ijazah?"],
+    keywords: ["syarat penyerahan ijazah", "pengambilan ijazah", "wisuda in absentia", "revisi sebelum wisuda"],
+    lead: "Ketentuan wisuda dan penyerahan ijazah menurut Peraturan Rektor Nomor 38 Tahun 2026:",
+    points: [
+      "Mahasiswa mendaftar wisuda setelah memenuhi seluruh persyaratan akademik, termasuk menyelesaikan revisi tugas akhir paling lambat 1 bulan sebelum pelaksanaan wisuda.",
+      "Wisuda boleh diikuti secara in absentia dengan prosedur yang ditetapkan UPI.",
+      "Ijazah dan dokumen akademik diberikan setelah lulusan menyelesaikan perbaikan tugas akhir, tidak punya tunggakan biaya pendidikan, mengunggah tugas akhir lewat unggah mandiri repositori perpustakaan, dan mengembalikan perlengkapan wisuda.",
+      "Lulusan sarjana jalur skripsi menunjukkan bukti submit artikel di jurnal nasional atau internasional; jalur artikel menunjukkan bukti artikel accepted atau published di jurnal nasional terakreditasi atau internasional bereputasi.",
+      "Alumni boleh meminta terjemahan ijazah, transkrip, dan SKPI ke bahasa Inggris.",
+      "Catatan: syarat publikasi untuk kelulusan sarjana diatur lebih baru dan lebih rinci di Peraturan Rektor Nomor 70 Tahun 2026 (berlaku 6 November 2026); kalau berbeda, ikuti yang lebih baru.",
+    ],
+    closing: "Mau saya jelaskan cara unggah mandiri tugas akhir lewat SIAS?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 38 Tahun 2026, mahasiswa mendaftar wisuda setelah revisi tugas akhir selesai paling lambat 1 bulan sebelum wisuda. Ijazah diberikan setelah perbaikan tugas akhir selesai, tidak ada tunggakan biaya, tugas akhir diunggah lewat unggah mandiri repositori, perlengkapan wisuda dikembalikan, dan bukti artikel (submit untuk jalur skripsi; accepted atau published untuk jalur artikel) ditunjukkan.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau jadwal wisuda belum jelas.",
+    ...PERREK_38,
+  },
+  {
+    id: "unggah-mandiri-sias",
+    category: "Kelulusan",
+    title: "Cara unggah mandiri tugas akhir lewat SIAS",
+    questions: ["Bagaimana cara unggah mandiri tugas akhir di SIAS?", "Di mana mengunggah tugas akhir ke repository UPI?"],
+    followUps: ["Bagaimana cara mengajukan bebas pustaka di SIAS?", "Berapa nomor WhatsApp CS unggah mandiri?"],
+    hints: ["Langkah unggah mandiri tugas akhir?", "Apa itu rekomendasi publikasi tugas akhir?"],
+    keywords: ["unggah mandiri", "unggah tugas akhir", "repository upi", "rekomendasi publikasi", "suma"],
+    lead: "Langkah unggah mandiri tugas akhir lewat SIAS (Panduan Perpustakaan UPI):",
+    points: [
+      "Masuk ke https://sias.upi.edu/ dengan akun SSO.",
+      "Pilih menu Pengajuan Sidang: Pengajuan Sidang untuk S1, atau Pengajuan Sidang Tahap 2 untuk S2 dan S3.",
+      "Klik Ajukan Rekomendasi Publikasi Tugas Akhir. Pastikan bebas pustaka sudah diajukan lebih dulu.",
+      "Tunggu dosen pembimbing 1 menyatakan karya tulis direkomendasikan dipublikasikan atau tidak. Kalau tidak dipublikasikan, karya tulis tetap harus diunggah ke repository.upi.edu tetapi tidak ditampilkan.",
+      "Unggah tugas akhir mengikuti panduan SUMa di perpustakaan.upi.edu/suma.",
+      "Klik Ajukan Sudah Unggah di SIAS, lalu tunggu verifikasi petugas pada hari dan jam kerja (08.00 sampai 15.00).",
+      "Kalau dinyatakan belum sesuai, perbaiki sesuai panduan SUMa. Pertanyaan bisa ke CS Unggah Mandiri lewat WhatsApp 0815-1017-9300.",
+    ],
+    closing: "Mau saya jelaskan cara mengajukan bebas pustaka?",
+    answer:
+      "Unggah mandiri dilakukan lewat SIAS (sias.upi.edu, akun SSO): buka Pengajuan Sidang, ajukan rekomendasi publikasi tugas akhir setelah bebas pustaka diajukan, tunggu persetujuan dosen pembimbing 1, unggah tugas akhir sesuai panduan SUMa, klik Ajukan Sudah Unggah, lalu tunggu verifikasi petugas (08.00 sampai 15.00). CS Unggah Mandiri: WhatsApp 0815-1017-9300.",
+    escalation:
+      "Kalau unggahan ditolak berulang kali, hubungi CS Unggah Mandiri Perpustakaan UPI.",
+    ...PUSTAKA_UNGGAH,
+  },
+  {
+    id: "bebas-pustaka-sias",
+    category: "Kelulusan",
+    title: "Cara mengajukan bebas pustaka di SIAS",
+    questions: ["Bagaimana cara mengajukan bebas pustaka di SIAS?", "Kenapa pengajuan bebas pustaka saya ditolak?"],
+    followUps: ["Bagaimana cara unggah mandiri tugas akhir di SIAS?", "Bagaimana cek buku yang belum dikembalikan?"],
+    hints: ["Langkah ajukan bebas pustaka?", "Bebas pustaka ditolak harus bagaimana?"],
+    keywords: ["bebas pustaka", "ajukan bebas pustaka", "pinjaman pustaka", "sanksi indisipliner perpustakaan"],
+    lead: "Langkah mengajukan bebas pustaka lewat SIAS (Panduan Perpustakaan UPI):",
+    points: [
+      "Masuk ke https://sias.upi.edu/ dengan akun SSO (user name dan password internet UPI).",
+      "Pilih menu Pengajuan Sidang: Pengajuan Sidang untuk S1, atau Pengajuan Sidang Tahap 1 untuk S2 dan S3.",
+      "Klik Ajukan bebas pustaka.",
+      "Tunggu petugas memverifikasi pada hari dan jam kerja (08.00 sampai 15.00). Statusnya akan tampil disetujui atau ditolak.",
+      "Kalau ditolak, artinya masih ada pinjaman pustaka atau sanksi indisipliner. Cek di digilib.upi.edu/sapa, lalu datang langsung ke Layanan Sirkulasi Perpustakaan UPI.",
+    ],
+    closing: "Mau saya jelaskan cara unggah mandiri tugas akhir?",
+    answer:
+      "Bebas pustaka diajukan lewat SIAS (sias.upi.edu, akun SSO): buka menu Pengajuan Sidang, klik Ajukan bebas pustaka, lalu tunggu verifikasi petugas pada 08.00 sampai 15.00. Kalau ditolak, berarti masih ada pinjaman pustaka atau sanksi indisipliner; cek di digilib.upi.edu/sapa dan datang ke Layanan Sirkulasi Perpustakaan UPI.",
+    escalation:
+      "Hubungi Perpustakaan UPI (cs_perpustakaan@upi.edu) kalau status bebas pustaka bermasalah.",
+    ...PUSTAKA_BEBAS,
+  },
+  {
+    id: "magang-bisnis-digital",
+    category: "Tugas Akhir",
+    title: "Program Magang Profesional Bisnis Digital: bentuk dan persyaratan",
+    questions: ["Apa syarat magang di Bisnis Digital?", "Berapa lama magang dan berapa SKS yang dikonversi?"],
+    followUps: ["Mata kuliah apa saja yang dikonversi dari magang?", "Siapa saja dosen pembimbing magang bertugas apa?"],
+    hints: ["Syarat magang mandiri apa saja?", "Bedanya magang merdeka dan magang mandiri?"],
+    keywords: ["buku magang", "magang mandiri", "magang merdeka", "magang profesional", "pkl bisnis digital"],
+    lead: "Program Magang Profesional Bisnis Digital menurut Buku Petunjuk Program Studi Bisnis Digital:",
+    points: [
+      "Magang Merdeka MBKM: 1 semester di semester 7, dikonversi 20 SKS, tempat dipilih lewat pendaftaran di website MBKM. Syarat: sudah menyelesaikan semester 6 dan semua mata kuliah MKKIPS, mengontrak PKL di semester 7 dengan persetujuan dosen PA, punya surat rekomendasi dari kampus daerah, SPTJM, dan transkrip nilai.",
+      "Magang Mandiri: 1 semester di semester 7, minimal 5 bulan, dikonversi 20 SKS, tempat dipilih sendiri atau atas rekomendasi prodi. Syarat: sudah menyelesaikan 110 SKS, mengontrak PKL di semester 7 dengan persetujuan dosen PA, surat pengantar dari prodi untuk mitra, dan surat rekomendasi dari kampus daerah setelah diterima.",
+      "Langkahnya: bimbingan dengan dosen PA, urus surat pengantar atau SPTJM dan surat rekomendasi, ikuti pembekalan prodi, magang, bimbingan laporan, lalu ujian sidang magang sebelum semester berakhir (sekaligus menyampaikan ide awal tugas akhir).",
+      "Mitra: sesuai bidang bisnis digital, bukan perusahaan milik keluarga peserta, berbentuk CV atau PT, atau instansi pemerintah, BUMN/BUMD, startup teknologi, dan sejenisnya.",
+      "Mahasiswa hanya magang di tempat yang disetujui Ketua Prodi dan tidak boleh pindah tanpa izin; absen lebih dari tiga hari wajib diberitahukan ke prodi.",
+    ],
+    closing: "Mau saya jelaskan mata kuliah yang dikonversi dari magang?",
+    answer:
+      "Magang Profesional Bisnis Digital dilakukan 1 semester di semester 7 dan dikonversi 20 SKS. Magang Merdeka MBKM mensyaratkan semester 6 dan semua MKKIPS selesai, kontrak PKL, surat rekomendasi, SPTJM, dan transkrip. Magang Mandiri minimal 5 bulan dan mensyaratkan 110 SKS, kontrak PKL, surat pengantar prodi, serta surat rekomendasi. Setelah magang ada bimbingan laporan dan ujian sidang magang sebelum semester berakhir.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital untuk surat pengantar dan pendaftaran magang.",
+    ...BUKU_MAGANG,
+  },
+  {
+    id: "magang-konversi-penilaian",
+    category: "Tugas Akhir",
+    title: "Konversi SKS, penilaian, dan monitoring magang Bisnis Digital",
+    questions: ["Mata kuliah apa yang dikonversi dari magang?", "Bagaimana penilaian dan monitoring magang?"],
+    followUps: ["Apa syarat magang di Bisnis Digital?", "Apa kriteria mitra magang?"],
+    hints: ["Konversi SKS magang ke mata kuliah apa?", "Berapa kali dosen memonitor magang?"],
+    keywords: ["konversi magang", "mata kuliah konversi magang", "penilaian magang", "logbook magang", "monitoring magang"],
+    lead: "Konversi, penilaian, dan monitoring magang menurut Buku Petunjuk Magang Prodi Bisnis Digital:",
+    points: [
+      "Pengakuan pengalaman magang maksimal 20 SKS, dikonversi ke mata kuliah keahlian pilihan prodi yang sesuai kegiatan magang.",
+      "Mata kuliah konversi yang tercantum: Pengembangan Profesional, Seminar Inisiasi Bisnis Digital, Budaya dan Organisasi, Berpikir Konseptual dan Pemecahan Masalah, serta Praktik dan Prinsip Kepemimpinan (masing-masing 4 SKS, semester 7). Mata kuliah generik: Strategi Pengembangan Diri, Total Quality Management, Etika Profesi, Keterampilan Manajerial dan Kewirausahaan, Komunikasi dan Kerjasama Tim, Berpikir Kritis dan Kreatif.",
+      "Penilaian bisa terstruktur, terbuka, atau gabungan. Penilaian terbuka memberi bobot pada rumusan masalah (15%), penyelesaian masalah teknis (20%), sintesis desain (15%), komunikasi (10%), kerja sama (10%), kerja keras (10%), kepemimpinan (10%), dan kreativitas (10%).",
+      "Kehadiran dibuktikan daftar hadir yang diketahui instruktur magang, dan kegiatan dicatat di logbook yang dilampirkan dalam laporan.",
+      "Dosen pembimbing memonitor kegiatan sekurang-kurangnya dua kali selama magang, bertemu dengan mitra, dan menjadi penguji dalam ujian magang.",
+    ],
+    closing: "Mau saya jelaskan syarat mengikuti magang?",
+    answer:
+      "Magang diakui maksimal 20 SKS dan dikonversi ke mata kuliah keahlian pilihan seperti Pengembangan Profesional, Seminar Inisiasi Bisnis Digital, Budaya dan Organisasi, Berpikir Konseptual dan Pemecahan Masalah, serta Praktik dan Prinsip Kepemimpinan. Penilaian bisa terstruktur, terbuka, atau gabungan. Kehadiran dibuktikan daftar hadir dan logbook, dan dosen pembimbing memonitor minimal dua kali selama magang.",
+    escalation:
+      "Hubungi koordinator magang Program Studi Bisnis Digital untuk detail konversi nilai.",
+    ...BUKU_MAGANG,
+  },
+  {
+    id: "simkatmawa-poin-kelulusan",
+    category: "Kelulusan",
+    title: "Pengakuan pengalaman belajar dan poin kelulusan (Panduan SIMKATMAWA 2026)",
+    questions: ["Bagaimana cara mengurus 100 poin ekstrakurikuler untuk sidang?", "Apa itu pengakuan pengalaman belajar mahasiswa di UPI?"],
+    followUps: ["Apa syarat kelulusan S1 menurut Peraturan Rektor?", "Apakah poin bisa mengurangi beban SKS?"],
+    hints: ["Cara klaim poin kegiatan mahasiswa?", "Di mana mengajukan poin untuk syarat sidang?"],
+    keywords: ["simkatmawa", "pengakuan pengalaman belajar", "poin kegiatan mahasiswa", "kampus berdampak", "skpi"],
+    lead: "Menurut Panduan Pengakuan Pengalaman Belajar dan Prestasi Mahasiswa (Kampus Berdampak) Edisi IV, 2026:",
+    points: [
+      "Mahasiswa sarjana wajib memperoleh minimal 100 poin dari kegiatan pengalaman belajar dan prestasi, serta memiliki minimal 1 sertifikat kompetensi kerja sesuai SKKNI, sebagai syarat mengajukan ujian sidang.",
+      "Pengajuan dilakukan lewat aplikasi https://student.upi.edu/ dengan portofolio dan bukti kegiatan.",
+      "Berkas diverifikasi dan dinilai oleh Pembina Kemahasiswaan tingkat program studi dan Direktorat Kemahasiswaan. Setelah poin terpenuhi, mahasiswa mengunduh buktinya.",
+      "Lewat SIAS, program studi memastikan mahasiswa layak disetujui mengikuti ujian sidang.",
+      "Pengalaman belajar juga bisa dikonversi ke SKS untuk mengurangi beban belajar (tidak berlaku untuk poin), dipakai sebagai tugas mata kuliah, atau dicatat di Surat Keterangan Pendamping Ijazah (SKPI).",
+      "Mata kuliah Kewirausahaan mewajibkan minimal satu kegiatan pelatihan, workshop kewirausahaan, atau kredensial mikro.",
+    ],
+    closing: "Mau saya jelaskan syarat kelulusan lainnya?",
+    answer:
+      "Menurut Panduan SIMKATMAWA 2026 (Edisi IV), mahasiswa sarjana wajib memiliki minimal 100 poin pengalaman belajar dan prestasi serta 1 sertifikat kompetensi kerja SKKNI untuk mengajukan sidang. Portofolio diajukan lewat student.upi.edu, diverifikasi pembina kemahasiswaan prodi dan Direktorat Kemahasiswaan, lalu bukti pemenuhan poin diunduh. Pengalaman belajar juga bisa dikonversi ke SKS, tugas mata kuliah, atau SKPI.",
+    escalation:
+      "Hubungi pembina kemahasiswaan Program Studi Bisnis Digital untuk verifikasi poin.",
+    ...SIMKATMAWA,
+  },
+
+  {
+    id: "edaran-5572-program-wajib",
+    category: "Administrasi",
+    title: "Program wajib mahasiswa sarjana sebagai syarat sidang (Edaran Direktur 5572/2025)",
+    questions: ["Program wajib apa saja untuk mahasiswa S1 Kampus Tasikmalaya?", "Kapan tes TOEFL dan pelatihan wajib dilakukan?"],
+    followUps: ["Apakah pelatihan kewirausahaan wajib?", "Berapa poin ekstrakurikuler untuk lulus?"],
+    hints: ["Program wajib mahasiswa S1 apa saja?", "Kapan tes sertifikasi kompetensi internasional?"],
+    keywords: ["program wajib mahasiswa", "edaran direktur 5572", "tes awal toefl", "pelatihan kmd pramuka", "tes sertifikasi kompetensi internasional"],
+    lead: "Edaran Direktur Kampus UPI Tasikmalaya Nomor 5572 Tahun 2025 menetapkan program wajib mahasiswa sarjana (S1) sebagai syarat ujian sidang dan penyelesaian studi:",
+    points: [
+      "Tes Awal TOEFL: Tingkat I (semester 1–2).",
+      "Pelatihan Kewirausahaan: Tingkat II (semester 3–4).",
+      "Pelatihan Kompetensi Mahir Dasar (KMD) Pramuka: Tingkat II (semester 3–4), khusus S1 PGSD.",
+      "Tes Sertifikasi Kompetensi Internasional: Tingkat III/IV (semester 5–7).",
+      "Tes TOEFL dan/atau Pelatihan Bahasa Inggris: Tingkat III/IV (semester 5–7).",
+      "Teknis pelaksanaan tiap program dikoordinasikan bidang Akademik, Kemahasiswaan dan Penjaminan Mutu Kampus UPI Tasikmalaya.",
+      "Catatan: berkas sumbernya berupa gambar (pindaian), jadi pembagian tingkatnya dibaca dari hasil OCR; cocokkan dengan edaran aslinya.",
+    ],
+    closing: "Mau saya jelaskan pelatihan kewirausahaannya?",
+    answer:
+      "Edaran Direktur Kampus UPI Tasikmalaya Nomor 5572 Tahun 2025 mewajibkan mahasiswa S1: Tes Awal TOEFL (semester 1–2), Pelatihan Kewirausahaan (semester 3–4), Pelatihan KMD Pramuka (semester 3–4, khusus S1 PGSD), serta Tes Sertifikasi Kompetensi Internasional dan Tes TOEFL dan/atau Pelatihan Bahasa Inggris (semester 5–7). Program ini menjadi syarat ujian sidang dan penyelesaian studi.",
+    escalation:
+      "Hubungi Wakil Direktur Bidang Pendidikan, Kemahasiswaan dan Penjaminan Mutu Kampus UPI Tasikmalaya untuk jadwal tiap program.",
+    ...PPT_EDARAN,
+  },
+  {
+    id: "pedoman-ta-jenis-s1",
+    category: "Tugas Akhir",
+    title: "Jenis tugas akhir program sarjana menurut Pedoman Penyusunan Tugas Akhir UPI 2024",
+    questions: ["Apa saja jenis tugas akhir untuk S1 di UPI?", "Selain skripsi, tugas akhir apa yang boleh diambil mahasiswa sarjana?"],
+    followUps: ["Apa itu proyek produk bisnis sebagai tugas akhir?", "Apa itu portofolio pencapaian prestasi?"],
+    hints: ["Jenis tugas akhir S1 apa saja?", "Apakah boleh tugas akhir berupa proyek bisnis?"],
+    keywords: ["jenis tugas akhir", "ragam tugas akhir", "pedoman penyusunan tugas akhir 2024", "tugas akhir selain skripsi", "proyek produk kreatif"],
+    lead: "Menurut Pedoman Penyusunan Tugas Akhir Mahasiswa UPI Edisi 2024, tugas akhir program sarjana atau sarjana terapan dapat berbentuk:",
+    points: [
+      "Skripsi.",
+      "Artikel ilmiah (terbit di jurnal terindeks nasional atau internasional).",
+      "Prototype produk industri (tingkat dasar dan menengah).",
+      "Proyek seni monumental, proyek seni desain, proyek teknologi tepat guna, dan proyek teknologi kependidikan.",
+      "Proyek produk bisnis dan proyek produk kreatif sarjana.",
+      "Portofolio pencapaian prestasi.",
+      "Mahasiswa sarjana hanya boleh mengambil tugas akhir yang diperuntukkan bagi sarjana; tesis dan disertasi untuk magister dan doktor.",
+      "Catatan: bentuk tugas akhir yang tersedia di program studi mengikuti ketetapan prodi, dan aturan terbaru ada di Peraturan Rektor 70/2026.",
+    ],
+    closing: "Mau saya jelaskan syarat proyek produk bisnis?",
+    answer:
+      "Pedoman Penyusunan Tugas Akhir UPI 2024 menyebut tugas akhir sarjana dapat berupa skripsi, artikel ilmiah, prototype produk industri, proyek seni (monumental atau desain), proyek teknologi tepat guna, proyek teknologi kependidikan, proyek produk bisnis, proyek produk kreatif sarjana, atau portofolio pencapaian prestasi. Bentuk yang tersedia mengikuti ketetapan program studi.",
+    escalation:
+      "Hubungi Ketua Program Studi Bisnis Digital untuk bentuk tugas akhir yang dibuka di prodi.",
+    ...PEDOMAN_2024,
+  },
+  {
+    id: "pedoman-ta-produk-bisnis",
+    category: "Tugas Akhir",
+    title: "Syarat proyek produk bisnis sebagai tugas akhir (Pedoman Tugas Akhir 2024)",
+    questions: ["Apa syarat proyek produk bisnis sebagai tugas akhir?", "Berapa lama bisnis harus berjalan untuk tugas akhir proyek bisnis?"],
+    followUps: ["Apa saja isi proposal proyek produk bisnis?", "Apa jenis tugas akhir S1 lainnya?"],
+    hints: ["Proyek bisnis bisa jadi tugas akhir?", "Isi proposal proyek produk bisnis apa saja?"],
+    keywords: ["proyek produk bisnis", "tugas akhir proyek bisnis", "business model canvas tugas akhir", "monograf proyek bisnis"],
+    lead: "Persyaratan Proyek Produk Bisnis sebagai tugas akhir sarjana menurut Pedoman Penyusunan Tugas Akhir UPI 2024:",
+    points: [
+      "Proposal singkat berisi profil usaha (visi misi, SWOT), riset pasar, segmentasi dan target pasar, perencanaan usaha (produk, produksi, proyeksi keuangan, HPP, BEP, pemasaran 4P, SDM), Business Model Canvas, rencana dan implementasi 6 bulan, serta evaluasi dan kesimpulan.",
+      "Rencana ditandatangani Dosen Pembimbing Akademik dan diajukan ke Ketua Program Studi. SK Ketua Prodi tentang calon pembimbing berlaku 14 hari; dalam 14 hari kerja mahasiswa dan calon pembimbing menyepakati lanjut atau tidak.",
+      "Kelayakan produk: lolos kurasi dosen pembimbing atau kurator, orisinal dan bernilai (estetik, teknis, fungsi, sosial, ekonomi), karya individu atau kelompok dengan peran jelas, pernah ikut kompetisi atau pameran, dan sudah menjalankan bisnis minimal 6 bulan dengan indikator kinerja tertentu (punya produk atau jasa, profit, toko online atau offline).",
+      "Dilengkapi monograf berafiliasi UPI yang disetujui pembimbing dan Ketua Prodi, layak memperoleh Hak Cipta, dan Buku Bimbingan diparaf pembimbing.",
+      "Syarat ujian: ajukan sidang lewat https://siak.upi.edu/sias/, serahkan monograf minimal 3 eksemplar, serta foto dan video proses dan hasil proyek.",
+    ],
+    closing: "Mau saya jelaskan jenis tugas akhir lainnya?",
+    answer:
+      "Proyek Produk Bisnis sebagai tugas akhir mensyaratkan proposal rencana usaha (profil usaha, riset pasar, rencana produksi dan keuangan, pemasaran, SDM, Business Model Canvas, rencana 6 bulan), bisnis yang sudah berjalan minimal 6 bulan, monograf berafiliasi UPI yang disetujui pembimbing dan Ketua Prodi (minimal 3 eksemplar), serta foto dan video proses dan hasil. Ujian sidang diajukan lewat SIAS.",
+    escalation:
+      "Hubungi Ketua Program Studi Bisnis Digital untuk memastikan apakah bentuk ini dibuka di prodi.",
+    ...PEDOMAN_2024,
+  },
+  {
+    id: "pedoman-ta-portofolio-prestasi",
+    category: "Tugas Akhir",
+    title: "Portofolio pencapaian prestasi sebagai tugas akhir (Pedoman Tugas Akhir 2024)",
+    questions: ["Apa syarat portofolio pencapaian prestasi sebagai tugas akhir?", "Prestasi apa yang bisa dijadikan tugas akhir?"],
+    followUps: ["Apa jenis tugas akhir S1 lainnya?", "Apa syarat proyek produk bisnis sebagai tugas akhir?"],
+    hints: ["Prestasi apa yang diakui jadi tugas akhir?", "Isi portofolio prestasi apa saja?"],
+    keywords: ["portofolio pencapaian prestasi", "tugas akhir prestasi", "juara nasional tugas akhir", "pomnas tugas akhir"],
+    lead: "Persyaratan Portofolio Pencapaian Prestasi sebagai tugas akhir sarjana menurut Pedoman Penyusunan Tugas Akhir UPI 2024:",
+    points: [
+      "Prestasi yang dilaporkan minimal juara 1, 2, atau 3 tingkat nasional pada cabang olahraga di event nasional seperti PON, Kejurnas, Peparnas, atau Pomnas.",
+      "Portofolio disusun sistematis: identitas diri, dokumen prestasi (sertifikat, piagam, surat keterangan resmi), rekaman kegiatan (foto atau video), portofolio karya bila relevan, rekomendasi atau testimoni, dan surat pernyataan keaslian.",
+      "Proses pengajuan sama seperti proyek lain: rencana ditandatangani Dosen PA, SK Ketua Prodi calon pembimbing (berlaku 14 hari), lalu SK Dekan atau Direktur Kampus UPI di Daerah.",
+      "Syarat ujian: Buku Bimbingan diparaf pembimbing, portofolio yang disetujui seluruh pembimbing dan Ketua Prodi minimal 3 eksemplar, dan pengajuan sidang lewat SIAS.",
+    ],
+    closing: "Mau saya jelaskan jenis tugas akhir lainnya?",
+    answer:
+      "Portofolio Pencapaian Prestasi dapat menjadi tugas akhir sarjana bila mahasiswa meraih juara 1, 2, atau 3 tingkat nasional pada event seperti PON, Kejurnas, Peparnas, atau Pomnas. Portofolio memuat identitas diri, dokumen prestasi, rekaman kegiatan, rekomendasi, dan surat pernyataan keaslian, minimal 3 eksemplar, disetujui seluruh pembimbing dan Ketua Prodi.",
+    escalation:
+      "Hubungi Ketua Program Studi Bisnis Digital untuk memastikan bentuk ini dibuka di prodi.",
+    ...PEDOMAN_2024,
+  },
+  {
+    id: "pedoman-ta-ujian-umum",
+    category: "Sidang",
+    title: "Ketentuan umum ujian tugas akhir menurut Pedoman Tugas Akhir 2024",
+    questions: ["Bagaimana ketentuan umum ujian tugas akhir untuk karya fisik?", "Apakah semua jenis tugas akhir harus diuji sidang?"],
+    followUps: ["Apa syarat sidang skripsi?", "Apa itu uji deteksi Generative AI pada skripsi?"],
+    hints: ["Semua tugas akhir wajib sidang?", "Bagaimana ketentuan umum ujian tugas akhir untuk karya fisik?"],
+    keywords: ["ketentuan umum ujian tugas akhir", "karya fisik ujian", "tugas akhir wajib diuji", "foto video tugas akhir"],
+    lead: "Ketentuan umum ujian tugas akhir menurut Pedoman Penyusunan Tugas Akhir UPI 2024:",
+    points: [
+      "Semua jenis tugas akhir (sarjana, magister, doktor) wajib diuji lewat Ujian Sidang Tugas Akhir.",
+      "Mekanisme ujian diatur Peraturan Rektor; kalau ada beda penafsiran, yang berlaku adalah Peraturan Rektor.",
+      "Produk tulisan, aplikasi, atau benda fisik yang mudah dibawa wajib diperlihatkan kepada seluruh penguji.",
+      "Benda fisik yang tidak bisa dibawa tetapi masih terjangkau: tim penguji mengunjungi lokasi pembuatannya.",
+      "Benda fisik yang tidak bisa dibawa dan tidak terjangkau: ditunjukkan lewat 2 foto dan 2 video (karya dan mahasiswa bekerja, kunjungan pembimbing, karya berfungsi, dan pembimbing memperhatikan cara kerjanya).",
+      "Ujian dilaksanakan sesuai jadwal dalam SK Dekan atau Direktur Kampus UPI di Daerah, yang boleh menambah tata cara ujian di lingkungannya.",
+      "Untuk skripsi, pedoman ini mensyaratkan uji similaritas Turnitin maksimal 25% dan uji deteksi teks Generative AI maksimal 15%. Peraturan Rektor 70/2026 (lebih baru) memakai batas similaritas 25% dan mewajibkan pernyataan penggunaan Generative AI.",
+    ],
+    closing: "Mau saya jelaskan syarat sidang skripsi terbaru?",
+    answer:
+      "Menurut Pedoman Penyusunan Tugas Akhir UPI 2024, semua tugas akhir wajib diuji sidang dan produknya ditunjukkan kepada seluruh penguji. Karya fisik yang tidak bisa dibawa diuji di lokasi, atau lewat 2 foto dan 2 video bila tidak terjangkau. Aturan terbaru ada di Peraturan Rektor 70/2026.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital untuk jadwal dan tata cara ujian di kampus Tasikmalaya.",
+    ...PEDOMAN_2024,
+  },
+  {
+    id: "perrek38-penilaian",
+    category: "Administrasi",
+    title: "Penilaian hasil belajar mata kuliah (Peraturan Rektor 38/2026)",
+    questions: ["Bagaimana penilaian mata kuliah di UPI?", "Komponen apa saja yang membentuk nilai akhir mata kuliah?"],
+    followUps: ["Berapa IPK minimal di semester 4?", "Berapa lama masa studi maksimal S1?"],
+    hints: ["Nilai akhir dari apa saja?", "Berapa kali ujian per semester?"],
+    keywords: ["penilaian hasil belajar", "nilai akhir mata kuliah", "uts dan uas", "penilaian acuan patokan"],
+    lead: "Penilaian hasil belajar menurut Peraturan Rektor Nomor 38 Tahun 2026:",
+    points: [
+      "Evaluasi memakai pendekatan penilaian berbasis kelas, terdiri atas evaluasi formatif (selama proses) dan sumatif (akhir).",
+      "Komponen nilai dapat berasal dari partisipasi, tugas, proyek atau produk, kuis, UTS, dan UAS. Nilai akhir adalah akumulasi komponen berdasarkan Penilaian Acuan Patokan (PAP).",
+      "Ujian mata kuliah dilaksanakan paling sedikit dua kali per semester: UTS dan UAS.",
+      "Hasil dinyatakan dalam nilai huruf, angka, dan derajat mutu; mata kuliah tertentu boleh berupa Lulus atau Tidak Lulus.",
+      "Nilai rata-rata tiap semester dan akhir program dihitung dari nilai mata kuliah dan bobot SKS.",
+      "Mahasiswa berhak mengetahui hasil penilaian sebagai umpan balik lewat sistem informasi akademik UPI, dan nilai dilaporkan ke PDDikti.",
+    ],
+    closing: "Mau saya jelaskan masa studi dan batas drop out?",
+    answer:
+      "Menurut Peraturan Rektor Nomor 38 Tahun 2026, nilai akhir mata kuliah adalah akumulasi partisipasi, tugas, proyek, kuis, UTS, dan UAS berdasarkan Penilaian Acuan Patokan. Ujian minimal dua kali per semester (UTS dan UAS). Hasil dinyatakan dalam nilai huruf, angka, dan derajat mutu.",
+    escalation:
+      "Hubungi dosen pengampu atau staf prodi kalau ada keberatan terhadap nilai.",
+    ...PERREK_38,
+  },
+  {
+    id: "mandala-bebas-publikasi",
+    category: "Kelulusan",
+    title: "Aplikasi Mandala: surat keterangan bebas publikasi S2 dan S3",
+    questions: ["Apa itu aplikasi Mandala UPI?", "Bagaimana cara mendapatkan surat keterangan bebas publikasi di Mandala?"],
+    followUps: ["Bagaimana cek similarity di Mandala?", "Bagaimana cara unggah mandiri tugas akhir di SIAS?"],
+    hints: ["Mandala itu untuk apa?", "Dokumen apa yang diunggah untuk verifikasi publikasi?"],
+    keywords: ["mandala upi", "aplikasi mandala", "surat keterangan bebas publikasi", "verifikasi publikasi s2 s3"],
+    lead: "Aplikasi Mandala (Manajemen Disertasi dan Luaran Akademik) khusus mahasiswa magister dan doktor. Alur surat keterangan bebas publikasi:",
+    points: [
+      "Mandala dipakai mahasiswa magister dan doktor untuk mendapat surat keterangan bebas publikasi, syarat ujian tahap 1 tesis atau disertasi. Akses di https://mandala.upi.edu dengan akun SSO.",
+      "Menu: Data Diri, Daftar Pengajuan, Publikasi, SK Publikasi (Claim), Similarity Check, dan Disertasi.",
+      "Ajukan verifikasi publikasi: isi judul artikel, nama jurnal, penerbit, jenis dan status publikasi, akreditasi, indexing, serta tautan jurnal dan profil Scimago.",
+      "Unggah PDF: full paper (maks 10 MB), bukti review atau screenshot OJS (maks 3 MB), Letter of Acceptance (maks 1 MB), dan bukti pembayaran (opsional, maks 1 MB).",
+      "Status: Menunggu Assignment, lalu Perlu Revisi bila ada catatan (perbaiki dan kirim revisi) atau lolos verifikasi.",
+      "Setelah lolos, buka Claim SK Publikasi, pilih publikasi, ajukan klaim, lalu unduh surat keterangan bila statusnya Selesai.",
+    ],
+    closing: "Mau saya jelaskan cara cek similarity di Mandala?",
+    answer:
+      "Mandala (mandala.upi.edu, akun SSO) dipakai mahasiswa S2 dan S3 untuk mendapat surat keterangan bebas publikasi sebagai syarat ujian tahap 1. Ajukan verifikasi publikasi dengan data dan PDF (full paper, bukti review, LoA), tunggu verifikasi, lalu klaim SK Publikasi dan unduh bila sudah selesai.",
+    escalation:
+      "Hubungi P3KI Sekolah Pascasarjana UPI untuk kendala di Mandala.",
+    ...MANDALA,
+  },
+  {
+    id: "mandala-similarity-check",
+    category: "Penulisan Ilmiah",
+    title: "Cek similarity (Turnitin) disertasi lewat aplikasi Mandala",
+    questions: ["Bagaimana cara cek similarity disertasi di Mandala?", "Apa yang diunggah untuk similarity check di Mandala?"],
+    followUps: ["Apa itu aplikasi Mandala UPI?", "Berapa batas similaritas Turnitin?"],
+    hints: ["Cara ajukan similarity check di Mandala?", "Bagaimana kalau hasil similarity perlu revisi?"],
+    keywords: ["similarity check mandala", "cek plagiasi disertasi", "turnitin mandala", "unggah bab disertasi"],
+    lead: "Cek similarity (Turnitin) disertasi lewat Mandala:",
+    points: [
+      "Buka menu Similarity Check, klik Ajukan Pengecekan, dan isi judul lengkap disertasi.",
+      "Unggah dokumen pendukung .doc/.docx maksimal 10 MB per file: cover dan pernyataan, daftar pustaka, dan lampiran.",
+      "Unggah setiap bab terpisah: Bab 1 sampai Bab 5 wajib, Bab 6 bila ada.",
+      "Pantau kelengkapan di halaman rekap (misalnya 0/9 bagian) dan buka Lihat Detail untuk skor per bab dan laporan.",
+      "Bagian berstatus Perlu Revisi diperbaiki: pilih file, klik Upload Revisi, lalu tunggu status Menunggu Review sampai diverifikasi petugas.",
+      "Setelah lolos, berkas bisa diajukan ke komisi disertasi pascasarjana untuk cek kelayakan.",
+    ],
+    closing: "Mau saya jelaskan cara mendapatkan surat keterangan bebas publikasi?",
+    answer:
+      "Di Mandala, buka Similarity Check, klik Ajukan Pengecekan, isi judul, unggah cover, daftar pustaka, lampiran, dan tiap bab dalam .doc atau .docx (maks 10 MB). Pantau skor per bab, unggah revisi untuk bagian yang perlu perbaikan, dan setelah lolos ajukan ke komisi disertasi pascasarjana.",
+    escalation:
+      "Hubungi operator Mandala Sekolah Pascasarjana UPI untuk kendala unggahan.",
+    ...MANDALA,
+  },
+  {
+    id: "simkatmawa-bentuk-kegiatan",
+    category: "Kelulusan",
+    title: "Bentuk kegiatan yang diakui dan rambu penilaiannya (Panduan SIMKATMAWA 2026)",
+    questions: ["Kegiatan apa saja yang diakui untuk poin pengalaman belajar?", "Bagaimana kompetisi dinilai untuk poin mahasiswa?"],
+    followUps: ["Bagaimana cara mengurus 100 poin ekstrakurikuler untuk sidang?", "Apa itu SKPI?"],
+    hints: ["Lomba apa saja yang diakui?", "Apakah PKM diakui untuk poin pengalaman belajar?"],
+    keywords: ["kegiatan diakui poin", "pkm program kreativitas mahasiswa", "p2mw", "ppk ormawa", "rambu penilaian kompetisi"],
+    lead: "Menurut Panduan SIMKATMAWA Edisi IV (2026), pengalaman belajar dan prestasi mahasiswa yang diakui berasal dari:",
+    points: [
+      "Program pembinaan mahasiswa: PKM, P2MW (wirausaha), PPK Ormawa, dan program lain dari Kemdiktisaintek.",
+      "Kompetisi dan festival, misalnya KBMK (bisnis manajemen dan keuangan), LIDM, GEMASTIK, Kontes Robot Indonesia, KDMI, POMNAS, PEKSIMINAS, dan event nasional atau internasional lain yang relevan.",
+      "Pelatihan, workshop, atau kegiatan ko-kurikuler.",
+      "Kreativitas kecendekiaan: asistensi bersama dosen dan kepeloporan di bidang akademik.",
+      "Penguatan kapasitas organisasi kemahasiswaan (BEM, UKM, HMP).",
+      "Perolehan sertifikat kompetensi dan hak kekayaan intelektual (HKI).",
+      "Kompetisi dinilai dengan rambu: durasi waktu (DW), prestasi atau luaran (PLP), level event (LE: provinsi, nasional, ASEAN, Asia, dunia), kategori event (KE), jumlah peserta (JP), relevansi bidang ilmu (RI), dan kontribusi pada IKU.",
+    ],
+    closing: "Mau saya jelaskan cara mengajukan poin untuk syarat sidang?",
+    answer:
+      "Panduan SIMKATMAWA 2026 mengakui pengalaman belajar dari PKM, P2MW, PPK Ormawa, kompetisi dan festival, pelatihan atau workshop, asistensi dosen dan kepeloporan akademik, penguatan organisasi kemahasiswaan, serta sertifikat kompetensi dan HKI. Kompetisi dinilai dari durasi, prestasi, level, kategori, jumlah peserta, relevansi bidang ilmu, dan kontribusi pada IKU.",
+    escalation:
+      "Hubungi pembina kemahasiswaan Program Studi Bisnis Digital untuk menilai kegiatan tertentu.",
+    ...SIMKATMAWA,
+  },
+  {
+    id: "glosarium-tugas-akhir",
+    category: "Glosarium",
+    title: "Glosarium: istilah tugas akhir dan sidang (TPTA, similaritas, accepted, published)",
+    questions: ["Apa itu TPTA?", "Apa bedanya accepted dan published?"],
+    followUps: ["Apa itu uji similaritas?", "Apa itu Generative AI dalam tugas akhir?"],
+    hints: ["Apa itu ujian ulang?", "Apa itu penguji eksternal?"],
+    keywords: ["apa itu tpta", "pengertian tpta", "apa itu accepted", "apa itu published", "apa itu uji similaritas", "glosarium tugas akhir", "apa itu ujian ulang", "penguji eksternal", "konflik kepentingan", "integritas akademik"],
+    lead: "Istilah tugas akhir menurut Peraturan Rektor UPI Nomor 70 Tahun 2026:",
+    points: [
+      "TPTA (Tim Pertimbangan Tugas Akhir): tim di tingkat program studi yang memberi pertimbangan akademik dalam penyelenggaraan tugas akhir.",
+      "Proposal tugas akhir: rencana akademik yang diajukan untuk memperoleh persetujuan sebelum tugas akhir dilaksanakan.",
+      "Pembimbing: dosen yang membimbing mahasiswa. Promotor: pembimbing program doktor. Tim penguji: dosen, ahli, atau praktisi yang menguji dan menilai tugas akhir. Penguji eksternal: penguji dari luar UPI yang kompeten di bidangnya.",
+      "Ujian sidang tugas akhir: asesmen akademik lewat presentasi, pengujian, pembahasan, dan penilaian tugas akhir. Revisi tugas akhir: perbaikan berdasarkan hasil sidang. Ujian ulang: sidang yang diulang bagi yang belum lulus.",
+      "Uji similaritas: pemeriksaan kemiripan karya dengan sumber lain memakai perangkat yang ditetapkan UPI. Integritas akademik: kejujuran, objektivitas, orisinalitas, dan etika dalam tugas akhir.",
+      "Generative AI: teknologi kecerdasan artifisial yang menghasilkan konten baru (teks, gambar, audio, video, kode).",
+      "Accepted: artikel dinyatakan diterima jurnal untuk diterbitkan. Published: artikel sudah resmi terbit dan dapat ditelusuri.",
+      "Publikasi ilmiah: penyebaran karya lewat jurnal, prosiding, buku, bab buku, antologi, atau bentuk lain. Konflik kepentingan: kondisi yang dapat memengaruhi objektivitas pembimbingan, penilaian, atau pengujian.",
+    ],
+    closing: "Mau saya jelaskan istilah sistem dan singkatan yang sering dipakai (SIAS, SSO, SUMa)?",
+    answer:
+      "TPTA adalah tim di tingkat prodi yang memberi pertimbangan akademik soal tugas akhir. Uji similaritas memeriksa kemiripan karya dengan sumber lain. Accepted berarti artikel sudah dinyatakan diterima jurnal, sedangkan published berarti sudah resmi terbit. Ujian ulang adalah sidang yang diulang bagi yang belum lulus, dan penguji eksternal adalah penguji dari luar UPI yang kompeten di bidangnya.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada istilah yang belum ada di sini.",
+    ...PERREK_70_GLOS,
+  },
+  {
+    id: "glosarium-sistem-singkatan",
+    category: "Glosarium",
+    title: "Glosarium: sistem dan singkatan di UPI (SIAS, SSO, SUMa, SKPI, SKKNI, PA)",
+    questions: ["Apa itu SIAS?", "Apa kepanjangan SKPI, SKKNI, dan PA?"],
+    followUps: ["Bagaimana cara unggah mandiri tugas akhir di SIAS?", "Apa itu SIMKATMAWA?"],
+    hints: ["SIAS dipakai untuk apa?", "Apa itu repository UPI dan SUMa?"],
+    keywords: ["apa itu sias", "apa itu sso", "apa itu suma", "apa itu skpi", "apa itu skkni", "apa itu pa dosen", "glosarium singkatan", "apa itu repository upi", "apa itu mkkips", "apa itu sptjm"],
+    lead: "Sistem dan singkatan yang sering muncul di dokumen UPI dan Prodi Bisnis Digital:",
+    points: [
+      "SIAS (Sistem Informasi Administrasi): sistem di sias.upi.edu untuk pengajuan sidang, bebas pustaka, rekomendasi publikasi, dan unggah mandiri. SIAK: sistem informasi akademik (siak.upi.edu).",
+      "SSO (Single Sign-On): akun tunggal UPI untuk masuk ke SIAS, Mandala, dan aplikasi lain.",
+      "SUMa: panduan unggah mandiri tugas akhir ke repository.upi.edu (perpustakaan.upi.edu/suma). Bebas pustaka: surat keterangan dari Perpustakaan UPI bahwa tidak ada pinjaman atau sanksi.",
+      "PA (Pembimbing Akademik): dosen yang mendampingi mahasiswa dan menyetujui rencana studi serta kontrak mata kuliah.",
+      "SKPI (Surat Keterangan Pendamping Ijazah): mencatat pengalaman belajar dan prestasi mahasiswa. SKKNI: Standar Kompetensi Kerja Nasional Indonesia, acuan sertifikat kompetensi kerja.",
+      "SIMKATMAWA: panduan pengakuan pengalaman belajar dan prestasi mahasiswa (aplikasi di student.upi.edu) untuk poin kelulusan, konversi SKS, dan SKPI.",
+      "MKKIPS dan MKKPPS: kelompok mata kuliah keahlian (wajib dan pilihan program studi). PKL: praktik kerja lapangan (magang). SPTJM: surat pernyataan tanggung jawab mutlak untuk magang merdeka. MBKM: Merdeka Belajar Kampus Merdeka.",
+      "KBK: Kelompok Bidang Keahlian dosen. P3KI: Pusat Pengembangan Publikasi dan Karya Ilmiah. Mandala: aplikasi manajemen disertasi dan luaran akademik untuk S2 dan S3. UKT: Uang Kuliah Tunggal. UTS dan UAS: ujian tengah dan akhir semester.",
+    ],
+    closing: "Mau saya jelaskan cara unggah mandiri atau bebas pustaka di SIAS?",
+    answer:
+      "SIAS (sias.upi.edu) adalah sistem untuk pengajuan sidang, bebas pustaka, rekomendasi publikasi, dan unggah mandiri; masuk memakai akun SSO UPI. SUMa adalah panduan unggah tugas akhir ke repository.upi.edu. PA adalah pembimbing akademik, SKPI adalah surat keterangan pendamping ijazah, dan SKKNI adalah standar kompetensi kerja nasional untuk sertifikat kompetensi.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada singkatan yang belum ada di sini.",
+    ...GLOS_UMUM,
+  },
+  {
+    id: "glosarium-pedoman-ta",
+    category: "Glosarium",
+    title: "Glosarium: istilah dalam Pedoman Penyusunan Tugas Akhir UPI 2024",
+    questions: ["Apa itu monograf?", "Apa itu payung riset dosen?"],
+    followUps: ["Apa itu produk bisnis dan produk kreatif?", "Apa itu P3KI dan KBK?"],
+    hints: ["Apa itu artikel ilmiah menurut pedoman?", "Apa itu PMDSU?"],
+    keywords: ["apa itu monograf", "apa itu payung riset", "apa itu produk kreatif", "apa itu produk bisnis", "apa itu pmdsu", "apa itu p3ki", "apa itu kbk", "apa itu hak cipta", "apa itu hak paten", "daftar istilah pedoman tugas akhir"],
+    lead: "Daftar istilah dalam Pedoman Penyusunan Tugas Akhir Mahasiswa UPI Edisi 2024:",
+    points: [
+      "Artikel ilmiah: karya ilmiah hasil penelitian penulis yang terbit di jurnal ilmiah terindeks nasional atau internasional.",
+      "Monograf: karya tulis mendalam tentang topik tertentu, berupa buku atau laporan panjang.",
+      "Payung riset dosen: program yang menyatukan penelitian dosen dalam satu tema besar; proposal skripsi yang bagian dari payung riset tidak wajib seminar proposal.",
+      "KBK (Kelompok Bidang Keahlian): kelompok dosen berdasarkan kesamaan keilmuan. P3KI (Pusat Pengembangan Publikasi dan Karya Ilmiah): unit universitas yang membantu mengelola publikasi ilmiah mahasiswa.",
+      "Produk bisnis: barang atau jasa untuk operasional perusahaan atau organisasi. Produk kreatif: barang atau layanan dari ide orisinal dan inovatif, fisik atau digital.",
+      "Prototype digital: model virtual hasil perangkat lunak desain 3D. Prototype visual: model yang menunjukkan bentuk dan estetika tanpa fokus fungsi.",
+      "Katalog: daftar terstruktur produk dengan deskripsi, gambar, dan harga. Booklet: buku kecil berisi informasi ringkas.",
+      "Cum laude: penghargaan bagi lulusan ber-IPK tinggi. Hak cipta: hak pencipta atas karya intelektualnya. Hak paten: hak eksklusif penemu atas penemuan baru.",
+      "PMDSU (fastrack): program percepatan magister menuju doktor bagi sarjana unggul. RPL: rekognisi pembelajaran lampau.",
+      "Direktur Kampus UPI di Daerah: pimpinan kampus di luar kampus utama (Cibiru, Sumedang, Tasikmalaya, Purwakarta, Serang).",
+    ],
+    closing: "Mau saya jelaskan jenis tugas akhir yang tersedia untuk S1?",
+    answer:
+      "Menurut Pedoman Penyusunan Tugas Akhir UPI 2024: monograf adalah karya tulis mendalam tentang topik tertentu; payung riset dosen menyatukan penelitian dosen dalam satu tema besar; KBK adalah kelompok dosen sebidang keilmuan; P3KI mengelola publikasi ilmiah mahasiswa; produk bisnis adalah barang atau jasa untuk operasional organisasi; produk kreatif adalah karya dari ide orisinal.",
+    escalation:
+      "Hubungi staf Program Studi Bisnis Digital kalau ada istilah yang belum ada di sini.",
+    ...PEDOMAN_2024_GLOS,
   },
 ];
