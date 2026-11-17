@@ -297,6 +297,24 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
 
   const dashboard = { range: "mingguan", from: "", to: "", outcome: null, category: "", page: 1, data: null };
 
+  /** Elemen terdekat yang benar-benar menggulung halaman (bisa window, bisa panel utama). */
+  function scroller(el) {
+    for (let node = el?.parentElement; node; node = node.parentElement) {
+      if (node.scrollHeight > node.clientHeight && /(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node;
+    }
+    return document.scrollingElement;
+  }
+
+  /** Muat ulang dashboard tanpa melempar layar ke atas: dipakai filter dan halaman tabel. */
+  async function refreshInPlace(root) {
+    const box = scroller(root);
+    const top = box?.scrollTop ?? 0;
+    root.style.minHeight = `${root.offsetHeight}px`; // cegah halaman memendek sesaat dan memaksa gulungan naik
+    await renderDashboard(root);
+    root.style.minHeight = "";
+    if (box) box.scrollTop = top;
+  }
+
   async function renderDashboard(root) {
     root.replaceChildren();
     await guarded(root, async () => {
@@ -654,7 +672,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       chip.addEventListener("click", () => {
         dashboard.outcome = value;
         dashboard.page = 1;
-        renderDashboard(root);
+        refreshInPlace(root);
       });
       chips.append(chip);
     }
@@ -675,7 +693,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       category.addEventListener("change", () => {
         dashboard.category = category.value;
         dashboard.page = 1;
-        renderDashboard(root);
+        refreshInPlace(root);
       });
       head.append(category);
     }
@@ -737,7 +755,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       button.disabled = disabled;
       button.addEventListener("click", () => {
         dashboard.page = page;
-        renderDashboard(root);
+        refreshInPlace(root);
       });
       pager.append(button);
     };
