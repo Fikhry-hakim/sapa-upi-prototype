@@ -253,7 +253,7 @@ export function createSettings(deps) {
   function dialog(title, build, { wide = false } = {}) {
     const overlay = make("div", "modal");
     overlay.setAttribute("role", "dialog");
-    root.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-modal", "true");
     const scrim = make("div", "modal-scrim");
     const box = make("div", `modal-box s-dialog${wide ? " is-wide" : ""}`);
     overlay.append(scrim, box);
@@ -464,6 +464,14 @@ export function createSettings(deps) {
 
   /** Percakapan yang diarsipkan: daftar dengan tombol kembalikan dan hapus. */
   async function renderArchived(container) {
+    try {
+      await loadArchived(container);
+    } finally {
+      localizeAll(container);
+    }
+  }
+
+  async function loadArchived(container) {
     const holder = make("div", "s-card s-card-pad");
     holder.append(emptyState("archiveBig", "Loading…", ""));
     container.append(holder);
@@ -513,7 +521,6 @@ export function createSettings(deps) {
     } catch {
       holder.replaceChildren(emptyState("archiveBig", "Could not load archived chats", "Try again later."));
     }
-    localizeAll(holder);
   }
 
   function renderVoice() {
@@ -591,6 +598,7 @@ export function createSettings(deps) {
         manage("images", "image", "Images", "0 B • 0 images"),
       ]),
     );
+    localizeAll(holder);
   }
 
   /* ------------------------------------------------------------ keyboard */
