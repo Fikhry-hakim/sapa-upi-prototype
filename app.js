@@ -328,12 +328,13 @@ function templateFor(url) {
 
 /** Teks biasa dengan tautan http(s) yang bisa diklik; tidak pernah memakai innerHTML. */
 function appendRichText(parent, text) {
-  const pattern = /(https?:\/\/[^\s)]+[^\s).,;])/g;
+  // Tautan lengkap (https://...), atau tanpa skema untuk bit.ly, www., dan laman *.upi.edu yang sering ditulis polos.
+  const pattern = /((?:https?:\/\/|www\.|bit\.ly\/|(?:[a-z0-9-]+\.)+upi\.edu\b)(?:[^\s)]*[^\s).,;:])?)/gi;
   let last = 0;
   for (const match of text.matchAll(pattern)) {
     if (match.index > last) parent.append(text.slice(last, match.index));
     const link = document.createElement("a");
-    link.href = match[0];
+    link.href = /^https?:\/\//i.test(match[0]) ? match[0] : `https://${match[0]}`;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = match[0];
@@ -526,7 +527,7 @@ function renderReferences(entry, parent, served = null, many = []) {
   } else {
     const chip = make("span", "ref-chip ref-chip-muted");
     chip.innerHTML = ICON.file;
-    chip.append(entry.sourceRef || entry.sourceTitle);
+    appendRichText(chip, entry.sourceRef || entry.sourceTitle);
     list.append(chip);
   }
   box.append(list);

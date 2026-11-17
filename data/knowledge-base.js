@@ -2045,6 +2045,7 @@ export const knowledgeBase = [
     keywords: ["template sempro", "template dokumen", "format sem", "format dokumen sempro", "unduh template", "lembar bimbingan", "kartu hadir seminar", "bukti keikutsertaan sempro", "daftar kelengkapan sidang", "template seminar hasil"],
     lead: "Template dokumen administrasi tugas akhir yang tersedia (unduh langsung):",
     points: [
+      "Semua template resmi (versi terbaru): https://bit.ly/Format-Template_admPenyelesaianStudi",
       "SEM 1 – Lembar Bimbingan Proposal Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-1-lembar-bimbingan-proposal-tugas-akhir.docx",
       "SEM 2 – Permohonan Seminar Proposal Tugas Akhir: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-2-permohonan-seminar-proposal-tugas-akhir.docx",
       "SEM 3 – Kartu Hadir Partisipan Seminar Proposal: https://fikhry-hakim.github.io/sapa-upi-prototype/dokumen/template/SEM-3-kartu-hadir-partisipan-seminar-proposal.docx",

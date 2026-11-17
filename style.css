@@ -4784,3 +4784,6 @@ button.ref-chip:hover {
 .docx-table td .docx-p {
   margin-bottom: 2pt;
 }
+
+.docx-img { max-width: 100%; height: auto; vertical-align: middle; }
+.docx-header { margin-bottom: 12pt; }
