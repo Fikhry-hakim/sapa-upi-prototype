@@ -112,11 +112,15 @@ test("each profile menu entry is handled", () => {
   }
 });
 
-test("settings only lists sections that do something", () => {
-  const sections = [...app.matchAll(/\{ id: "(\w+)", label:/g)].map((m) => m[1]);
-  assert.ok(sections.length >= 3);
+test("settings only lists sections that do something", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const settings = await readFile(new URL("../settings.js", import.meta.url), "utf8");
+  const sections = [...settings.matchAll(/\{ id: "(\w+)", label:/g)].map((m) => m[1]);
+  assert.ok(sections.length >= 9, "the design has nine settings tabs");
   for (const id of sections) {
-    assert.ok(app.includes(`section.id === "${id}"`), `settings section "${id}" renders nothing`);
+    // A tab either has a renderer in the table, or is handled by name (archived and storage load their own data).
+    const rendered = new RegExp(`\\b${id}: render`).test(settings) || settings.includes(`section.id === "${id}"`);
+    assert.ok(rendered, `settings section "${id}" renders nothing`);
   }
 });
 

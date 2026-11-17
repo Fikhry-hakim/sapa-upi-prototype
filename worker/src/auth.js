@@ -205,3 +205,40 @@ export async function destroyOtherSessions(db, user, request) {
     .bind(user.id, await hashToken(token))
     .run();
 }
+
+/**
+ * Sesi aktif milik pengguna. `id` adalah awalan hash token (bukan tokennya), cukup untuk
+ * menunjuk satu sesi saat dicabut; `current` menandai sesi yang sedang dipakai permintaan ini.
+ */
+export async function listSessions(db, user, request, now = Date.now) {
+  if (!db || !user) return [];
+  const mine = bearerToken(request) ? await hashToken(bearerToken(request)) : null;
+  const { results } = await db
+    .prepare(
+      `SELECT token_hash, method, created_at, last_used_at, expires_at
+         FROM sessions
+        WHERE user_id = ? AND expires_at > ?
+        ORDER BY COALESCE(last_used_at, created_at) DESC`,
+    )
+    .bind(user.id, iso(now()))
+    .all();
+  return (results ?? []).map((row) => ({
+    id: row.token_hash.slice(0, 16),
+    method: row.method ?? null,
+    createdAt: row.created_at,
+    lastUsedAt: row.last_used_at ?? row.created_at,
+    expiresAt: row.expires_at,
+    current: row.token_hash === mine,
+  }));
+}
+
+/** Cabut satu sesi pengguna lain-lain; sesi yang sedang dipakai tidak bisa dicabut dari sini (gunakan keluar). */
+export async function revokeSession(db, user, request, sessionId) {
+  if (!db || !user || !/^[0-9a-f]{16}$/i.test(String(sessionId))) return false;
+  const mine = bearerToken(request) ? await hashToken(bearerToken(request)) : null;
+  const { meta } = await db
+    .prepare("DELETE FROM sessions WHERE user_id = ? AND substr(token_hash, 1, 16) = ? AND token_hash != ?")
+    .bind(user.id, String(sessionId).toLowerCase(), mine ?? "")
+    .run();
+  return (meta?.changes ?? 0) > 0;
+}

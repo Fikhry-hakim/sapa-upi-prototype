@@ -81,13 +81,63 @@ export async function listConversations(db, user) {
     .prepare(
       `SELECT id, title, updated_at
          FROM conversations
-        WHERE user_id = ?
+        WHERE user_id = ? AND archived_at IS NULL
         ORDER BY updated_at DESC
         LIMIT ?`,
     )
     .bind(user.id, MAX_CONVERSATIONS)
     .all();
   return results ?? [];
+}
+
+/** Percakapan yang diarsipkan pengguna ini, yang terbaru diarsipkan lebih dulu. */
+export async function listArchived(db, user) {
+  if (!db || !user) return [];
+  const { results } = await db
+    .prepare(
+      `SELECT id, title, updated_at, archived_at
+         FROM conversations
+        WHERE user_id = ? AND archived_at IS NOT NULL
+        ORDER BY archived_at DESC
+        LIMIT ?`,
+    )
+    .bind(user.id, MAX_CONVERSATIONS)
+    .all();
+  return results ?? [];
+}
+
+/** Arsipkan satu percakapan (atau kembalikan, bila archived = false). Mengembalikan true bila ada yang berubah. */
+export async function setArchived(db, user, conversationId, archived) {
+  if (!db || !user) return false;
+  const { meta } = await db
+    .prepare("UPDATE conversations SET archived_at = ? WHERE id = ? AND user_id = ?")
+    .bind(archived ? new Date().toISOString() : null, conversationId, user.id)
+    .run();
+  return (meta?.changes ?? 0) > 0;
+}
+
+/** Arsipkan semua percakapan yang belum diarsipkan; jumlahnya dikembalikan. */
+export async function archiveAllConversations(db, user) {
+  if (!db || !user) return 0;
+  const { meta } = await db
+    .prepare("UPDATE conversations SET archived_at = ? WHERE user_id = ? AND archived_at IS NULL")
+    .bind(new Date().toISOString(), user.id)
+    .run();
+  return meta?.changes ?? 0;
+}
+
+/** Ruang yang dipakai riwayat pengguna ini: jumlah percakapan dan perkiraan ukuran teksnya. */
+export async function conversationUsage(db, user) {
+  if (!db || !user) return { conversations: 0, messages: 0, bytes: 0 };
+  const row = await db
+    .prepare(
+      `SELECT COUNT(DISTINCT c.id) AS conversations, COUNT(m.id) AS messages, COALESCE(SUM(LENGTH(m.content)), 0) AS bytes
+         FROM conversations c LEFT JOIN messages m ON m.conversation_id = c.id
+        WHERE c.user_id = ?`,
+    )
+    .bind(user.id)
+    .first();
+  return { conversations: row?.conversations ?? 0, messages: row?.messages ?? 0, bytes: row?.bytes ?? 0 };
 }
 
 /** Isi satu percakapan, atau null kalau bukan milik pengguna ini. */

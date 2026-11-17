@@ -18,6 +18,8 @@ import {
   destroyOtherSessions,
   destroySession,
   isFreshGoogleSession,
+  listSessions,
+  revokeSession,
   roleOf,
   upsertUser,
 } from "./auth.js";
@@ -37,13 +39,17 @@ import { handleTranscribe } from "./transcribe.js";
 import { clientKey, hit } from "./rate-limit.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
+  archiveAllConversations,
+  conversationUsage,
   deleteAllConversations,
   deleteConversation,
   exportConversations,
+  listArchived,
   listConversations,
   readConversation,
   recordExchange,
   searchConversations,
+  setArchived,
 } from "./history.js";
 
 const MAX_QUESTION_LENGTH = 300;
@@ -123,8 +129,11 @@ async function handleAsk(request, env, cors, ctx) {
   let topic = null;
   let lang = "id";
   let history = [];
+  // "Improve SAPA UPI" dimatikan pembaca: pertanyaannya tidak ikut dihitung di statistik Dashboard.
+  let improve = true;
   try {
     const body = await request.json();
+    improve = body.improve !== false;
     ({ question = "", conversationId = null, scope = null, topic = null, lang = "id" } = body);
     // Giliran sebelumnya di chat yang sama; `previous` dari browser lama tetap dimengerti.
     history = cleanHistory(body.history, body.previous);
@@ -173,7 +182,7 @@ async function handleAsk(request, env, cors, ctx) {
     const asked = findRequestedDocuments(searchText).filter(({ doc }) => !excluded.has(doc.file));
     if (asked.length) {
       const answer = fileRequestMessage(asked, lang);
-      const task = recordEvent(db, {
+      const task = (improve ? recordEvent : async () => {})(db, {
         outcome: "berbasis_sumber",
         entryId: null,
         category: "Berkas",
@@ -264,7 +273,7 @@ async function handleAsk(request, env, cors, ctx) {
       fromPassage,
     });
     const cited = top ? (fromPassage ? { documentId: citation.documentId, page: citation.page } : citationFor(top)) : null;
-    const task = recordEvent(db, {
+    const task = (improve ? recordEvent : async () => {})(db, {
       outcome,
       entryId: top?.id ?? null,
       category: top ? (fromPassage ? top.title : top.title) : null,
@@ -464,6 +473,20 @@ async function handleAuth(request, env, cors, path) {
     return json({ ok: true }, { headers: cors });
   }
 
+  // Sesi aktif: lihat dan cabut. Hanya milik pengguna yang sedang masuk.
+  if (path === "/auth/sessions" || path.startsWith("/auth/sessions/")) {
+    const user = await authenticate(db, request);
+    if (!user) return json({ error: "Perlu masuk" }, { status: 401, headers: cors });
+    if (path === "/auth/sessions" && request.method === "GET") {
+      return json({ sessions: await listSessions(db, user, request) }, { headers: cors });
+    }
+    if (request.method === "DELETE") {
+      const revoked = await revokeSession(db, user, request, path.slice("/auth/sessions/".length));
+      return json({ ok: revoked }, { status: revoked ? 200 : 404, headers: cors });
+    }
+    return json({ error: "Metode tidak didukung" }, { status: 405, headers: cors });
+  }
+
   if (path === "/auth/logout-all") {
     const user = await authenticate(db, request);
     if (!user) return json({ error: "Perlu masuk" }, { status: 401, headers: cors });
@@ -579,6 +602,22 @@ async function handleConversations(request, env, cors, path) {
 
   if (path === "/conversations/export") {
     return json(await exportConversations(db, user), { headers: cors });
+  }
+
+  // Arsip: daftar, arsipkan semua, dan arsipkan atau kembalikan satu percakapan.
+  if (path === "/conversations/archived" && request.method === "GET") {
+    return json({ conversations: await listArchived(db, user) }, { headers: cors });
+  }
+  if (path === "/conversations/archive-all" && request.method === "POST") {
+    return json({ ok: true, archived: await archiveAllConversations(db, user) }, { headers: cors });
+  }
+  if (path === "/conversations/usage" && request.method === "GET") {
+    return json(await conversationUsage(db, user), { headers: cors });
+  }
+  const archiveMatch = /^\/conversations\/([\w-]+)\/(archive|unarchive)$/.exec(path);
+  if (archiveMatch && request.method === "POST") {
+    const changed = await setArchived(db, user, archiveMatch[1], archiveMatch[2] === "archive");
+    return json({ ok: changed }, { status: changed ? 200 : 404, headers: cors });
   }
 
   if (request.method === "DELETE") {

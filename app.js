@@ -5,6 +5,7 @@ import { clarifiedSentence, clarifyQuestion, isBullet, isClarifiable, splitSente
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { fileRequestMessage, findRequestedDocuments } from "./lib/doc-request.js";
+import { createSettings } from "./settings.js";
 import { createOwner } from "./owner.js";
 import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
 import { MAX_RECORD_MS, startRecording } from "./lib/recorder.js";
@@ -97,9 +98,6 @@ const refs = {
   fileGrid: $("file-grid"),
   filesEmpty: $("files-empty"),
   settingsBack: $("settings-back"),
-  settingsItems: $("settings-items"),
-  settingsTitle: $("settings-title"),
-  settingsCard: $("settings-card"),
   toast: $("toast"),
 };
 
@@ -125,7 +123,6 @@ const state = {
   scopeDocumentId: null,
   suggestedQuestion: null, // pertanyaan lanjutan dari topik yang sedang dibahas, ditampilkan sebagai placeholder
   latestRequestId: 0,
-  settingsSection: "profile",
   filesTab: "suggested",
   filesLayout: readLayout(),
   searchTab: "all",
@@ -843,7 +840,7 @@ async function askBackend(question, topic = null) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), ...(state.history.length ? { history: state.history.slice(-3) } : {}), ...(topic ? { topic } : {}) }),
+    body: JSON.stringify({ question, conversationId: state.conversationId, scope, lang: getLang(), improve: settings.prefs.improve, ...(state.history.length ? { history: state.history.slice(-3) } : {}), ...(topic ? { topic } : {}) }),
     signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -1568,114 +1565,6 @@ function ultNote() {
   return p;
 }
 
-const SETTINGS_SECTIONS = [
-  { id: "profile", label: "Profil", icon: ICON.user, needsAccount: true },
-  { id: "security", label: "Keamanan dan login", icon: ICON.shield, needsAccount: true },
-  { id: "data", label: "Kontrol data", icon: ICON.database, needsAccount: true },
-  { id: "help", label: "Bantuan", icon: ICON.help, needsAccount: false },
-];
-
-function row(label, description, value) {
-  const wrap = make("div", "settings-row");
-  const text = make("div", "label");
-  text.append(make("strong", "", label));
-  if (description) text.append(make("small", "", description));
-  wrap.append(text);
-  if (value instanceof Node) wrap.append(value);
-  else if (value !== undefined) wrap.append(make("span", "value", value));
-  return wrap;
-}
-
-function actionButton(label, handler, danger = false) {
-  const button = make("button", `btn${danger ? " btn-danger" : ""}`, label);
-  button.type = "button";
-  button.addEventListener("click", handler);
-  return button;
-}
-
-function renderSettings() {
-  refs.settingsItems.replaceChildren();
-  for (const section of SETTINGS_SECTIONS) {
-    const button = make("button", `settings-item${state.settingsSection === section.id ? " is-active" : ""}`);
-    button.type = "button";
-    button.innerHTML = section.icon;
-    button.append(make("span", "", section.label));
-    button.addEventListener("click", () => {
-      state.settingsSection = section.id;
-      renderSettings();
-    });
-    refs.settingsItems.append(button);
-  }
-
-  const section = SETTINGS_SECTIONS.find((s) => s.id === state.settingsSection);
-  refs.settingsTitle.textContent = section.label;
-  refs.settingsCard.replaceChildren();
-
-  if (section.needsAccount && !state.account) {
-    refs.settingsCard.append(row("Belum masuk", "Masuk dengan akun UPI untuk membuka pengaturan ini."));
-    return;
-  }
-
-  const account = state.account;
-
-  if (section.id === "profile") {
-    refs.settingsCard.append(
-      row("Nama", "Sesuai akun Google UPI", account.name || "—"),
-      row("Email", "Dipakai untuk masuk", account.email),
-      row("Peran", "Hak akses pada SAPA UPI", account.role ? roleLabel(account) : "Pengguna"),
-    );
-  } else if (section.id === "security") {
-    refs.settingsCard.append(
-      row("Akun masuk", "Email UPI terbukti lewat Google", "Google • upi.edu"),
-      row(
-        "Kata sandi",
-        account.hasPassword
-          ? "Dipakai untuk masuk dengan email. Untuk menggantinya, kamu perlu kata sandi yang sekarang"
-          : "Pasang kata sandi untuk masuk dengan email, tanpa Google",
-        actionButton(account.hasPassword ? "Ganti" : "Atur", openPasswordDialog),
-      ),
-      row(
-        "Keluar dari semua perangkat",
-        "Keluar dari semua perangkat, termasuk yang sedang kamu pakai sekarang",
-        actionButton("Keluar semua", logoutEverywhere),
-      ),
-    );
-  } else if (section.id === "data") {
-    refs.settingsCard.append(
-      row(
-        "Unduh riwayat percakapan",
-        "Seluruh percakapanmu dalam satu berkas JSON",
-        actionButton("Unduh", exportHistory),
-      ),
-      row(
-        "Hapus semua riwayat",
-        "Menghapus seluruh percakapan tersimpan. Tidak bisa dibatalkan",
-        actionButton("Hapus semua", deleteAllHistory, true),
-      ),
-    );
-  } else if (section.id === "help") {
-    const link = (href, text) => {
-      const a = make("a", "", text);
-      a.href = href;
-      a.target = "_blank";
-      a.rel = "noopener";
-      return a;
-    };
-    refs.settingsCard.append(
-      row("Program Studi", "Pihak yang menerbitkan pedoman", HELP_CONTACT.program),
-      row("Email", "", link(`mailto:${HELP_CONTACT.email}`, HELP_CONTACT.email)),
-      row("Telepon", "", HELP_CONTACT.phone),
-      row("Alamat", "", HELP_CONTACT.address),
-      row("Laman", "", link(HELP_CONTACT.site, "kd-tasikmalaya.upi.edu")),
-      row(
-        "Tentang jawaban SAPA",
-        "Jawaban diambil dari dokumen yang tersedia. Keputusan resmi tetap ada di program studi",
-        "",
-      ),
-    );
-  }
-}
-
 function openPasswordDialog() {
   const account = state.account;
   const dialog = make("div", "modal");
@@ -1754,8 +1643,8 @@ function openPasswordDialog() {
       });
       state.account.hasPassword = true;
       close();
-      renderSettings();
-      showToast("Kata sandi disimpan.");
+      settings.render();
+      showToast("Password saved.");
     } catch (error) {
       message.textContent = error.status ? error.message : "Gagal menyimpan kata sandi.";
     } finally {
@@ -1772,10 +1661,8 @@ function roleLabel(account) {
   return `${account.role}${unit}`;
 }
 
-function openSettings(section = "profile") {
-  state.settingsSection = section;
-  renderSettings();
-  showView("settings");
+function openSettings(section = "general") {
+  settings.open(section);
 }
 
 async function exportHistory() {
@@ -1844,6 +1731,61 @@ const owner = createOwner({
   authHeaders: () => authHeaders(),
 });
 owner.setApiBase(API_URL);
+
+/** Halaman Setting (9 tab sesuai desain). Pintasan keyboard di seluruh aplikasi juga dijalankan dari sini. */
+const settings = createSettings({
+  api,
+  apiEnabled: Boolean(API_URL),
+  getAccount: () => state.account,
+  showToast,
+  getLang,
+  setLang,
+  goHome: () => showView("home"),
+  show: () => showView("settings"),
+  openPasswordDialog,
+  logoutEverywhere,
+  exportHistory,
+  deleteAllHistory,
+  refreshHistory,
+  helpContact: HELP_CONTACT,
+  onPrefsChange: (prefs) => {
+    // Dikte mati: tombol mikrofon disembunyikan dari kolom ketik.
+    refs.voiceButton.hidden = !prefs.dictation;
+  },
+  actions: {
+    focus: () => refs.question.focus(),
+    send: () => {},
+    sendBackground: () => refs.composer.requestSubmit(),
+    annotation: () => refs.composer.requestSubmit(),
+    attach: () => refs.attachButton.click(),
+    selectText: () => {
+      const answers = refs.chatLog.querySelectorAll(".bot-body");
+      const last = answers[answers.length - 1];
+      if (!last) return;
+      const range = document.createRange();
+      range.selectNodeContents(last);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    },
+    deleteChat: async () => {
+      if (!state.conversationId) return resetChat();
+      if (!window.confirm("Delete this chat? This cannot be undone.")) return;
+      try {
+        await api(`/conversations/${state.conversationId}`, { method: "DELETE" });
+        refreshHistory();
+      } catch {
+        showToast("Could not delete this chat.");
+      }
+      resetChat();
+    },
+    newChat: () => resetChat(),
+    showShortcuts: () => settings.showShortcuts(),
+    switchChat: () => document.getElementById("nav-search").click(),
+    toggleSidebar: () => (refs.app.classList.contains("sidebar-collapsed") ? openSidebar() : closeSidebar()),
+  },
+});
+refs.voiceButton.hidden = !settings.prefs.dictation;
 
 /** Dokumen unggahan yang sudah tervalidasi, supaya tampil di Files dan bisa dibuka. */
 async function loadPublicDocuments() {
@@ -2342,14 +2284,8 @@ function initThemeSwitch() {
 }
 
 function initLanguageSwitch() {
-  const buttons = { id: $("lang-id"), en: $("lang-en") };
-  const paint = (lang) => {
-    for (const [code, button] of Object.entries(buttons)) button.setAttribute("aria-pressed", String(code === lang));
-  };
-  for (const [code, button] of Object.entries(buttons)) button.addEventListener("click", () => setLang(code));
-  onLangChange(paint);
+  // Bahasa dipilih di Setting > General; di sini hanya membaca pilihan tersimpan.
   initLang();
-  paint(getLang());
 }
 
 function initialize() {
@@ -2446,8 +2382,8 @@ function initialize() {
     closeMenus();
     const action = item.dataset.profile;
     if (action === "logout") logout();
-    else if (action === "settings") openSettings("security");
-    else if (action === "help") openSettings("help");
+    else if (action === "settings") openSettings("general");
+    else if (action === "help") settings.help();
     else openSettings("profile");
   });
 
