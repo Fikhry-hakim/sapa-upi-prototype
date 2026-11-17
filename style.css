@@ -28,6 +28,8 @@
   --red: #b91c2c;
   --red-dark: #9f1625;
   --red-soft: #fdecee;
+  --docx: #1d4ed8; /* berkas Word: biru, supaya beda dari PDF yang merah */
+  --docx-soft: #e8efff;
   --red-line: #f3c4c9;
   --ink: #111827;
   --ink-2: #374151;
@@ -4650,6 +4652,8 @@ button.ref-chip:hover {
 ============================================================ */
 
 :root[data-theme="dark"] {
+  --docx: #6ea0ff;
+  --docx-soft: rgba(110, 160, 255, 0.16);
   --red: #e2485a;
   --red-dark: #cc3547;
   --red-soft: #3a1d23;
@@ -4918,15 +4922,6 @@ button.ref-chip:hover {
 .s-empty small { color: var(--muted); font-size: 12.5px; max-width: 340px; }
 .s-empty-badge { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 6px; border-radius: 50%; background: var(--surface-3); color: var(--muted); }
 
-.s-storage { display: grid; gap: 22px; }
-.s-storage-card { padding: 22px 24px; display: grid; gap: 14px; }
-.s-storage-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.s-storage-top strong { font-size: 17px; font-weight: 700; }
-.s-storage-capacity { color: var(--muted); font-size: 12.5px; }
-.s-bar { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
-.s-bar i { display: block; height: 100%; border-radius: 999px; background: var(--red); }
-.s-storage-card small { color: var(--muted); font-size: 12.5px; }
-
 .s-row-key { min-height: 58px; padding: 12px 24px; justify-content: flex-start; gap: 16px; }
 .s-key-title { flex: 1; min-width: 0; font-size: 14px; }
 .s-keys { display: inline-flex; align-items: center; gap: 6px; padding: 4px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; font: inherit; }
@@ -4974,3 +4969,52 @@ button.ref-chip:hover {
 .s-card .switch.is-on i { transform: translateX(16px); }
 .s-help-value { color: var(--ink-2); font-size: 13px; text-align: right; overflow-wrap: anywhere; }
 .s-row a { color: var(--red); font-size: 13px; }
+
+/* Riwayat: tombol arsip muncul saat kursor di atas item percakapan tersimpan. */
+.recent-row { position: relative; }
+.recent-row .recent-item { padding-right: 30px; }
+.recent-archive {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: none; place-items: center;
+  padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.recent-archive svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.recent-row:hover .recent-archive, .recent-archive:focus-visible { display: grid; }
+.recent-archive:hover { background: var(--tint-strong); color: var(--ink); }
+.recent-row .recent-item.is-active ~ .recent-archive { color: var(--on-accent); }
+@media (hover: none) { .recent-row .recent-archive { display: grid; } }
+
+/* Berkas Word (DOCX): biru di mana pun jenis berkasnya ditandai, bukan merah seperti PDF. */
+.file-tag[data-kind="DOCX"] { background: var(--docx); }
+.file-card[data-kind="DOCX"] .file-sub::before { background: var(--docx); }
+.doc-kind[data-kind="DOCX"] { background: var(--docx-soft); color: var(--docx); }
+.file-result[data-kind="DOCX"] .file-result-icon,
+.ref-chip[data-kind="DOCX"] .file-ico { color: var(--docx); }
+.file-result[data-kind="DOCX"] .file-result-open:hover,
+.file-result[data-kind="DOCX"] .file-result-download:hover { border-color: var(--docx); }
+.file-result[data-kind="DOCX"] .file-result-download { color: var(--docx); }
+
+/* Bagikan chat: dialog dan halaman hanya-baca. */
+.share-box { width: min(560px, calc(100vw - 32px)); padding: 24px 26px 22px; }
+.share-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.share-head h2 { margin: 0; font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
+.share-close { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: var(--surface-3); color: var(--ink-2); cursor: pointer; }
+.share-close svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.share-intro { margin: 10px 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.share-preview { max-height: 260px; overflow: hidden; position: relative; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.share-preview-log { max-height: 232px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.share-preview .bubble { max-width: 86%; font-size: 12.5px; padding: 10px 14px; }
+.share-preview .bot-card { box-shadow: none; padding: 12px 14px; }
+.share-access { margin: 14px 0 10px; color: var(--ink-2); font-size: 13px; }
+.share-url { width: 100%; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); color: var(--ink-2); font: inherit; font-size: 12.5px; }
+.share-foot { display: flex; justify-content: flex-end; margin-top: 16px; }
+.share-copy { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px; }
+.share-copy svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.view-shared { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.shared-scroll { min-height: 0; overflow-y: auto; }
+.shared-wrap { width: min(744px, 100%); margin: 0 auto; padding: 36px 24px 48px; }
+.shared-kicker { margin: 0 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.shared-wrap h1 { margin: 0 0 18px; font-size: 24px; line-height: 1.3; letter-spacing: -0.015em; overflow-wrap: anywhere; }
+.shared-log { width: 100%; padding: 0; }
+.shared-missing { margin: 0; color: var(--muted); }
+.shared-foot { display: flex; justify-content: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line-soft); }

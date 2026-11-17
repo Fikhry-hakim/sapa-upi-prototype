@@ -35,12 +35,12 @@ import {
   verifyPassword,
 } from "./password.js";
 import { checkFeedback, recordFeedback } from "./feedback.js";
+import { createShare, listShares, readShare, revokeShare } from "./shares.js";
 import { handleTranscribe } from "./transcribe.js";
 import { clientKey, hit } from "./rate-limit.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
 import {
   archiveAllConversations,
-  conversationUsage,
   deleteAllConversations,
   deleteConversation,
   exportConversations,
@@ -540,6 +540,22 @@ async function handleAuth(request, env, cors, path) {
   return json({ error: "Rute auth tidak dikenal" }, { status: 404, headers: cors });
 }
 
+/** Membaca chat yang dibagikan: terbuka untuk siapa pun yang punya tautannya, hanya-baca. */
+async function handlePublicShare(request, env, cors, path) {
+  const db = env.sapa_upi_kb;
+  if (request.method !== "GET") return json({ error: "Metode tidak didukung" }, { status: 405, headers: cors });
+
+  const limited = await hit(db, `share:${await clientKey(request)}`, { limit: 60, windowMs: 60_000 });
+  if (!limited.allowed) {
+    return json({ error: "Terlalu banyak permintaan." }, { status: 429, headers: { ...cors, "Retry-After": String(limited.retryAfter) } });
+  }
+
+  const shared = await readShare(db, path.slice("/share/".length));
+  if (!shared) return json({ error: "Tautan tidak ditemukan atau sudah dicabut" }, { status: 404, headers: cors });
+  // Tautan bisa dicabut kapan saja, jadi jangan disimpan di cache bersama.
+  return json({ share: shared }, { headers: { ...cors, "Cache-Control": "no-store" } });
+}
+
 async function handleConversations(request, env, cors, path) {
   const db = env.sapa_upi_kb;
   const user = await authenticate(db, request);
@@ -604,15 +620,31 @@ async function handleConversations(request, env, cors, path) {
     return json(await exportConversations(db, user), { headers: cors });
   }
 
+  // Tautan bagikan: buat, daftar, cabut. Membaca tautan (tanpa masuk) ada di handlePublicShare.
+  if (path === "/conversations/shares" && request.method === "GET") {
+    return json({ shares: await listShares(db, user) }, { headers: cors });
+  }
+  const revokeMatch = /^\/conversations\/shares\/([\w-]+)$/.exec(path);
+  if (revokeMatch && request.method === "DELETE") {
+    const removed = await revokeShare(db, user, revokeMatch[1]);
+    return json({ ok: removed }, { status: removed ? 200 : 404, headers: cors });
+  }
+  const shareMatch = /^\/conversations\/([\w-]+)\/share$/.exec(path);
+  if (shareMatch && request.method === "POST") {
+    const conversation = await readConversation(db, user, shareMatch[1]);
+    if (!conversation) return json({ error: "Tidak ditemukan" }, { status: 404, headers: cors });
+    const share = await createShare(db, user, conversation);
+    if (!share) return json({ error: "Percakapan masih kosong" }, { status: 400, headers: cors });
+    if (share.error === "limit") return json({ error: "Terlalu banyak tautan. Cabut beberapa dulu." }, { status: 429, headers: cors });
+    return json({ share }, { headers: cors });
+  }
+
   // Arsip: daftar, arsipkan semua, dan arsipkan atau kembalikan satu percakapan.
   if (path === "/conversations/archived" && request.method === "GET") {
     return json({ conversations: await listArchived(db, user) }, { headers: cors });
   }
   if (path === "/conversations/archive-all" && request.method === "POST") {
     return json({ ok: true, archived: await archiveAllConversations(db, user) }, { headers: cors });
-  }
-  if (path === "/conversations/usage" && request.method === "GET") {
-    return json(await conversationUsage(db, user), { headers: cors });
   }
   const archiveMatch = /^\/conversations\/([\w-]+)\/(archive|unarchive)$/.exec(path);
   if (archiveMatch && request.method === "POST") {
@@ -689,6 +721,7 @@ export default {
 
     if (path.startsWith("/auth/")) return handleAuth(request, env, cors, path);
     if (path.startsWith("/conversations")) return handleConversations(request, env, cors, path);
+    if (path.startsWith("/share/")) return handlePublicShare(request, env, cors, path);
     if (path.startsWith("/admin/")) return handleAdmin(request, env, cors, path);
     if (path === "/documents" && request.method === "GET") return handlePublicDocuments(request, env, cors);
 

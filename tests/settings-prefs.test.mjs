@@ -2,11 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SHORTCUTS,
-  capacityPercent,
   comboFromEvent,
   conflictsWith,
-  effectiveLanguage,
-  formatBytes,
   isValidCombo,
   loadPrefs,
   loadShortcuts,
@@ -39,7 +36,7 @@ test("stored values that are not valid choices are ignored, not trusted", () => 
   assert.equal(prefs.language, "auto");
   assert.equal(prefs.notifications.krs, "Push, Email");
   assert.equal(prefs.dictation, true);
-  assert.deepEqual(loadPrefs(memory({ "sapa-prefs": "{not json" })).voice, { voice: "Default", language: "auto" });
+  assert.deepEqual(loadPrefs(memory({ "sapa-prefs": "{not json" })).voice, { language: "auto" });
 });
 
 test("blocked storage never throws", () => {
@@ -83,17 +80,14 @@ test("only switched-on shortcuts match, and clashes are reported", () => {
   assert.deepEqual(conflictsWith(shortcuts, "sendBackground", ["Ctrl", "Enter"]), ["annotation"]);
 });
 
-test("Auto detect follows the browser; an explicit choice wins", () => {
-  assert.equal(effectiveLanguage("auto", "en-US"), "en");
-  assert.equal(effectiveLanguage("auto", "id-ID"), "id");
-  assert.equal(effectiveLanguage("id", "en-US"), "id");
-});
+import { detectLanguage } from "../lib/i18n.js";
 
-test("storage sizes read like the design", () => {
-  assert.equal(formatBytes(0), "0 B");
-  assert.equal(formatBytes(2048), "2 KB");
-  assert.equal(formatBytes(13 * 1024 * 1024), "13 MB");
-  assert.equal(capacityPercent(13 * 1024 * 1024), "2.5%");
+test("Auto detect: Indonesian if any browser language is Indonesian, English only when it is the main one", () => {
+  assert.equal(detectLanguage(["id-ID"]), "id");
+  assert.equal(detectLanguage(["en-US", "id"]), "id", "an English-first browser that also lists Indonesian stays Indonesian");
+  assert.equal(detectLanguage(["en-US"]), "en");
+  assert.equal(detectLanguage(["fr-FR"]), "id", "unknown languages fall back to Indonesian");
+  assert.equal(detectLanguage([]), "id");
 });
 
 import { SETTINGS_ID, SETTINGS_ID_FORMATS, SETTINGS_EN_FORMATS } from "../lib/settings-id.js";
@@ -109,8 +103,6 @@ test("every notification and shortcut label has an Indonesian translation", () =
 
 test("the Indonesian and English formats cover the same messages", () => {
   assert.deepEqual(Object.keys(SETTINGS_ID_FORMATS).sort(), Object.keys(SETTINGS_EN_FORMATS).sort());
-  assert.equal(SETTINGS_EN_FORMATS.used("13 MB", "512 MB"), "13 MB of 512 MB used");
-  assert.equal(SETTINGS_ID_FORMATS.used("13 MB", "512 MB"), "13 MB dari 512 MB terpakai");
   assert.equal(SETTINGS_ID_FORMATS.archivedCount(0), "Tidak ada chat untuk diarsipkan.");
 });
 

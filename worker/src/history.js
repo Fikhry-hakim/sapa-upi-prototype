@@ -126,20 +126,6 @@ export async function archiveAllConversations(db, user) {
   return meta?.changes ?? 0;
 }
 
-/** Ruang yang dipakai riwayat pengguna ini: jumlah percakapan dan perkiraan ukuran teksnya. */
-export async function conversationUsage(db, user) {
-  if (!db || !user) return { conversations: 0, messages: 0, bytes: 0 };
-  const row = await db
-    .prepare(
-      `SELECT COUNT(DISTINCT c.id) AS conversations, COUNT(m.id) AS messages, COALESCE(SUM(LENGTH(m.content)), 0) AS bytes
-         FROM conversations c LEFT JOIN messages m ON m.conversation_id = c.id
-        WHERE c.user_id = ?`,
-    )
-    .bind(user.id)
-    .first();
-  return { conversations: row?.conversations ?? 0, messages: row?.messages ?? 0, bytes: row?.bytes ?? 0 };
-}
-
 /** Isi satu percakapan, atau null kalau bukan milik pengguna ini. */
 export async function readConversation(db, user, conversationId) {
   if (!db || !user) return null;
@@ -203,7 +189,7 @@ export async function searchConversations(db, user, term) {
                 WHERE m.conversation_id = c.id AND m.content LIKE ?2 ESCAPE '\\'
                 ORDER BY m.created_at LIMIT 1) AS matched
          FROM conversations c
-        WHERE c.user_id = ?1
+        WHERE c.user_id = ?1 AND c.archived_at IS NULL
           AND (c.title LIKE ?2 ESCAPE '\\'
                OR EXISTS (SELECT 1 FROM messages m
                            WHERE m.conversation_id = c.id AND m.content LIKE ?2 ESCAPE '\\'))

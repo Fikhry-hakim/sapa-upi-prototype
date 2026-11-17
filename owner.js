@@ -1214,6 +1214,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
 
       const name = make("td", "doc-name");
       const icon = make("span", "doc-kind", doc.kind);
+      icon.dataset.kind = doc.kind;
       const label = make("div");
       label.append(make("strong", "", doc.title), make("small", "", `${doc.reference} • ${sizeLabel(doc.sizeBytes)} • ${doc.pages} hlm`));
       const lineage = lineageBlock(doc, data.documents);

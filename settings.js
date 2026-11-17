@@ -1,6 +1,7 @@
 /**
  * Halaman Setting: 9 tab sesuai desain Figma (General, Notifications, Profile,
- * Security and login, Archived chats, Voice, Storage, Keyboard, Data controls).
+ * Security and login, Archived chats, Voice, Keyboard, Data controls; Notifications stays hidden until
+ * email delivery exists).
  *
  * Teks memakai bahasa Inggris persis seperti di desain. Yang bisa dijalankan
  * betul-betul dijalankan: bahasa, dikte, pintasan keyboard, sesi aktif, ekspor,
@@ -16,19 +17,16 @@ import {
   NOTIFICATIONS,
   SHORTCUT_GROUPS,
   DEFAULT_SHORTCUTS,
-  capacityPercent,
   comboFromEvent,
   conflictsWith,
-  formatBytes,
   isValidCombo,
   loadPrefs,
   loadShortcuts,
   matchShortcut,
   savePrefs,
   saveShortcuts,
-  STORAGE_LIMIT_BYTES,
 } from "./lib/settings-prefs.js";
-import { LANG_KEY, onLangChange } from "./lib/i18n.js";
+import { LANG_KEY, detectLanguage, onLangChange } from "./lib/i18n.js";
 import { SETTINGS_EN_FORMATS, SETTINGS_ID, SETTINGS_ID_FORMATS, SETTINGS_MESSAGES_ID } from "./lib/settings-id.js";
 
 const svg = (body) => `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
@@ -40,7 +38,6 @@ const ICONS = {
   security: svg('<path d="M12 3 4.5 6v5.5c0 4.4 3 7.6 7.5 9.5 4.5-1.9 7.5-5.1 7.5-9.5V6z"/>'),
   archived: svg('<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/>'),
   voice: svg('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>'),
-  storage: svg('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'),
   keyboard: svg('<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>'),
   data: svg('<circle cx="8.5" cy="8" r="2.8"/><path d="M3.5 18c.8-2.6 2.6-4 5-4s4.2 1.4 5 4"/><circle cx="17" cy="14" r="1.8"/><path d="M17 10.5v1M17 16.5v1M13.8 12.2l.9.5M19.3 15.3l.9.5M13.8 15.8l.9-.5M19.3 12.7l.9-.5"/>'),
   chevron: svg('<path d="m9 6 6 6-6 6"/>'),
@@ -56,12 +53,12 @@ const ICONS = {
 
 const SECTIONS = [
   { id: "general", label: "General", icon: ICONS.general },
-  { id: "notifications", label: "Notifications", icon: ICONS.notifications },
+  // Disembunyikan: belum ada penyedia email, jadi pilihannya tidak akan pernah sampai ke pengguna.
+  { id: "notifications", label: "Notifications", icon: ICONS.notifications, hidden: true },
   { id: "profile", label: "Profile", icon: ICONS.profile, needsAccount: true },
   { id: "security", label: "Security and login", icon: ICONS.security, needsAccount: true },
   { id: "archived", label: "Archived chats", icon: ICONS.archived, needsAccount: true },
   { id: "voice", label: "Voice", icon: ICONS.voice },
-  { id: "storage", label: "Storage", icon: ICONS.storage, needsAccount: true },
   { id: "keyboard", label: "Keyboard", icon: ICONS.keyboard },
   { id: "data", label: "Data controls", icon: ICONS.data, needsAccount: true },
   // Halaman Bantuan memakai desain aplikasi sendiri; tidak ada di daftar samping, dibuka dari menu profil.
@@ -76,9 +73,8 @@ const SEARCH_TERMS = {
   security: "password sessions login devices security recommendations how you log in",
   archived: "archived chats archive restore",
   voice: "voice language dictation recordings microphone",
-  storage: "storage files images capacity used",
   keyboard: "shortcuts keys composer chat app restore defaults",
-  data: "shared links improve location archived archive all delete export cookie privacy data",
+  data: "shared links improve archived archive all delete export cookie privacy data",
 };
 
 const make = (tag, className, text) => {
@@ -347,7 +343,7 @@ export function createSettings(deps) {
               } catch {
                 // abaikan
               }
-              setLang((navigator.language ?? "id").toLowerCase().startsWith("en") ? "en" : "id", { persist: false });
+              setLang(detectLanguage(), { persist: false });
             } else {
               setLang(value);
             }
@@ -527,14 +523,6 @@ export function createSettings(deps) {
     return [
       group("VOICE PREFERENCES", [
         row({
-          title: "Voice",
-          text: "Choose the voice used for SAPA UPI voice responses.",
-          control: select(["Default"], prefs.voice.voice, (value) => {
-            prefs.voice.voice = value;
-            savePrefsNow();
-          }, "Voice"),
-        }),
-        row({
           title: "Language",
           text: "Choose the language used for voice interaction.",
           control: select(LANGUAGE_OPTIONS, prefs.voice.language, (value) => {
@@ -562,43 +550,6 @@ export function createSettings(deps) {
         }),
       ]),
     ];
-  }
-
-  async function renderStorage(container) {
-    const holder = make("div", "s-storage");
-    container.append(holder);
-    let bytes = 0;
-    try {
-      bytes = (await api("/conversations/usage")).bytes ?? 0;
-    } catch {
-      // Tanpa angka dari server, kartu tetap tampil dengan 0.
-    }
-    const summary = make("div", "s-card s-storage-card");
-    const top = make("div", "s-storage-top");
-    top.append(
-      make("strong", "", fmt().used(formatBytes(bytes), formatBytes(STORAGE_LIMIT_BYTES))),
-      make("span", "s-storage-capacity", fmt().capacity(capacityPercent(bytes))),
-    );
-    const bar = make("div", "s-bar");
-    const fill = make("i");
-    fill.style.width = `${Math.max(1.5, Math.min(100, (bytes / STORAGE_LIMIT_BYTES) * 100))}%`;
-    bar.append(fill);
-    summary.append(top, bar, make("small", "", "Manage files and images stored in your SAPA UPI account."));
-
-    const manage = (kind, iconName, title, subtitle) =>
-      row({
-        title,
-        text: subtitle,
-        onClick: () => dialog(title, (body) => body.append(emptyState(iconName, `No ${kind} stored`, `You have not uploaded any ${kind} to your account.`))),
-      });
-    holder.append(
-      summary,
-      group("MANAGE STORAGE", [
-        manage("files", "doc", "Files", "0 B • 0 files"),
-        manage("images", "image", "Images", "0 B • 0 images"),
-      ]),
-    );
-    localizeAll(holder);
   }
 
   /* ------------------------------------------------------------ keyboard */
@@ -687,7 +638,49 @@ export function createSettings(deps) {
 
   function openSharedLinks() {
     dialog("Shared Links", (body) => {
-      body.append(emptyState("data", "No shared links", "Links you share to conversations will appear here."));
+      const list = make("div", "s-sessions");
+      body.append(list);
+      const load = async () => {
+        list.replaceChildren(make("p", "s-dialog-intro", "Loading…"));
+        try {
+          const { shares } = await api("/conversations/shares");
+          list.replaceChildren();
+          if (!shares.length) list.append(emptyState("data", "No shared links", "Links you share to conversations will appear here."));
+          for (const share of shares) {
+            const url = `${location.origin}${location.pathname}#share=${share.token}`;
+            const item = make("div", "s-session");
+            const text = make("span", "s-label");
+            text.append(make("strong", "", share.title), make("small", "", fmtDate(share.createdAt)));
+            const actionsEl = make("span", "s-actions");
+            actionsEl.append(
+              button("Copy link", async () => {
+                try {
+                  await navigator.clipboard.writeText(url);
+                  showToast(t("Link copied."));
+                } catch {
+                  window.prompt("Copy link", url);
+                }
+              }),
+              button("Revoke", async () => {
+                if (!window.confirm(t("Revoke this link? People who have it will no longer be able to open the chat."))) return;
+                try {
+                  await api(`/conversations/shares/${share.token}`, { method: "DELETE" });
+                  showToast(t("Link revoked."));
+                  load();
+                } catch {
+                  showToast(t("Could not revoke this link."));
+                }
+              }, { danger: true }),
+            );
+            item.append(text, actionsEl);
+            list.append(item);
+          }
+        } catch {
+          list.replaceChildren(make("p", "s-dialog-intro", "Could not load sessions. Try again later."));
+        }
+        localizeAll(list);
+      };
+      load();
     });
   }
 
@@ -712,15 +705,6 @@ export function createSettings(deps) {
             prefs.improve = on;
             savePrefsNow();
           }, "Improve SAPA UPI"),
-        }),
-        row({
-          title: "Location",
-          text: "Manage location permissions used for relevant campus information.",
-          control: button(prefs.location ? "Turn off" : "Turn on", () => {
-            prefs.location = !prefs.location;
-            savePrefsNow();
-            render();
-          }),
         }),
         row({ title: "Archived Chats", text: "Manage archived conversations.", control: button("Manage", () => open("archived")) }),
         row({ title: "Archive All Chats", text: "Archive all conversations without deleting them.", control: button("Archive all", archiveAll) }),
@@ -782,8 +766,6 @@ export function createSettings(deps) {
       );
     } else if (section.id === "archived") {
       renderArchived(contentEl);
-    } else if (section.id === "storage") {
-      renderStorage(contentEl);
     } else {
       for (const node of RENDERERS[section.id]()) contentEl.append(node);
     }

@@ -39,6 +39,8 @@ const ICON = {
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
+  link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/></svg>',
 };
 
 const refs = {
@@ -101,7 +103,7 @@ const refs = {
   toast: $("toast"),
 };
 
-const VIEWS = ["home", "chat", "search", "files", "settings", "dashboard", "metrics", "kb"];
+const VIEWS = ["home", "chat", "search", "files", "settings", "dashboard", "metrics", "kb", "shared"];
 
 /* ============================================================
    STATE
@@ -319,6 +321,19 @@ function renderRecent() {
       else openLocalChat(entry.id);
     });
     item.append(button);
+    if (entry.saved && state.account) {
+      item.className = "recent-row";
+      const archive = make("button", "recent-archive");
+      archive.type = "button";
+      archive.title = "Arsipkan percakapan ini";
+      archive.setAttribute("aria-label", "Arsipkan percakapan ini");
+      archive.innerHTML = ICON.archive;
+      archive.addEventListener("click", (event) => {
+        event.stopPropagation();
+        archiveConversation(entry.id, { leave: false });
+      });
+      item.append(archive);
+    }
     refs.recentList.append(item);
   }
   highlightRecent();
@@ -548,6 +563,7 @@ function fileResults(ids) {
     const doc = documents[id];
     if (!doc) continue;
     const row = make("div", "file-result");
+    row.dataset.kind = doc.kind;
     const open = make("button", "file-result-open");
     open.type = "button";
     open.setAttribute("aria-label", `Buka ${doc.title}`);
@@ -602,6 +618,7 @@ function sourceChip(citation) {
   const chip = make("button", "ref-chip");
   chip.type = "button";
   chip.innerHTML = ICON.file;
+  chip.dataset.kind = citation.document.kind;
   // Template satu halaman: "hal. 1" tidak berarti apa-apa.
   chip.append(citation.document.pages > 1 ? `${citation.document.title}, hal. ${citation.page}` : citation.document.title);
   chip.addEventListener("click", () =>
@@ -1146,6 +1163,177 @@ async function deleteCurrentConversation() {
   refreshHistory();
 }
 
+/** Arsipkan satu percakapan tersimpan: hilang dari riwayat, bisa dipulihkan dari Setting > Archived chats. */
+async function archiveConversation(id, { leave = false } = {}) {
+  if (!state.account || !id) {
+    showToast("Percakapan ini belum tersimpan.");
+    return;
+  }
+  try {
+    await api(`/conversations/${id}/archive`, { method: "POST" });
+  } catch {
+    showToast("Gagal mengarsipkan percakapan.");
+    return;
+  }
+  showToast("Percakapan diarsipkan.");
+  if (leave || String(state.conversationId) === String(id)) resetChat();
+  refreshHistory();
+}
+
+/* ============================================================
+   BAGIKAN CHAT
+============================================================ */
+
+/** Alamat yang dibuka orang lain: aplikasi ini dengan tokennya, bukan halaman biasa. */
+function shareUrl(token) {
+  return `${window.location.origin}${window.location.pathname}#share=${token}`;
+}
+
+/** Isi sebuah jawaban yang tersimpan sebagai teks: paragraf dan daftar ("- ..."), tautan bisa diklik. */
+function renderPlainAnswer(container, text) {
+  let list = null;
+  for (const line of String(text).split("\n")) {
+    if (!line.trim()) {
+      list = null;
+      continue;
+    }
+    if (line.startsWith("- ")) {
+      if (!list) {
+        list = make("ul", "bot-list");
+        container.append(list);
+      }
+      const item = document.createElement("li");
+      appendRichText(item, line.slice(2));
+      list.append(item);
+    } else {
+      list = null;
+      const p = make("p");
+      appendRichText(p, line);
+      container.append(p);
+    }
+  }
+}
+
+/** Pesan-pesan sebuah chat dalam bentuk hanya-baca (dipakai pratinjau dan halaman yang dibagikan). */
+function renderMessages(container, messages) {
+  for (const message of messages) {
+    if (message.role === "user") {
+      container.append(make("p", "bubble", message.content));
+    } else {
+      const card = make("article", "bot-card");
+      const head = make("header", "bot-head");
+      head.append(make("strong", "", "SAPA AI Academic Hub"));
+      const body = make("div", "bot-body");
+      renderPlainAnswer(body, message.content);
+      card.append(head, body);
+      container.append(card);
+    }
+  }
+}
+
+async function openShareDialog() {
+  const id = state.conversationId;
+  if (!state.account || !id || state.view !== "chat") {
+    showToast("Masuk dan buka sebuah percakapan dulu untuk membagikannya.");
+    return;
+  }
+
+  let conversation;
+  let share;
+  try {
+    ({ conversation } = await api(`/conversations/${id}`));
+    ({ share } = await api(`/conversations/${id}/share`, { method: "POST" }));
+  } catch (error) {
+    showToast(error.status === 429 ? error.message : "Gagal membuat tautan bagikan.");
+    return;
+  }
+
+  const dialog = make("div", "modal");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "share-title");
+  const scrim = make("div", "modal-scrim");
+  const box = make("div", "modal-box share-box");
+  dialog.append(scrim, box);
+
+  const close = () => {
+    dialog.remove();
+    document.removeEventListener("keydown", onKey);
+  };
+  function onKey(event) {
+    if (event.key === "Escape") close();
+  }
+  document.addEventListener("keydown", onKey);
+  scrim.addEventListener("click", close);
+
+  const head = make("div", "share-head");
+  const title = make("h2", "", `Bagikan ${conversation.title}`);
+  title.id = "share-title";
+  const x = make("button", "share-close");
+  x.type = "button";
+  x.setAttribute("aria-label", "Tutup");
+  x.innerHTML = ICON.close;
+  x.addEventListener("click", close);
+  head.append(title, x);
+
+  const intro = make("p", "share-intro", "Namamu dan pesan yang kamu tambahkan setelah membagikan tidak akan muncul di chat yang dibagikan.");
+
+  const preview = make("div", "share-preview");
+  const previewLog = make("div", "share-preview-log");
+  renderMessages(previewLog, conversation.messages);
+  preview.append(previewLog);
+
+  const access = make("p", "share-access", "Siapa pun yang punya tautan bisa melihat chat ini");
+  const url = shareUrl(share.token);
+  const field = make("input", "share-url");
+  field.readOnly = true;
+  field.value = url;
+  field.setAttribute("aria-label", "Tautan chat");
+  field.addEventListener("focus", () => field.select());
+
+  const copy = make("button", "btn btn-primary share-copy");
+  copy.type = "button";
+  copy.innerHTML = ICON.link;
+  copy.append(make("span", "", "Salin tautan"));
+  copy.addEventListener("click", async () => {
+    await copyText(url, "Tautan chat disalin.");
+    copy.querySelector("span").textContent = "Tersalin";
+    setTimeout(() => (copy.querySelector("span").textContent = "Salin tautan"), 1800);
+  });
+  const foot = make("div", "share-foot");
+  foot.append(copy);
+
+  box.append(head, intro, preview, access, field, foot);
+  document.body.append(dialog);
+  copy.focus();
+}
+
+/** Membuka chat yang dibagikan seseorang, hanya-baca. Tanpa masuk pun bisa. */
+async function openSharedChat(token) {
+  const log = $("shared-log");
+  log.replaceChildren();
+  $("shared-title").textContent = "";
+  showView("shared");
+  try {
+    const response = await fetch(`${API_URL}/share/${encodeURIComponent(token)}`);
+    if (!response.ok) throw new Error(`share ${response.status}`);
+    const { share } = await response.json();
+    $("shared-title").textContent = share.title;
+    renderMessages(log, share.messages);
+  } catch {
+    $("shared-title").textContent = "Tautan tidak ditemukan";
+    log.append(make("p", "shared-missing", "Chat ini tidak ada lagi atau tautannya sudah dicabut oleh pemiliknya."));
+  }
+}
+
+/** Alamat yang memuat #share=<token> membuka halaman bagikan alih-alih beranda. */
+function openSharedFromUrl() {
+  const match = /^#share=([\w-]{22})$/.exec(window.location.hash);
+  if (!match) return false;
+  openSharedChat(match[1]);
+  return true;
+}
+
 function transcript() {
   const lines = [];
   for (const node of refs.chatLog.children) {
@@ -1170,7 +1358,10 @@ function buildMoreMenu() {
     ],
     ["Mulai percakapan baru", () => resetChat()],
   ];
-  if (state.account) actions.push(["Hapus percakapan ini", deleteCurrentConversation]);
+  if (state.account) {
+    actions.push(["Arsipkan percakapan ini", () => archiveConversation(state.conversationId)]);
+    actions.push(["Hapus percakapan ini", deleteCurrentConversation]);
+  }
 
   for (const [label, action] of actions) {
     const button = make("button", "", label);
@@ -1484,7 +1675,10 @@ function renderFiles() {
     image.alt = "";
     image.loading = "lazy";
     image.addEventListener("error", () => image.remove());
-    thumb.append(image, make("span", "file-tag", doc.kind));
+    const tag = make("span", "file-tag", doc.kind);
+    tag.dataset.kind = doc.kind;
+    card.dataset.kind = doc.kind;
+    thumb.append(image, tag);
 
     const info = make("div", "file-info");
     info.append(
@@ -2165,7 +2359,9 @@ async function finishServerVoice() {
       return;
     }
     showToast("Mengubah suara jadi teks...");
-    const response = await fetch(`${API_URL}/transcribe?lang=${getLang()}`, {
+    // Bahasa suara dari Setting > Voice > Language; "Auto detect" mengikuti bahasa tampilan.
+    const spoken = settings.prefs.voice.language === "auto" ? getLang() : settings.prefs.voice.language;
+    const response = await fetch(`${API_URL}/transcribe?lang=${spoken}`, {
       method: "POST",
       headers: { "content-type": "audio/wav" },
       body: wav,
@@ -2357,9 +2553,7 @@ function initialize() {
     if (!event.target.closest(".file-menu")) closeFileMenu();
   });
 
-  refs.shareButton.addEventListener("click", () =>
-    copyText(window.location.href.split("#")[0], "Tautan disalin."),
-  );
+  refs.shareButton.addEventListener("click", openShareDialog);
   refs.moreButton.addEventListener("click", (event) => {
     event.stopPropagation();
     toggleMenu(refs.moreMenu, refs.moreButton, buildMoreMenu);
@@ -2427,6 +2621,15 @@ function initialize() {
   setRecentOpen(false);
   renderAccount();
   showView("home");
+  // Tautan bagikan (#share=...) membuka chat itu, hanya-baca, alih-alih beranda.
+  openSharedFromUrl();
+  window.addEventListener("hashchange", () => {
+    if (!openSharedFromUrl() && state.view === "shared") showView("home");
+  });
+  $("shared-start").addEventListener("click", () => {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    resetChat();
+  });
   loadAccount();
   loadPublicDocuments();
 }

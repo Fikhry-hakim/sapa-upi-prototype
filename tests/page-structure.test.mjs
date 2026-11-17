@@ -82,10 +82,10 @@ test("the mobile layout moves the sidebar off-canvas", () => {
 });
 
 test("every view has one heading and the composer has a label", () => {
-  for (const id of ["home-title", "search-title", "files-title", "settings-title"]) {
+  for (const id of ["home-title", "search-title", "files-title", "settings-title", "shared-title"]) {
     assert.match(html, new RegExp(`<h1 id="${id}"`), `missing heading ${id}`);
   }
-  assert.equal([...html.matchAll(/<h1\b/g)].length, 4, "one h1 per view");
+  assert.equal([...html.matchAll(/<h1\b/g)].length, 5, "one h1 per view");
   assert.match(html, /<label class="sr-only" for="question">/);
 });
 
@@ -116,7 +116,7 @@ test("settings only lists sections that do something", async () => {
   const { readFile } = await import("node:fs/promises");
   const settings = await readFile(new URL("../settings.js", import.meta.url), "utf8");
   const sections = [...settings.matchAll(/\{ id: "(\w+)", label:/g)].map((m) => m[1]);
-  assert.ok(sections.length >= 9, "the design has nine settings tabs");
+  assert.ok(sections.length >= 8, "the design tabs (minus the ones removed on purpose) are all present");
   for (const id of sections) {
     // A tab either has a renderer in the table, or is handled by name (archived and storage load their own data).
     const rendered = new RegExp(`\\b${id}: render`).test(settings) || settings.includes(`section.id === "${id}"`);
