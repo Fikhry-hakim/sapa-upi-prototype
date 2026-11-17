@@ -4,6 +4,7 @@ import { createChatResponse } from "./lib/chat-engine.js";
 import { clarifiedSentence, clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
+import { fileRequestMessage, findRequestedDocuments } from "./lib/doc-request.js";
 import { createOwner } from "./owner.js";
 import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
 import { MAX_RECORD_MS, startRecording } from "./lib/recorder.js";
@@ -36,6 +37,7 @@ const ICON = {
   help: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5M12 17h.01"/></svg>',
   doc: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14 3.5V8h5"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
 };
 
 const refs = {
@@ -513,6 +515,38 @@ function renderTable(table, parent) {
   parent.append(wrap);
 }
 
+/** Berkas yang diminta: dibuka dari halaman pertama tanpa sorotan, atau diunduh langsung. */
+function fileResults(ids) {
+  const list = make("div", "file-results");
+  for (const id of ids) {
+    const doc = documents[id];
+    if (!doc) continue;
+    const row = make("div", "file-result");
+    const open = make("button", "file-result-open");
+    open.type = "button";
+    open.setAttribute("aria-label", `Buka ${doc.title}`);
+    const icon = make("span", "file-result-icon");
+    icon.innerHTML = ICON.file;
+    const text = make("span", "file-result-text");
+    text.append(
+      make("strong", "", doc.title),
+      make("small", "", [doc.kind, doc.pages > 1 ? `${doc.pages} halaman` : null, doc.sizeLabel, doc.dateLabel].filter(Boolean).join(" • ")),
+    );
+    open.append(icon, text);
+    open.addEventListener("click", () => viewer.open(doc, { page: 1 }));
+
+    const download = make("a", "file-result-download");
+    download.href = doc.download ?? doc.file;
+    download.setAttribute("download", (doc.download ?? doc.file).split("/").pop());
+    download.setAttribute("aria-label", `Unduh ${doc.title}`);
+    download.title = "Unduh";
+    download.innerHTML = ICON.download;
+    row.append(open, download);
+    list.append(row);
+  }
+  return list;
+}
+
 function renderReferences(entry, parent, served = null, many = []) {
   // Beberapa dokumen: semuanya ditampilkan, yang terbaru paling atas dan bertanda.
   if (many?.length > 1) return renderManyReferences(entry, parent, many);
@@ -676,6 +710,15 @@ function fillCard(card, response, { feedback = false, question = "" } = {}) {
   const entry = response.entry;
   let followUps = null;
 
+  if (response.type === "files") {
+    head.append(pill("Berkas resmi", "ok"));
+    body.append(paragraph(response.message));
+    body.append(fileResults(response.files));
+    renderContactOnly(body, null);
+    if (feedback) body.append(feedbackRow(response));
+    return;
+  }
+
   if (response.type === "answer") {
     head.append(
       response.generated
@@ -778,6 +821,10 @@ async function askBackend(question, topic = null) {
 
   const data = await response.json();
   if (data.conversationId) state.conversationId = data.conversationId;
+  // Permintaan berkas: Worker menjawab dengan daftar id dokumen, bukan kutipan topik.
+  if (Array.isArray(data.files) && data.files.length) {
+    return { type: "files", message: data.answer, files: data.files.filter((id) => documents[id]) };
+  }
   return {
     type: "answer",
     generated: true,
@@ -863,7 +910,10 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   let answeredLocally = false;
   if (!response) {
-    response = createChatResponse(question, scopedEntries(), { topic, lang: getLang() });
+    const asked = state.scopeDocumentId || clarifiedSentence(question) ? [] : findRequestedDocuments(question);
+    response = asked.length
+      ? { type: "files", message: fileRequestMessage(asked, getLang()), files: asked.map(({ id }) => id) }
+      : createChatResponse(question, scopedEntries(), { topic, lang: getLang() });
     answeredLocally = true;
   }
 

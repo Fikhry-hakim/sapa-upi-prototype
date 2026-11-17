@@ -9,6 +9,7 @@ import { classifyOutcome, recordEvent } from "./events.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import { sourceSet } from "../../lib/source-set.js";
+import { fileRequestMessage, findRequestedDocuments } from "../../lib/doc-request.js";
 import { cleanHistory, contextQuery, mergeContext, needsContext, lastEntries, soundsLikeFollowUp, withAnchor } from "../../lib/followup.js";
 import {
   authenticate,
@@ -165,6 +166,32 @@ async function handleAsk(request, env, cors, ctx) {
   const clicked = clarifiedSentence(question);
   // Pertanyaan berbahasa Inggris dicari lewat padanan kata Indonesianya; model tetap menerima aslinya.
   const searchText = lang === "en" ? toIndonesianQuery(question) : question;
+
+  // Orang yang meminta berkasnya ("ada file kalender akademik ga") diberi berkasnya, dibuka dari
+  // halaman pertama, bukan kutipan di dalamnya. Tidak perlu model: katalog dokumenlah yang menjawab.
+  if (!clicked && typeof scope !== "string") {
+    const asked = findRequestedDocuments(searchText).filter(({ doc }) => !excluded.has(doc.file));
+    if (asked.length) {
+      const answer = fileRequestMessage(asked, lang);
+      const task = recordEvent(db, {
+        outcome: "berbasis_sumber",
+        entryId: null,
+        category: "Berkas",
+        documentId: asked[0].id,
+        page: 1,
+        durationMs: Date.now() - startedAt,
+        source: "berkas",
+        signedIn: Boolean(user),
+      }).catch((error) => console.warn("events: gagal mencatat —", error.message));
+      ctx?.waitUntil?.(task);
+      const savedTo = await recordExchange(db, user, { conversationId, question, answer, entryId: null, source: "berkas" }).catch(() => null);
+      return json(
+        { source: "berkas", answer, entry: null, files: asked.map(({ id }) => id), followUps: [], conversationId: savedTo, citations: [], citation: null },
+        { headers: cors },
+      );
+    }
+  }
+
   const found = retrieve(clicked ?? searchText, knowledgeBase, {
     scope: typeof scope === "string" ? scope : null,
     excluded,
