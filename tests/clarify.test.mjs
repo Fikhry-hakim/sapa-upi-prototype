@@ -112,3 +112,21 @@ test("a topic that is unknown, switched off or outside the chosen document is ig
   assert.equal(prioritizeTopic(found, KB, "sidang", { scope: "b.pdf" }), found);
   assert.deepEqual(prioritizeTopic(found, KB, "kkn", { scope: "b.pdf" }).map((e) => e.id), ["kkn"]);
 });
+
+/* ---------- nomor hanya untuk jawaban panjang ---------- */
+
+import { isExplainable, shouldNumber } from "../lib/clarify.js";
+
+test("jawaban pendek tidak diberi nomor", () => {
+  assert.equal(shouldNumber(["Template proposal tersedia di laman prodi.\n- Unduh template proposal di https://bisnisdigital.upi.edu/tugas-akhir-mahasiswa/\n- Unduh seluruh template di https://bit.ly/Format-Template_admPenyelesaianStudi"]), false);
+});
+
+test("kalimat yang hanya mengantar ke tautan tidak bisa dijelaskan", () => {
+  assert.equal(isExplainable("Unduh template proposal di https://bisnisdigital.upi.edu/tugas-akhir-mahasiswa/"), false);
+  assert.equal(isExplainable("Masa studi maksimal empat belas semester."), true);
+});
+
+test("jawaban panjang dengan banyak poin tetap diberi nomor", () => {
+  const text = "Syarat sidang ada beberapa.\n- Lulus semua mata kuliah wajib.\n- Menyelesaikan bimbingan skripsi.\n- Memenuhi syarat bebas pustaka.\n- Mengumpulkan berkas pendaftaran lengkap.\n- Mendapat persetujuan pembimbing.";
+  assert.equal(shouldNumber([text]), true);
+});

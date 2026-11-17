@@ -1,7 +1,7 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { documents, citationFor, documentIdForFile } from "./data/sources.js";
 import { createChatResponse } from "./lib/chat-engine.js";
-import { clarifiedSentence, clarifyQuestion, isBullet, isClarifiable, splitSentences, stripBullet } from "./lib/clarify.js";
+import { clarifiedSentence, clarifyQuestion, isBullet, isExplainable, shouldNumber, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
 import { fileRequestMessage, findRequestedDocuments } from "./lib/doc-request.js";
@@ -443,7 +443,7 @@ function topicOf(entry) {
 function appendNumberedText(parent, text, counter, topic) {
   for (const sentence of splitSentences(text)) {
     appendRichText(parent, sentence);
-    if (isClarifiable(sentence) && counter.n < MAX_NUMBERED) {
+    if (counter.on !== false && isExplainable(sentence) && counter.n < MAX_NUMBERED) {
       counter.n += 1;
       parent.append(clarifyMarker(counter.n, sentence, topic));
     }
@@ -788,7 +788,11 @@ function fillCard(card, response, { feedback = false, question = "" } = {}) {
         : pill("Jawaban cadangan • AI sedang tidak tersedia"),
     );
 
-    const counter = { n: 0 };
+    const counter = {
+      n: 0,
+      // Jawaban pendek sudah jelas: tanpa nomor dan tanpa ajakan "klik angka".
+      on: shouldNumber(response.generated ? [response.message] : [entry?.lead ?? response.message, ...(entry?.points ?? [])]),
+    };
     if (response.generated) {
       appendNumberedAnswer(body, response.message, counter, topicOf(entry));
     } else {
