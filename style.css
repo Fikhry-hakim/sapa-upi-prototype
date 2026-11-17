@@ -219,7 +219,35 @@ svg text,
 }
 
 .sb-collapse {
-  display: none;
+  margin-left: auto;
+}
+
+/* Sidebar bisa ditutup di layar lebar: kolomnya hilang dan isinya melebar. */
+.app.sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.app.sidebar-collapsed .sidebar {
+  visibility: hidden;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+}
+
+.app.sidebar-collapsed .menu-btn {
+  display: inline-grid;
+}
+
+/* Tombol buka di bilah atas memakai ikon panel, bukan garis tiga, saat sidebar ditutup di layar lebar. */
+.menu-ico-panel { display: none; }
+.app.sidebar-collapsed .menu-ico-open { display: none; }
+.app.sidebar-collapsed .menu-ico-panel { display: block; }
+
+@media (max-width: 900px) {
+  .app.sidebar-collapsed { grid-template-columns: 1fr; }
+  .app.sidebar-collapsed .sidebar { visibility: visible; }
+  .app.sidebar-collapsed .menu-ico-open { display: block; }
+  .app.sidebar-collapsed .menu-ico-panel { display: none; }
 }
 
 /* ------------------------------------------------------------ nav */

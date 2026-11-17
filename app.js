@@ -238,19 +238,48 @@ function showView(name) {
   refs.navMetrics.classList.toggle("is-active", name === "metrics");
   refs.navKb.classList.toggle("is-active", name === "kb");
   highlightRecent();
-  closeSidebar();
+  dismissDrawer();
 
   if (name === "home" || name === "chat") refs.question.focus({ preventScroll: true });
 }
 
+const WIDE = window.matchMedia("(min-width: 901px)");
+const SIDEBAR_KEY = "sapa-sidebar-collapsed";
+
+/** Layar lebar: sidebar ditutup atau dibuka dari tombolnya, dan pilihannya diingat. */
+function setSidebarCollapsed(collapsed) {
+  refs.app.classList.toggle("sidebar-collapsed", collapsed);
+  refs.menuButton.setAttribute("aria-expanded", String(!collapsed));
+  refs.menuButton.setAttribute("aria-label", collapsed ? "Buka navigasi" : "Tutup navigasi");
+  try {
+    localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
+  } catch {
+    // Mode privat: pilihan tidak diingat, tombol tetap bekerja.
+  }
+}
+
 function openSidebar() {
+  if (WIDE.matches) return setSidebarCollapsed(false);
   refs.sidebar.classList.add("is-open");
   refs.scrim.hidden = false;
 }
 
 function closeSidebar() {
+  if (WIDE.matches) return setSidebarCollapsed(true);
   refs.sidebar.classList.remove("is-open");
   refs.scrim.hidden = true;
+}
+
+/** Berpindah halaman menutup laci di ponsel, tapi tidak boleh menutup sidebar di layar lebar. */
+function dismissDrawer() {
+  refs.sidebar.classList.remove("is-open");
+  refs.scrim.hidden = true;
+}
+
+try {
+  if (localStorage.getItem(SIDEBAR_KEY) === "1") setSidebarCollapsed(true);
+} catch {
+  // Tanpa penyimpanan: sidebar mulai terbuka.
 }
 
 function firstWord(name) {
@@ -2367,7 +2396,7 @@ function initialize() {
 
   refs.menuButton.addEventListener("click", openSidebar);
   refs.sidebarClose.addEventListener("click", closeSidebar);
-  refs.scrim.addEventListener("click", closeSidebar);
+  refs.scrim.addEventListener("click", dismissDrawer);
 
   refs.searchClear.addEventListener("click", () => {
     refs.searchInput.value = "";
@@ -2450,7 +2479,7 @@ function initialize() {
   window.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeMenus();
-    closeSidebar();
+    dismissDrawer(); // Esc menutup laci ponsel; sidebar layar lebar hanya ditutup dari tombolnya
     stopVoice();
   });
 
