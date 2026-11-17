@@ -36,6 +36,7 @@ import {
 } from "./password.js";
 import { checkFeedback, recordFeedback } from "./feedback.js";
 import { createShare, listShares, readShare, revokeShare } from "./shares.js";
+import { answerCacheKey, readCachedAnswer, writeCachedAnswer } from "./answer-cache.js";
 import { handleTranscribe } from "./transcribe.js";
 import { clientKey, hit } from "./rate-limit.js";
 import { allowedDomains, consumeState, exchangeCode, isAllowedEmail, startLogin } from "./google-oidc.js";
@@ -287,26 +288,38 @@ async function handleAsk(request, env, cors, ctx) {
   };
 
   try {
-    let answer;
-    try {
-      // Gemini diberi sebagian anggaran waktu; sisanya untuk cadangan di Workers AI.
-      const geminiResult = await askWithFallback({
-        question,
-        entries,
-        lang,
-        history: askedBefore ?? [],
-        apiKey: env.GEMINI_API_KEY,
-        models: [env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", env.GEMINI_FALLBACK_MODEL],
-        totalMs: env.AI ? PRIMARY_BUDGET_MS : undefined,
-      });
-      answer = geminiResult.text;
-      if (geminiResult.fellBack) console.warn(`gemini: model utama gagal, dijawab oleh ${geminiResult.model}`);
-    } catch (geminiError) {
-      if (!env.AI) throw geminiError;
-      console.warn("gemini gagal, beralih ke Workers AI:", String(geminiError).slice(0, 200));
-      const backupModel = env.AI_FALLBACK_MODEL || WORKERS_AI_MODEL;
-      answer = await askWorkersAI({ question, entries, lang, history: askedBefore ?? [], ai: env.AI, model: backupModel });
-      console.warn(`dijawab oleh cadangan ${backupModel}`);
+    // Pertanyaan yang sama dengan kutipan yang sama tidak perlu memanggil model lagi. Hanya untuk
+    // pertanyaan mandiri: yang bergantung pada riwayat atau klik-angka selalu dijawab baru.
+    const cacheable = !askedBefore && !clicked && !fromPassage && entries.length > 0;
+    const cacheKey = cacheable ? await answerCacheKey({ question, entries, lang }) : null;
+    let answer = await readCachedAnswer(db, cacheKey);
+
+    if (!answer) {
+      // Cadangan Workers AI (model 8B) kadang menjawab "tidak ada informasi" padahal ada di kutipan,
+      // jadi dimatikan kecuali sengaja dinyalakan. Tanpa ia, kegagalan Gemini jatuh ke 502 dan browser
+      // menampilkan jawaban kurasi dari knowledge base, yang akurat.
+      const aiBackup = env.AI_FALLBACK_ENABLED === "true" && Boolean(env.AI);
+      try {
+        const geminiResult = await askWithFallback({
+          question,
+          entries,
+          lang,
+          history: askedBefore ?? [],
+          apiKey: env.GEMINI_API_KEY,
+          models: [env.GEMINI_MODEL ?? "gemini-3.5-flash-lite", env.GEMINI_FALLBACK_MODEL],
+          // Cadangan Workers AI nyala: Gemini diberi sebagian anggaran waktu; kalau tidak, seluruhnya.
+          totalMs: aiBackup ? PRIMARY_BUDGET_MS : undefined,
+        });
+        answer = geminiResult.text;
+        if (geminiResult.fellBack) console.warn(`gemini: model utama gagal, dijawab oleh ${geminiResult.model}`);
+      } catch (geminiError) {
+        if (!aiBackup) throw geminiError;
+        console.warn("gemini gagal, beralih ke Workers AI:", String(geminiError).slice(0, 200));
+        const backupModel = env.AI_FALLBACK_MODEL || WORKERS_AI_MODEL;
+        answer = await askWorkersAI({ question, entries, lang, history: askedBefore ?? [], ai: env.AI, model: backupModel });
+        console.warn(`dijawab oleh cadangan ${backupModel}`);
+      }
+      if (cacheKey) ctx?.waitUntil?.(writeCachedAnswer(db, cacheKey, answer));
     }
     note(false);
 

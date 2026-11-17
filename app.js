@@ -110,7 +110,8 @@ const VIEWS = ["home", "chat", "search", "files", "settings", "dashboard", "metr
 ============================================================ */
 
 // Sedikit di atas batas total Worker (15 dtk), supaya galatnya sampai sebelum browser menyerah.
-const BACKEND_TIMEOUT_MS = 18_000;
+// Sedikit lebih lama dari anggaran waktu Worker (20 detik), supaya jawaban yang tiba di detik terakhir tetap terpakai.
+const BACKEND_TIMEOUT_MS = 24_000;
 
 const state = {
   view: "home",

@@ -12,6 +12,9 @@ GEMINI_FALLBACK_MODEL = ""
 # Model Workers AI untuk cadangan. Cloudflare menghentikan model lama secara berkala;
 # lihat daftar terbaru dengan: npx wrangler ai models
 AI_FALLBACK_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+# Cadangan Workers AI mati secara bawaan: model 8B ini kadang menjawab "tidak ada informasi" padahal
+# ada di kutipan, lebih buruk daripada jawaban kurasi yang ditampilkan browser saat Gemini gagal.
+AI_FALLBACK_ENABLED = "false"
 
 
 # Origin yang boleh memanggil API ini (dipisah koma).

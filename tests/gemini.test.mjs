@@ -4,6 +4,11 @@ import assert from "node:assert/strict";
 import { knowledgeBase } from "../data/knowledge-base.js";
 import {
   SYSTEM_INSTRUCTION,
+  systemInstructionFor,
+  relevantTextFor,
+  askHedged,
+  PRIMARY_BUDGET_MS,
+  ATTEMPT_TIMEOUT_MS,
   buildContextBlock,
   buildInput,
   extractText,
@@ -37,6 +42,14 @@ test("the system instruction carries the glossary and forbids guessing an abbrev
   assert.match(SYSTEM_INSTRUCTION, /GLOSARIUM ISTILAH/);
   assert.match(SYSTEM_INSTRUCTION, /LOA = letter of acceptance/i);
   assert.match(SYSTEM_INSTRUCTION, /Jangan pernah menebak kepanjangan singkatan/i);
+
+  // Each request sends only the glossary terms it mentions, instead of all of them (about half the prompt).
+  const forLoa = systemInstructionFor("Apa itu LoA?");
+  assert.match(forLoa, /LOA = letter of acceptance/i);
+  assert.equal(/SIAKKU/i.test(forLoa), false, "terms that were not asked about are left out");
+  assert.ok(forLoa.length < SYSTEM_INSTRUCTION.length - 4_000, "a pruned glossary is much shorter than the full one");
+  assert.match(systemInstructionFor("halo"), /jangan menebak kepanjangan singkatan apa pun/i, "with no term mentioned, guessing is still forbidden");
+  assert.match(forLoa, /Jangan pernah menebak kepanjangan singkatan/i);
 });
 
 test("context block carries the answer and its provenance", () => {
@@ -110,7 +123,7 @@ test("askGemini posts to the Interactions API with the key in the header", async
 
   const body = JSON.parse(captured.init.body);
   assert.equal(body.model, "gemini-3.5-flash-lite");
-  assert.equal(body.system_instruction, SYSTEM_INSTRUCTION);
+  assert.equal(body.system_instruction, systemInstructionFor(relevantTextFor("Apa syarat sidang?", [sidang], [])));
   assert.ok(body.input.includes(sidang.answer), "grounding context must be sent");
 });
 
@@ -304,7 +317,7 @@ test("when the main model times out, the backup answers and the swap is reported
   const clock = { t: 0 };
   const { fetchImpl, seen } = modelRouter(
     {
-      utama: { throws: "The operation was aborted due to timeout", cost: 9_000 },
+      utama: { throws: "The operation was aborted due to timeout", cost: PRIMARY_BUDGET_MS },
       cadangan: { text: "Jawaban dari cadangan." },
     },
     clock,
@@ -338,7 +351,7 @@ test("a quota error moves to the backup, but a malformed request does not", asyn
 test("both models failing surfaces the last error, within the total budget", async () => {
   const clock = { t: 0 };
   const { fetchImpl } = modelRouter(
-    { utama: { throws: "timeout utama", cost: 9_000 }, cadangan: { throws: "timeout cadangan", cost: 6_000 } },
+    { utama: { throws: "timeout utama", cost: PRIMARY_BUDGET_MS }, cadangan: { throws: "timeout cadangan", cost: TOTAL_BUDGET_MS - PRIMARY_BUDGET_MS } },
     clock,
   );
   await assert.rejects(askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t })), /cadangan/);
@@ -347,7 +360,7 @@ test("both models failing surfaces the last error, within the total budget", asy
 
 test("the backup is skipped when the main model already used up the whole budget", async () => {
   const clock = { t: 0 };
-  const { fetchImpl, seen } = modelRouter({ utama: { throws: "timeout", cost: 14_500 }, cadangan: { text: "x" } }, clock);
+  const { fetchImpl, seen } = modelRouter({ utama: { throws: "timeout", cost: TOTAL_BUDGET_MS - 500 }, cadangan: { text: "x" } }, clock);
   await assert.rejects(askWithFallback(ask({ models: ["utama", "cadangan"], fetchImpl, now: () => clock.t })));
   assert.deepEqual(seen.map((s) => s.model), ["utama"]);
 });
@@ -390,4 +403,74 @@ test("the Workers AI backup refuses to invent an answer when it returns nothing,
     askWorkersAI({ question: "x", entries: [], ai: { run: () => new Promise(() => {}) }, timeoutMs: 30 }),
     /timeout/,
   );
+});
+
+
+/* ------------------------------------------------------------ hedging */
+
+const okResponse = (text) => new Response(JSON.stringify({ steps: [{ type: "model_output", content: [{ type: "text", text }] }] }), { status: 200 });
+const wait = (ms, signal) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(new Error("aborted"));
+    });
+  });
+
+test("a fast first call is never doubled", async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return okResponse("Cepat.");
+  };
+  const text = await askHedged({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl, hedgeMs: 50, sleep: async () => {} });
+  assert.equal(text, "Cepat.");
+  assert.equal(calls, 1);
+});
+
+test("a slow first call is raced by a second one, and the faster answer wins", async () => {
+  let calls = 0;
+  const fetchImpl = async (_url, options) => {
+    calls += 1;
+    const mine = calls;
+    await wait(mine === 1 ? 400 : 20, options.signal); // the first call is slow, the second is quick
+    return okResponse(mine === 1 ? "Lambat." : "Kedua.");
+  };
+  const text = await askHedged({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl, hedgeMs: 30, sleep: async () => {} });
+  assert.equal(text, "Kedua.");
+  assert.equal(calls, 2);
+});
+
+test("when the first call fails fast (quota, bad request) there is no second call", async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return new Response("quota", { status: 429 });
+  };
+  await assert.rejects(askHedged({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl, hedgeMs: 30, sleep: async () => {} }), /Gemini 429/);
+  assert.equal(calls, 1);
+});
+
+test("the slow call's rival is cancelled once an answer arrives", async () => {
+  let aborted = 0;
+  let calls = 0;
+  const fetchImpl = async (_url, options) => {
+    calls += 1;
+    const mine = calls;
+    options.signal?.addEventListener("abort", () => {
+      aborted += 1;
+    });
+    await wait(mine === 1 ? 300 : 10, options.signal).catch(() => {});
+    return okResponse("ok");
+  };
+  await askHedged({ question: "x", entries: [], apiKey: "k", model: "m", fetchImpl, hedgeMs: 20, sleep: async () => {} });
+  await wait(30);
+  assert.ok(aborted >= 1, "the call that lost the race is told to stop");
+});
+
+test("the time budgets fit together: attempts fit in the total, and the primary leaves room for a backup", () => {
+  assert.ok(ATTEMPT_TIMEOUT_MS <= TOTAL_BUDGET_MS);
+  assert.ok(PRIMARY_BUDGET_MS < TOTAL_BUDGET_MS);
+  assert.ok(TOTAL_BUDGET_MS - PRIMARY_BUDGET_MS >= 3_000, "a backup call still has a usable slice");
 });

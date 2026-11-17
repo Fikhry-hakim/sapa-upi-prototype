@@ -2,7 +2,7 @@ import { glossaryContext } from "../../lib/glossary.js";
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
-export const SYSTEM_INSTRUCTION = `Kamu adalah SAPA UPI, asisten akademik untuk mahasiswa dan dosen Universitas Pendidikan Indonesia.
+export const BASE_INSTRUCTION = `Kamu adalah SAPA UPI, asisten akademik untuk mahasiswa dan dosen Universitas Pendidikan Indonesia.
 
 ATURAN ISI YANG WAJIB DIPATUHI:
 1. Jawab HANYA berdasarkan "KONTEKS PEDOMAN" yang diberikan. Jangan memakai pengetahuan di luar itu.
@@ -38,9 +38,26 @@ Sesuaikan menurut jenis pertanyaan:
 - Angka, tanggal, atau batas: baris 1 berisi angkanya dan dokumen asalnya, tanpa daftar. Daftar hanya kalau ada dua ketentuan berbeda: butir pertama dokumen terbaru (tandai sebagai yang berlaku), butir kedua dokumen yang lebih lama, lalu penutup yang menegaskan agar mengikuti dokumen terbaru.
 - Arti istilah atau singkatan: artinya dalam satu kalimat sederhana, ditambah satu contoh atau kegunaannya dari dokumen kalau ada. Tanpa daftar dan tanpa penutup.
 - Informasinya tidak ada: "Maaf, saya belum menemukan [hal yang ditanya] di dokumen yang tersedia." Kalau ada informasi yang berkaitan, sebut itu dulu, lalu sarankan menghubungi tenaga administrasi program studi.
-Jangan mengulang isi baris 1 di dalam daftar. Daftar minimal 2 butir; kalau hanya ada satu rincian, gabungkan ke baris 1 atau tulis sebagai kalimat biasa. Kalau jawabannya cukup satu atau dua kalimat, tulis itu saja tanpa daftar. Jangan menambah butir hanya supaya terlihat lengkap.
+Jangan mengulang isi baris 1 di dalam daftar. Daftar minimal 2 butir; kalau hanya ada satu rincian, gabungkan ke baris 1 atau tulis sebagai kalimat biasa. Kalau jawabannya cukup satu atau dua kalimat, tulis itu saja tanpa daftar. Jangan menambah butir hanya supaya terlihat lengkap.`;
 
-${glossaryContext()}`;
+/** Instruksi lengkap dengan seluruh glosarium; dipakai cadangan Workers AI dan tes. */
+export const SYSTEM_INSTRUCTION = `${BASE_INSTRUCTION}\n\n${glossaryContext()}`;
+
+/**
+ * Instruksi untuk satu permintaan Gemini: aturan yang sama, tetapi glosarium hanya memuat istilah yang
+ * muncul di pertanyaan, riwayat, atau konteksnya. Seluruh glosarium menambah hampir 8 ribu karakter
+ * di setiap permintaan (separuh prompt) padahal hampir semuanya tidak dipakai.
+ */
+export function systemInstructionFor(relevantText) {
+  return `${BASE_INSTRUCTION}\n\n${glossaryContext(relevantText)}`;
+}
+
+/** Teks yang menentukan istilah glosarium mana yang perlu ikut dikirim. */
+export function relevantTextFor(question, entries = [], history = []) {
+  const context = entries.map((entry) => `${entry.title} ${entry.answer} ${(entry.points ?? []).join(" ")}`);
+  const turns = (Array.isArray(history) ? history : []).map((turn) => `${turn?.q ?? ""} ${turn?.a ?? ""}`);
+  return [question, ...context, ...turns].join(" ");
+}
 
 export function buildContextBlock(entries) {
   if (!entries.length) return "KONTEKS PEDOMAN: (tidak ada rujukan yang cocok)";
@@ -101,13 +118,16 @@ export function extractText(payload) {
 export const ANSWER_SEED = 20261014;
 
 export const MAX_ATTEMPTS = 3;
+
+/** Berapa lama permintaan pertama dibiarkan sendirian sebelum permintaan kedua dikirim bersamanya. */
+export const HEDGE_DELAY_MS = 6_000;
 export const RETRY_DELAY_MS = 250;
 
 /** Cap on one call to Gemini. A throttled model can otherwise stall for minutes. */
-export const ATTEMPT_TIMEOUT_MS = 12_000;
+export const ATTEMPT_TIMEOUT_MS = 18_000;
 
 /** Cap on all attempts together, so retrying never costs more than answering. */
-export const TOTAL_BUDGET_MS = 15_000;
+export const TOTAL_BUDGET_MS = 20_000;
 
 /** Percobaan yang tersisa waktunya kurang dari ini tidak layak dimulai. */
 export const MIN_ATTEMPT_MS = 3_000;
@@ -147,11 +167,13 @@ export async function askGemini({
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   now = Date.now,
   budgetMs = TOTAL_BUDGET_MS,
+  maxAttempts = MAX_ATTEMPTS,
+  signal,
 }) {
   const startedAt = now();
   const body = JSON.stringify({
     model,
-    system_instruction: SYSTEM_INSTRUCTION,
+    system_instruction: systemInstructionFor(relevantTextFor(question, entries, history)),
     input: buildInput(question, entries, lang, history),
     // The same question must not get a differently worded answer depending on
     // who asked it. Nothing about the reader reaches the prompt, and a fixed
@@ -164,7 +186,7 @@ export async function askGemini({
 
   let lastError;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     // Anggaran total adalah batas keras: percobaan terakhir dipotong ke sisa
     // waktu, dan tidak dimulai sama sekali kalau sisanya terlalu sedikit.
     const remaining = budgetMs - (now() - startedAt);
@@ -180,12 +202,12 @@ export async function askGemini({
           "content-type": "application/json",
         },
         body,
-        signal: AbortSignal.timeout(attemptTimeout),
+        signal: signal ? AbortSignal.any([AbortSignal.timeout(attemptTimeout), signal]) : AbortSignal.timeout(attemptTimeout),
       });
     } catch (error) {
       // A timed-out or aborted attempt is worth another go, within the budget.
       lastError = new Error(`Gemini request failed: ${error.message}`);
-      if (attempt === MAX_ATTEMPTS || now() - startedAt >= budgetMs) throw lastError;
+      if (attempt === maxAttempts || now() - startedAt >= budgetMs || signal?.aborted) throw lastError;
       await sleep(RETRY_DELAY_MS * attempt);
       continue;
     }
@@ -201,7 +223,7 @@ export async function askGemini({
     lastError = new Error(`Gemini ${response.status}: ${detail.slice(0, 300)}`);
 
     if (
-      attempt === MAX_ATTEMPTS ||
+      attempt === maxAttempts ||
       !isRetryable(response.status, detail) ||
       now() - startedAt >= budgetMs
     ) {
@@ -213,8 +235,59 @@ export async function askGemini({
   throw lastError;
 }
 
+/**
+ * Tanya satu model, dan kalau belum menjawab dalam `hedgeMs`, kirim satu permintaan lagi
+ * bersamanya; yang selesai lebih dulu menang dan yang lain dihentikan.
+ *
+ * Lama jawaban Gemini bervariasi per panggilan: kebanyakan 4-6 detik, sebagian jauh lebih lama.
+ * Panggilan kedua hanya dikirim pada kasus lambat, jadi kuota tambahan hanya terpakai di sana,
+ * dan peluang kedua panggilan sama-sama lambat jauh lebih kecil daripada satu panggilan lambat.
+ * Galat yang berarti permintaannya sendiri salah (400 selain pembatasan lokasi) tidak
+ * diulang, sama seperti askGemini.
+ */
+export async function askHedged({ hedgeMs = HEDGE_DELAY_MS, ...options }) {
+  const aborts = [];
+  const launch = (extra = {}) => {
+    const controller = new AbortController();
+    aborts.push(controller);
+    return askGemini({ ...options, ...extra, signal: controller.signal });
+  };
+
+  const HEDGE = Symbol("hedge");
+  let timer;
+  const first = launch();
+  const outcome = first.then(
+    (value) => ({ value }),
+    (error) => ({ error }),
+  );
+  const hedgeTimer = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(HEDGE), hedgeMs);
+  });
+
+  try {
+    const early = await Promise.race([outcome, hedgeTimer]);
+    // Panggilan pertama selesai sebelum waktunya habis, berhasil atau gagal: tidak ada yang perlu diperlombakan.
+    if (early !== HEDGE) {
+      if ("error" in early) throw early.error;
+      return early.value;
+    }
+
+    // Panggilan pertama lambat: kirim yang kedua (satu percobaan, dengan sisa anggaran) dan ambil yang pertama selesai.
+    const second = launch({ maxAttempts: 1, budgetMs: Math.max(MIN_ATTEMPT_MS, (options.budgetMs ?? TOTAL_BUDGET_MS) - hedgeMs) });
+    try {
+      return await Promise.any([first, second]);
+    } catch (aggregate) {
+      throw aggregate.errors?.[0] ?? aggregate; // galat panggilan pertama paling informatif
+    }
+  } finally {
+    clearTimeout(timer);
+    for (const controller of aborts) controller.abort();
+    first.catch(() => {}); // yang dibatalkan boleh menolak tanpa pendengar
+  }
+}
+
 /** Bagian anggaran waktu untuk model utama; sisanya untuk model cadangan. */
-export const PRIMARY_BUDGET_MS = 9_000;
+export const PRIMARY_BUDGET_MS = 16_000;
 
 /**
  * Tanya model utama, dan kalau gagal (timeout, kuota, gangguan), model cadangan.
@@ -239,7 +312,7 @@ export async function askWithFallback({ models, now = Date.now, totalMs = TOTAL_
     // Model utama dibatasi supaya cadangan masih kebagian waktu.
     const budgetMs = isLast ? remaining : Math.min(PRIMARY_BUDGET_MS, remaining);
     try {
-      const text = await askGemini({ ...options, model: list[i], now, budgetMs });
+      const text = await askHedged({ ...options, model: list[i], now, budgetMs });
       return { text, model: list[i], fellBack: i > 0 };
     } catch (error) {
       lastError = error;
