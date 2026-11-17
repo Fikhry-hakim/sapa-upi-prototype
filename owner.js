@@ -1413,7 +1413,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     { id: "gabung", icon: "link", title: "Gabungkan Terkait", text: "Hubungkan dengan dokumen yang telah ada tanpa mengubah file master sebelumnya." },
     { id: "versi", icon: "clock", title: "Perbarui Versi", text: "Gantikan dokumen yang sedang berlaku dengan versi terbarunya. Dokumen lama menjadi Tidak Berlaku." },
   ];
-  const FALLBACK_CATEGORIES = ["Pedoman Akademik & Tugas Akhir", "Peraturan, Edaran", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Lainnya"];
+  const FALLBACK_CATEGORIES = ["Pedoman Akademik & Tugas Akhir", "Peraturan, Edaran", "Surat Keputusan", "Pengumuman", "Kalender Akademik", "Template Dokumen", "Lainnya"];
   const MAX_UPLOAD = 24 * 1024 * 1024;
 
   async function openUpload(onDone) {

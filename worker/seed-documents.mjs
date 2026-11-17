@@ -31,8 +31,8 @@ const categories = {
   "panduan-bebas-pustaka": "Pedoman Akademik & Tugas Akhir",
   "buku-magang": "Pedoman Akademik & Tugas Akhir",
 };
-// Semua dokumen bawaan dirujuk entri knowledge base, kecuali template yang hanya untuk diunduh.
-const usedForAnswers = (id) => !id.startsWith("template-");
+// Semua dokumen bawaan dirujuk entri knowledge base (template lewat satu entri tpl-* per berkas).
+const usedForAnswers = () => true;
 const sizeBytes = { "buku-panduan": 3756418, "pedoman-karya-ilmiah": 8775470, "pengumuman-t207": 312662,
   "kalender-akademik-2026": 800546,
   "edaran-48-2026": 1008547,

@@ -27,6 +27,7 @@ export const CATEGORIES = [
   "Surat Keputusan",
   "Pengumuman",
   "Kalender Akademik",
+  "Template Dokumen",
   "Lainnya",
 ];
 

@@ -75,7 +75,7 @@ test("an entry either links its source document or is silent about it", async ()
   for (const entry of knowledgeBase) {
     if (entry.sourceUrl === null || entry.sourceUrl === undefined) continue;
 
-    assert.match(entry.sourceUrl, /^\.\/dokumen\/[\w.-]+\.pdf$/, `odd document path on ${entry.id}`);
+    assert.match(entry.sourceUrl, /^\.\/dokumen\/(?:template\/)?[\w.-]+\.(?:pdf|docx)$/, `odd document path on ${entry.id}`);
 
     const file = new URL(`../${entry.sourceUrl.slice(2)}`, import.meta.url);
     await assert.doesNotReject(

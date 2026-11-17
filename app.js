@@ -542,7 +542,8 @@ function sourceChip(citation) {
   const chip = make("button", "ref-chip");
   chip.type = "button";
   chip.innerHTML = ICON.file;
-  chip.append(`${citation.document.title}, hal. ${citation.page}`);
+  // Template satu halaman: "hal. 1" tidak berarti apa-apa.
+  chip.append(citation.document.pages > 1 ? `${citation.document.title}, hal. ${citation.page}` : citation.document.title);
   chip.addEventListener("click", () =>
     viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
   );
@@ -1403,7 +1404,7 @@ function renderFiles() {
 
     const thumb = make("div", "file-thumb");
     const image = document.createElement("img");
-    image.src = `./assets/thumbs/${id}.jpg`;
+    image.src = `./assets/thumbs/${id}.jpg?v=3`; // v naik tiap thumbnail dibuat ulang, supaya cache browser tidak menahan yang lama
     image.alt = "";
     image.loading = "lazy";
     image.addEventListener("error", () => image.remove());
