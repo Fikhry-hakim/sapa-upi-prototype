@@ -323,16 +323,18 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
         query.set("from", dashboard.from);
         query.set("to", dashboard.to);
       }
-      const [overview, interactions] = await Promise.all([
+      const [overview, interactions, questions] = await Promise.all([
         api(`/admin/overview?${query}`),
         api(`/admin/interactions?${new URLSearchParams({ page: dashboard.page, ...(dashboard.outcome ? { outcome: dashboard.outcome } : {}), ...(dashboard.category ? { category: dashboard.category } : {}) })}`),
+        // Dashboard tetap tampil kalau daftar pertanyaan gagal dimuat (mis. migrasi belum dijalankan).
+        api(`/admin/top-questions?${query}`).catch(() => null),
       ]);
       dashboard.data = overview;
-      draw(root, overview, interactions);
+      draw(root, overview, interactions, questions?.topQuestions ?? null);
     });
   }
 
-  function draw(root, overview, interactions) {
+  function draw(root, overview, interactions, topQuestions = null) {
     root.replaceChildren();
     const s = overview.summary;
 
@@ -486,6 +488,9 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       evaluationCard(),
     );
     root.append(more);
+
+    /* --- pertanyaan teratas --- */
+    root.append(topQuestionsCard(topQuestions));
 
     /* --- kondisi sumber --- */
     root.append(sourceCard(overview.documents));
@@ -650,11 +655,83 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     return wrap;
   }
 
+  const SIDE_INFO = {
+    terjawab: { label: "Terjawab", note: "Dijawab dari dokumen resmi." },
+    pengguna: { label: "Sisi pengguna", note: "Di luar dokumen yang tersedia, atau pertanyaannya kurang jelas." },
+    ai_data: { label: "Sisi AI & data", note: "Bukti lemah di knowledge base, atau model dan sistem gagal." },
+  };
+
+  /** Pertanyaan yang paling sering diajukan, dengan dugaan sisi masalahnya (pengguna atau AI dan data). */
+  function topQuestionsCard(data) {
+    const wrap = make("section", "panel-card");
+    const head = make("div", "panel-card-head");
+    const text = make("div");
+    text.append(
+      make("h2", "", "Pertanyaan Teratas"),
+      make("p", "", "Pertanyaan yang paling sering diajukan, untuk memeriksa apakah masalahnya ada di pengguna atau di AI dan data."),
+    );
+    head.append(text);
+    wrap.append(head);
+
+    if (!data) {
+      wrap.append(make("p", "owner-note", "Data pertanyaan belum tersedia."));
+      return wrap;
+    }
+    if (!data.recorded) {
+      wrap.append(make("p", "owner-note", "Belum ada pertanyaan tercatat pada periode ini. Teks pertanyaan hanya dicatat bila pengguna mengaktifkan Improve SAPA UPI, tanpa identitas."));
+      return wrap;
+    }
+
+    const split = make("div", "side-split");
+    for (const key of ["terjawab", "pengguna", "ai_data"]) {
+      const item = make("div", `side-card side-${key}`);
+      item.append(
+        make("strong", "", `${nf.format(data.sides[key])} (${formatPercent((data.sides[key] / data.recorded) * 100)})`),
+        make("span", "", SIDE_INFO[key].label),
+        make("small", "", SIDE_INFO[key].note),
+      );
+      split.append(item);
+    }
+    wrap.append(split);
+
+    const table = make("table", "owner-table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    for (const column of ["#", "Pertanyaan", "Jumlah", "Rincian Hasil", "Dugaan Sisi Masalah"]) headRow.append(make("th", "", column));
+    thead.append(headRow);
+
+    const tbody = document.createElement("tbody");
+    data.questions.forEach((item, index) => {
+      const tr = document.createElement("tr");
+      const breakdown = make("td", "breakdown-cell");
+      for (const [outcome, count] of Object.entries(item.counts)) {
+        if (count) breakdown.append(make("span", `outcome-pill outcome-${outcome}`, `${OUTCOME[outcome]?.label ?? outcome} ${count}`));
+      }
+      const side = make("td");
+      side.append(make("span", `side-pill side-${item.side}`, SIDE_INFO[item.side].label));
+      tr.append(make("td", "", String(index + 1)), make("td", "question-cell", item.question), make("td", "", nf.format(item.total)), breakdown, side);
+      tbody.append(tr);
+    });
+    stackLabels(thead, tbody);
+    table.append(thead, tbody);
+    const scroll = make("div", "table-scroll");
+    scroll.append(table);
+    wrap.append(scroll);
+    wrap.append(
+      make(
+        "p",
+        "owner-note",
+        `${nf.format(data.recorded)} interaksi dengan teks tercatat dari ${nf.format(data.unique)} pertanyaan berbeda. Hanya dari pengguna yang mengaktifkan Improve SAPA UPI; teks dipotong 200 karakter, tanpa identitas, email dan angka panjang disamarkan.`,
+      ),
+    );
+    return wrap;
+  }
+
   function activityCard(root, overview, interactions) {
     const wrap = make("section", "panel-card");
     const head = make("div", "panel-card-head");
     const text = make("div");
-    text.append(make("h2", "", "Aktivitas Interaksi Terakhir"), make("p", "", "Log penanganan percakapan mahasiswa. Isi pertanyaan tidak disimpan."));
+    text.append(make("h2", "", "Aktivitas Interaksi Terakhir"), make("p", "", "Log penanganan percakapan mahasiswa. Teks pertanyaan hanya tercatat bila pengguna mengaktifkan Improve SAPA UPI, tanpa identitas."));
     head.append(text);
 
     const chips = make("div", "chips");
@@ -722,6 +799,10 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       const pill = make("span", `outcome-pill outcome-${row.outcome}`, OUTCOME[row.outcome]?.label ?? row.outcome);
       outcomeCell.append(pill);
 
+      const categoryCell = make("td");
+      categoryCell.append(make("span", "", row.category ?? "—"));
+      if (row.question) categoryCell.append(make("small", "row-question", row.question));
+
       const referenceCell = make("td", "reference-cell");
       referenceCell.textContent = row.documentId ? `${row.documentId.replaceAll("-", " ")}${row.page ? ` • hal. ${row.page}` : ""}` : "—";
 
@@ -731,7 +812,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       tr.append(
         make("td", "interaction-id", row.code),
         timeCell,
-        make("td", "", row.category ?? "—"),
+        categoryCell,
         outcomeCell,
         referenceCell,
         make("td", "", row.durationMs ? `${(row.durationMs / 1000).toFixed(1)}s` : "—"),

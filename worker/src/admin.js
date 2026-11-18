@@ -28,7 +28,7 @@ import {
 import { suggestDocumentFields } from "./document-suggest.js";
 import { clientKey, hit } from "./rate-limit.js";
 import { feedbackSummary } from "./feedback.js";
-import { INTERACTION_PAGE_SIZE, listInteractions, outcomeTotals, summarize, windowFor } from "./events.js";
+import { INTERACTION_PAGE_SIZE, listInteractions, outcomeTotals, summarize, topQuestions, windowFor } from "./events.js";
 
 function json(body, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(body), {
@@ -105,6 +105,18 @@ export async function handleAdmin(request, env, cors, path) {
       feedbackSummary(db, window).catch(() => null),
     ]);
     return json({ summary, documents: documentStats(docs), totals, feedback, role: assignment }, { headers });
+  }
+
+  if (path === "/admin/top-questions" && method === "GET") {
+    const window = windowFor(
+      url.searchParams.get("range") ?? "mingguan",
+      Date.now(),
+      url.searchParams.get("from"),
+      url.searchParams.get("to"),
+    );
+    // Kolom question baru ada setelah migrasi schema-question.sql; sebelum itu Dashboard tetap jalan tanpanya.
+    const result = await topQuestions(db, window).catch(() => null);
+    return json({ topQuestions: result }, { headers });
   }
 
   if (path === "/admin/interactions" && method === "GET") {

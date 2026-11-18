@@ -88,15 +88,15 @@ Pilihan ini disengaja, tetapi ukurannya sudah di batas atas untuk "tanpa framewo
 | Berbagi | `shares` | Potret chat yang dibagikan, di bawah token acak 128 bit yang bisa dicabut |
 | Berkas dicari | `seen_documents` | Id dokumen yang pernah dicari tiap akun (tanpa isi pertanyaan) |
 | Dokumen unggahan | `documents`, `passages` (FTS5) | Metadata dan status validasi, teks per halaman |
-| Analitik | `events`, `feedback`, `audit_log` | Hasil jawaban dan penilaian singkat (tanpa teks pertanyaan dan tanpa identitas), log setiap perubahan admin |
+| Analitik | `events`, `feedback`, `audit_log` | Hasil jawaban (dengan teks pertanyaan bila Improve aktif, tanpa identitas), penilaian singkat, log setiap perubahan admin |
 | Performa dan pengaman | `answer_cache`, `rate_limits` | Cache jawaban 12 jam, penghitung pembatasan laju |
 
-Skema dasar: [`worker/schema.sql`](worker/schema.sql), [`schema-auth.sql`](worker/schema-auth.sql), [`schema-owner.sql`](worker/schema-owner.sql). Migrasi untuk basis data yang sudah ada: `schema-password`, `-upload-fields`, `-hardening`, `-feedback`, `-idle-session`, `-category-merge`, `-archive`, `-share`, `-cache`, `-seen` — dijalankan manual dengan `wrangler d1 execute ... --file`, selalu **sebelum** deploy Worker yang memakainya.
+Skema dasar: [`worker/schema.sql`](worker/schema.sql), [`schema-auth.sql`](worker/schema-auth.sql), [`schema-owner.sql`](worker/schema-owner.sql). Migrasi untuk basis data yang sudah ada: `schema-password`, `-upload-fields`, `-hardening`, `-feedback`, `-idle-session`, `-category-merge`, `-archive`, `-share`, `-cache`, `-seen`, `-question` — dijalankan manual dengan `wrangler d1 execute ... --file`, selalu **sebelum** deploy Worker yang memakainya.
 
 Keputusan desain yang masih berlaku:
 
 - **Metadata sumber disimpan sebagai kolom, bukan prosa.** Sitasi dirender dari data, jadi tidak bisa dikarang model.
-- **Analitik tanpa identitas dan tanpa teks pertanyaan.** `events` dan `feedback` hanya menyimpan hasilnya; kalau pengguna mematikan "Improve SAPA UPI", interaksinya tidak dicatat sama sekali. Riwayat chat terpisah dan tidak ada jalur bagi admin untuk membacanya.
+- **Analitik tanpa identitas.** `events` tidak menyimpan siapa yang bertanya. Teks pertanyaan dicatat **hanya bila pengguna mengaktifkan "Improve SAPA UPI"** (aktif secara baku): dirapikan, dipotong 200 karakter, email dan angka panjang (NIM, telepon) disamarkan, dan klik-angka tidak dicatat. Kalau pengguna mematikannya, interaksinya tidak dicatat sama sekali. Riwayat chat terpisah dan tidak ada jalur bagi admin untuk membacanya.
 - **Tautan bagikan menyimpan potret**, bukan rujukan ke chat hidup: pesan yang ditambahkan sesudahnya, nama, dan email pemilik tidak ikut.
 
 Menambah topik kurasi tidak perlu deploy: cukup `INSERT`. `data/knowledge-base.js` adalah benih sekaligus cadangan offline; `worker/seed.mjs` mengubahnya menjadi SQL (menimpa entri dengan id yang sama).
@@ -240,7 +240,6 @@ Bagian ini sama pentingnya dengan yang di atas. Jangan dianggap sudah selesai:
 |---|---|
 | **Pencarian semantik (embedding)** | Belum ada. Diperlukan begitu dokumen bertambah banyak. Kandidat: Cloudflare Vectorize. |
 | **Penguncian di sisi Worker** | Gerbang login hanya di browser; `/ask` masih bisa dipanggil langsung tanpa token. Perlu pemeriksaan token di Worker kalau ingin benar-benar tertutup. |
-| **Teks pertanyaan di analitik** | Tidak disimpan (Dashboard hanya mencatat hasil). Daftar "pertanyaan teratas" untuk membedakan masalah AI dan pengguna butuh keputusan privasi dulu: simpan teks (hanya bila Improve aktif, dipotong, disamarkan) atau hanya statistik per topik. |
 | **Notifikasi email** | Belum ada penyedia email; tab Notifications di Settings disembunyikan. |
 | **Formulir login manual** | Disembunyikan sementara; hanya Google yang tersedia di layar masuk. |
 | **Penyimpanan berkas (R2)** | Belum diaktifkan (perlu kartu pembayaran untuk mulai). Sekarang memakai KV, cukup untuk berkas ≤24 MB. |

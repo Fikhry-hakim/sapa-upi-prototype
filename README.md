@@ -37,7 +37,7 @@ Kalau Gemini gagal atau lambat, Worker membalas 502 dan browser menampilkan **ja
 - Mode terang dan gelap, tampilan responsif dari ponsel sampai layar lebar.
 
 **Untuk pengelola** (akun yang punya baris di `staff_roles`)
-- **Dashboard**: kartu KPI, grafik analitik, log interaksi dengan filter, ekspor Excel (timestamp asli, filter di lembar Aktivitas, grafik), CSV rekap, dan PDF.
+- **Dashboard**: kartu KPI, grafik analitik, **Pertanyaan Teratas** (pertanyaan yang paling sering diajukan, dengan dugaan sisi masalahnya: pengguna atau AI dan data), log interaksi dengan filter, ekspor Excel (timestamp asli, filter di lembar Aktivitas, grafik), CSV rekap, dan PDF.
 - **Metrics**: 10 KPI sesuai Lampiran A.
 - **Knowledge Base**: daftar dokumen, validasi, sakelar RAG, proses ulang teks, tandai tidak berlaku, hapus, log audit.
 - **Upload dokumen**: pilih PDF, **AI mengisi** nama, kategori, penerbit, nomor surat, tanggal, periode, dan deskripsi dari isi berkas; wajib melalui **pratinjau** (halaman 1, isian, cuplikan isi) sebelum dikirim. Dokumen baru berstatus *Menunggu Validasi* dan belum dipakai menjawab.
@@ -152,7 +152,7 @@ Seed **menimpa** setiap entri yang id-nya sama, jadi jangan dijalankan kalau ada
 
 ### Skema dan migrasi
 
-Instalasi baru: `schema.sql`, `schema-auth.sql`, `schema-owner.sql`. Basis data yang sudah ada dimigrasi manual dengan `wrangler d1 execute sapa-upi-kb --remote --file=<berkas>`, selalu **sebelum** deploy Worker yang memakainya: `schema-password.sql`, `schema-upload-fields.sql`, `schema-hardening.sql`, `schema-feedback.sql`, `schema-idle-session.sql`, `schema-category-merge.sql`, `schema-archive.sql`, `schema-share.sql`, `schema-cache.sql`, `schema-seen.sql`.
+Instalasi baru: `schema.sql`, `schema-auth.sql`, `schema-owner.sql`. Basis data yang sudah ada dimigrasi manual dengan `wrangler d1 execute sapa-upi-kb --remote --file=<berkas>`, selalu **sebelum** deploy Worker yang memakainya: `schema-password.sql`, `schema-upload-fields.sql`, `schema-hardening.sql`, `schema-feedback.sql`, `schema-idle-session.sql`, `schema-category-merge.sql`, `schema-archive.sql`, `schema-share.sql`, `schema-cache.sql`, `schema-seen.sql`, `schema-question.sql`.
 
 Memberi peran pengelola:
 
@@ -182,7 +182,7 @@ Pencocokan kata kunci biasa gampang salah pilih, jadi `lib/search.js` memakai:
 - Kuota Gemini akun gratis terbatas, dan sesekali lambat di sisi Google. Hedging, anggaran 20 detik, dan cache mengurangi gejalanya; kalau tetap gagal, jawaban cadangan dari knowledge base tampil.
 - Notifikasi email belum ada (tab Notifications di Settings disembunyikan).
 - Daftar "berkas yang sudah dicari" untuk pengunjung yang belum login tersimpan di browser; untuk akun yang login tersimpan di server.
-- Teks pertanyaan tidak disimpan di analitik (Dashboard hanya mencatat hasil). Riwayat chat pribadi terpisah dan hanya terbaca pemiliknya.
+- Teks pertanyaan dicatat di analitik **hanya bila pengguna mengaktifkan "Improve SAPA UPI"** (aktif secara baku): dipotong 200 karakter, tanpa identitas, email dan angka panjang (NIM, telepon) disamarkan. Kalau dimatikan, interaksinya tidak dicatat sama sekali. Riwayat chat pribadi terpisah dan hanya terbaca pemiliknya.
 
 ## CI dan deploy
 

@@ -72,7 +72,7 @@ test("the dashboard workbook carries the cards, both charts, and the data they r
       series: [{ label: "Minggu 1", total: 0 }, { label: "Minggu 2", total: 8 }],
     },
     documents: { total: 3, ready: 3, validating: 0, readiness: 100 },
-    interactions: [{ code: "INT-1", at: "2026-10-20 03:00:00", category: "Sidang & <Skripsi>", outcome: "gangguan_teknis", ok: false, durationMs: 1500 }],
+    interactions: [{ code: "INT-1", at: "2026-10-20 03:00:00", category: "Sidang & <Skripsi>", question: "Apa syarat sidang?", outcome: "gangguan_teknis", ok: false, durationMs: 1500 }],
     outcomes,
     sources: [{ key: "ready", label: "Siap Digunakan", color: "#2e9e6b", note: "Tervalidasi" }],
     exportedAt: "20 Oktober 2026",
@@ -106,9 +106,10 @@ test("the dashboard workbook carries the cards, both charts, and the data they r
 
   // Waktu: angka waktu asli Excel (jam WIB), bukan teks "Hari ini 10:00", dengan filter di lembar Aktivitas.
   const activity = read("xl/worksheets/sheet3.xml");
-  assert.match(activity, /<autoFilter ref="A1:H2"\/>/);
+  assert.match(activity, /<autoFilter ref="A1:I2"\/>/);
   assert.match(activity, /<c r="B2" s="\d+"><v>46315\.41666667<\/v><\/c>/); // 2026-10-20 03:00 UTC = 10:00 WIB
   assert.ok(!activity.includes("Hari ini"));
+  assert.ok(activity.includes("Apa syarat sidang?"), "the question text is exported next to its outcome");
   assert.match(read("xl/styles.xml"), /<numFmt numFmtId="164" formatCode="yyyy-mm-dd hh:mm:ss"\/>/);
 });
 

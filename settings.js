@@ -690,7 +690,7 @@ export function createSettings(deps) {
         row({ title: "Shared Links", text: "Manage links to conversations you have shared.", control: button("Manage", openSharedLinks) }),
         row({
           title: "Improve SAPA UPI",
-          text: "Allow conversations to help improve the SAPA UPI academic assistant.",
+          text: "Allow your questions to be recorded anonymously, without your name or email, so the team can see what is asked and improve the assistant.",
           control: toggle(prefs.improve, (on) => {
             prefs.improve = on;
             savePrefsNow();

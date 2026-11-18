@@ -46,24 +46,67 @@ export function classifyOutcome({ failed = false, entryCount = 0, status = "matc
   return "berbasis_sumber";
 }
 
+/** Panjang maksimum teks pertanyaan yang dicatat. */
+export const MAX_QUESTION_CHARS = 200;
+
+/**
+ * Pertanyaan untuk log interaksi: spasi dirapikan, email dan angka panjang (NIM, nomor telepon)
+ * disamarkan, tanda baca penutup dibuang supaya pertanyaan yang sama dikelompokkan jadi satu,
+ * dan dipotong. null untuk pertanyaan yang terlalu pendek atau bukan pertanyaan pengguna.
+ */
+export function sanitizeQuestion(text) {
+  const clean = String(text ?? "")
+    .replace(/\s+/g, " ")
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email]")
+    .replace(/\d[\d\s().-]{4,}\d/g, (digits) => (digits.replace(/\D/g, "").length >= 6 ? "[angka]" : digits))
+    .replace(/[\s?!.]+$/, "")
+    .trim()
+    .slice(0, MAX_QUESTION_CHARS)
+    .trim();
+  return clean.length >= 3 ? clean : null;
+}
+
+/** Sisi yang kemungkinan menjadi sumber masalah menurut hasil jawaban. */
+export const SIDE = {
+  berbasis_sumber: "terjawab",
+  klarifikasi: "pengguna", // pertanyaan cocok dengan beberapa topik atau kurang jelas
+  di_luar_cakupan: "pengguna", // pertanyaan di luar dokumen yang tersedia
+  bukti_terbatas: "ai_data", // rujukan ada tetapi lemah: periksa knowledge base
+  gangguan_teknis: "ai_data", // model atau sistem gagal
+};
+
 export async function recordEvent(db, event) {
   if (!db) return;
-  await db
-    .prepare(
-      `INSERT INTO events (outcome, entry_id, category, document_id, page, duration_ms, source, signed_in)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(
-      event.outcome,
-      event.entryId ?? null,
-      event.category ?? null,
-      event.documentId ?? null,
-      event.page ?? null,
-      event.durationMs ?? null,
-      event.source ?? null,
-      event.signedIn ? 1 : 0,
-    )
-    .run();
+  const base = [
+    event.outcome,
+    event.entryId ?? null,
+    event.category ?? null,
+    event.documentId ?? null,
+    event.page ?? null,
+    event.durationMs ?? null,
+    event.source ?? null,
+    event.signedIn ? 1 : 0,
+  ];
+  const question = event.question ? sanitizeQuestion(event.question) : null;
+  try {
+    await db
+      .prepare(
+        `INSERT INTO events (outcome, entry_id, category, document_id, page, duration_ms, source, signed_in, question)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(...base, question)
+      .run();
+  } catch (error) {
+    // Sebelum migrasi schema-question.sql kolom question belum ada: log tetap dicatat, tanpa teksnya.
+    if (!/question/i.test(String(error?.message))) throw error;
+    await db
+      .prepare(
+        `INSERT INTO events (outcome, entry_id, category, document_id, page, duration_ms, source, signed_in)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(...base)
+      .run();
+  }
 }
 
 /* ------------------------------------------------------------ rentang waktu */
@@ -264,7 +307,7 @@ export async function listInteractions(db, { outcome = null, category = null, pa
   const totalRow = await db.prepare(`SELECT COUNT(*) AS n FROM events ${where}`).bind(...bindings).first();
   const { results } = await db
     .prepare(
-      `SELECT id, at, outcome, category, document_id, page, duration_ms, source
+      `SELECT id, at, outcome, category, document_id, page, duration_ms, source, question
          FROM events ${where}
         ORDER BY id DESC LIMIT ? OFFSET ?`,
     )
@@ -283,6 +326,7 @@ export async function listInteractions(db, { outcome = null, category = null, pa
       documentId: row.document_id,
       page: row.page,
       durationMs: row.duration_ms,
+      question: row.question ?? null,
       ok: row.outcome !== "gangguan_teknis",
     })),
   };
@@ -298,4 +342,53 @@ export async function outcomeTotals(db) {
     all += row.n;
   }
   return { all, ...totals };
+}
+
+
+/**
+ * Pertanyaan yang paling sering diajukan pada sebuah periode, dengan rincian hasil dan sisi masalahnya.
+ * Pertanyaan yang sama (tanpa membedakan huruf besar) dihitung satu. Hanya interaksi yang
+ * mencatat teksnya (pengguna mengaktifkan "Improve SAPA UPI") yang ikut.
+ */
+export async function topQuestions(db, window, { limit = 10 } = {}) {
+  const { results } = await db
+    .prepare(
+      `SELECT lower(question) AS key, MIN(question) AS question, outcome, COUNT(*) AS n
+         FROM events
+        WHERE at >= ? AND at < ? AND question IS NOT NULL AND question <> ''
+        GROUP BY lower(question), outcome
+        LIMIT 5000`,
+    )
+    .bind(sqlTime(window.start), sqlTime(window.end))
+    .all();
+
+  const byQuestion = new Map();
+  for (const row of results ?? []) {
+    const item = byQuestion.get(row.key) ?? { question: row.question, total: 0, counts: Object.fromEntries(OUTCOMES.map((o) => [o, 0])) };
+    if (row.outcome in item.counts) item.counts[row.outcome] += row.n;
+    item.total += row.n;
+    byQuestion.set(row.key, item);
+  }
+
+  const rank = [...byQuestion.values()].sort((a, b) => b.total - a.total || a.question.localeCompare(b.question));
+  const withSide = (item) => {
+    const sides = { terjawab: 0, pengguna: 0, ai_data: 0 };
+    for (const outcome of OUTCOMES) sides[SIDE[outcome]] += item.counts[outcome];
+    // Sisi yang dilaporkan: yang bermasalah paling banyak; terjawab hanya bila tidak ada masalah yang lebih banyak darinya.
+    const problem = sides.ai_data > sides.pengguna ? "ai_data" : sides.pengguna > 0 ? "pengguna" : null;
+    const side = problem && sides[problem] >= sides.terjawab ? problem : "terjawab";
+    return { ...item, side, sides };
+  };
+
+  const all = rank.map(withSide);
+  const recorded = all.reduce((sum, item) => sum + item.total, 0);
+  const totals = { terjawab: 0, pengguna: 0, ai_data: 0 };
+  for (const item of all) for (const key of Object.keys(totals)) totals[key] += item.sides[key];
+
+  return {
+    recorded, // interaksi yang teksnya tercatat pada periode ini
+    unique: all.length,
+    sides: totals,
+    questions: all.slice(0, limit),
+  };
 }

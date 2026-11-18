@@ -198,6 +198,7 @@ async function handleAsk(request, env, cors, ctx) {
         durationMs: Date.now() - startedAt,
         source: "berkas",
         signedIn: Boolean(user),
+        question,
       }).catch((error) => console.warn("events: gagal mencatat —", error.message));
       ctx?.waitUntil?.(task);
       const savedTo = await recordExchange(db, user, { conversationId, question, answer, entryId: null, source: "berkas" }).catch(() => null);
@@ -289,6 +290,8 @@ async function handleAsk(request, env, cors, ctx) {
       durationMs: Date.now() - startedAt,
       source: failed ? "gagal" : "llm",
       signedIn: Boolean(user),
+      // Klik-angka bukan pertanyaan pengguna; teks hanya dicatat bila Improve aktif (recordEvent tidak dipanggil kalau tidak).
+      question: clicked ? null : question,
     }).catch((error) => console.warn("events: gagal mencatat —", error.message));
     ctx?.waitUntil?.(task);
   };
