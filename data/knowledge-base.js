@@ -1759,7 +1759,7 @@ export const knowledgeBase = [
       "Apa kewajiban peserta magang setelah MSIB?",
       "Bagaimana penilaian mentor MSIB?",
     ],
-    keywords: ["msib", "magang", "studi independen", "laporan msib", "logbook", "pks", "ia", "implementation of agreement", "penilaian mentor", "angkatan 2022"],
+    keywords: ["msib", "magang msib", "studi independen", "laporan msib", "logbook", "pks", "ia", "implementation of agreement", "penilaian mentor", "angkatan 2022"],
     lead: "Berdasarkan Surat Edaran Nomor 092 Tahun 2025 untuk mahasiswa Prodi Bisnis Digital angkatan 2022 (berlaku untuk MSIB Batch 8):",
     points: [
       "Mahasiswa melaksanakan MSIB di tempat yang sudah ditentukan dan melaporkan progres secara berkala kepada Dosen Pembimbing.",
@@ -2225,7 +2225,7 @@ export const knowledgeBase = [
     questions: ["Apa syarat magang di Bisnis Digital?", "Berapa lama magang dan berapa SKS yang dikonversi?"],
     followUps: ["Mata kuliah apa saja yang dikonversi dari magang?", "Siapa saja dosen pembimbing magang bertugas apa?"],
     hints: ["Syarat magang mandiri apa saja?", "Bedanya magang merdeka dan magang mandiri?"],
-    keywords: ["buku magang", "magang mandiri", "magang merdeka", "magang profesional", "pkl bisnis digital"],
+    keywords: ["buku magang", "magang", "magang mandiri", "magang merdeka", "magang profesional", "pkl bisnis digital", "kriteria magang", "syarat magang", "persyaratan magang", "ketentuan magang", "kriteria mitra magang", "mitra magang"],
     lead: "Program Magang Profesional Bisnis Digital menurut Buku Petunjuk Program Studi Bisnis Digital:",
     points: [
       "Magang Merdeka MBKM: 1 semester di semester 7, dikonversi 20 SKS, tempat dipilih lewat pendaftaran di website MBKM. Syarat: sudah menyelesaikan semester 6 dan semua mata kuliah MKKIPS, mengontrak PKL di semester 7 dengan persetujuan dosen PA, punya surat rekomendasi dari kampus daerah, SPTJM, dan transkrip nilai.",
@@ -2248,7 +2248,7 @@ export const knowledgeBase = [
     questions: ["Mata kuliah apa yang dikonversi dari magang?", "Bagaimana penilaian dan monitoring magang?"],
     followUps: ["Apa syarat magang di Bisnis Digital?", "Apa kriteria mitra magang?"],
     hints: ["Konversi SKS magang ke mata kuliah apa?", "Berapa kali dosen memonitor magang?"],
-    keywords: ["konversi magang", "mata kuliah konversi magang", "penilaian magang", "logbook magang", "monitoring magang"],
+    keywords: ["konversi magang", "mata kuliah konversi magang", "penilaian magang", "kriteria penilaian magang", "bobot penilaian magang", "logbook magang", "monitoring magang"],
     lead: "Konversi, penilaian, dan monitoring magang menurut Buku Petunjuk Magang Prodi Bisnis Digital:",
     points: [
       "Pengakuan pengalaman magang maksimal 20 SKS, dikonversi ke mata kuliah keahlian pilihan prodi yang sesuai kegiatan magang.",

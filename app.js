@@ -26,6 +26,7 @@ function make(tag, className, text) {
 
 /** Ikon sebagai string SVG; dipakai di tempat yang dibangun dari JS. */
 const ICON = {
+  edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
   copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15V6.2A2.2 2.2 0 0 1 7.2 4H15"/></svg>',
   more: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="12" cy="18.5" r="1.4" /></svg>',
   chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z"/><path d="M9 11.5h.01M12 11.5h.01M15 11.5h.01"/></svg>',
@@ -510,7 +511,38 @@ function appendUserMessage(question, documentId) {
     chip.append(make("span", "", doc.title));
     refs.chatLog.append(chip);
   }
-  refs.chatLog.append(make("p", "bubble", question));
+  refs.chatLog.append(make("p", "bubble", question), userActions(question));
+}
+
+/** Salin dan ubah pertanyaan sendiri. Mengubah memuat teksnya kembali ke kolom ketik untuk dikirim lagi. */
+function userActions(question) {
+  const row = make("div", "bubble-actions");
+
+  const copy = make("button", "bubble-action");
+  copy.type = "button";
+  copy.innerHTML = ICON.copy;
+  copy.setAttribute("aria-label", "Salin pertanyaan");
+  copy.title = "Salin pertanyaan";
+  copy.addEventListener("click", async () => {
+    await copyText(question, "Pertanyaan disalin.");
+    copy.innerHTML = ICON.check;
+    setTimeout(() => (copy.innerHTML = ICON.copy), 1600);
+  });
+
+  const edit = make("button", "bubble-action");
+  edit.type = "button";
+  edit.innerHTML = ICON.edit;
+  edit.setAttribute("aria-label", "Ubah pertanyaan");
+  edit.title = "Ubah pertanyaan";
+  edit.addEventListener("click", () => {
+    refs.question.value = question.slice(0, 300);
+    resizeComposer();
+    refs.question.focus();
+    refs.question.setSelectionRange(refs.question.value.length, refs.question.value.length);
+  });
+
+  row.append(copy, edit);
+  return row;
 }
 
 function createBotCard() {
@@ -614,7 +646,7 @@ function fileResults(ids) {
 
 function renderReferences(entry, parent, served = null, many = []) {
   // Beberapa dokumen: semuanya ditampilkan, yang terbaru paling atas dan bertanda.
-  if (many?.length > 1) return renderManyReferences(entry, parent, many);
+  if (many?.length > 1 || many?.some((item) => item.related)) return renderManyReferences(entry, parent, many);
   // Jawaban dari dokumen unggahan membawa rujukannya sendiri dari Worker.
   const citation = served ?? citationFor(entry);
   if (citation?.document) markSeen(citation.document);
@@ -655,8 +687,10 @@ function sourceChip(citation) {
 }
 
 /** Dua dokumen atau lebih: yang terbaru ditonjolkan sebagai yang berlaku. */
-function renderManyReferences(entry, parent, citations) {
-  markSeen(...citations.map((item) => item.document).filter(Boolean));
+function renderManyReferences(entry, parent, allCitations) {
+  markSeen(...allCitations.map((item) => item.document).filter(Boolean));
+  const citations = allCitations.filter((item) => !item.related);
+  const related = allCitations.filter((item) => item.related);
   const box = make("div", "refs refs-many");
   box.append(make("p", "refs-label", "SUMBER DOKUMEN RESMI"));
   const list = make("div", "refs-stack");
@@ -668,7 +702,8 @@ function renderManyReferences(entry, parent, citations) {
     if (item.newest) head.append(make("span", "ref-badge", "Terbaru · berlaku"));
     else if (newest) head.append(make("span", "ref-badge ref-badge-old", "Sebelumnya"));
     if (item.updatedAt) head.append(make("span", "ref-date", item.updatedAt));
-    row.append(head, sourceChip(item));
+    if (head.children.length) row.append(head);
+    row.append(sourceChip(item));
     list.append(row);
   }
   box.append(list);
@@ -682,6 +717,19 @@ function renderManyReferences(entry, parent, citations) {
       ),
     );
   }
+
+  // Dokumen serupa yang mungkin berguna juga; bukan dasar jawaban di atas.
+  if (related.length) {
+    box.append(make("p", "refs-label refs-label-related", "DOKUMEN TERKAIT"));
+    const more = make("div", "refs-stack");
+    for (const item of related) {
+      const row = make("div", "ref-row");
+      row.append(sourceChip(item));
+      more.append(row);
+    }
+    box.append(more);
+  }
+
   box.append(make("p", "ref-note escalation-note", contactNote(entry)));
   box.append(ultNote());
   parent.append(box);

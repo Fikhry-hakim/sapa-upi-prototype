@@ -9,7 +9,7 @@ import { classifyOutcome, recordEvent } from "./events.js";
 import { addSeen, listSeen } from "./seen-documents.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
-import { sourceSet } from "../../lib/source-set.js";
+import { relatedSources, sourceSet } from "../../lib/source-set.js";
 import { catalogDocuments, catalogMessage, fileRequestMessage, findRequestedDocuments, isCatalogQuestion } from "../../lib/doc-request.js";
 import { cleanHistory, contextQuery, mergeContext, needsContext, lastEntries, soundsLikeFollowUp, withAnchor } from "../../lib/followup.js";
 import {
@@ -110,12 +110,13 @@ function retrieve(question, knowledgeBase, { scope = null, excluded = new Set(),
     return { entries: [], status: "none", score: null };
   }
   const ranked = [result.best, ...result.alternatives].filter(Boolean);
+  const scored = ranked;
   const seen = new Set();
   const entries = ranked
     .filter(({ entry }) => (seen.has(entry.id) ? false : seen.add(entry.id)))
     .slice(0, MAX_CONTEXT_ENTRIES)
     .map(({ entry }) => entry);
-  return { entries, status: result.status, score: result.best?.score ?? null };
+  return { entries, status: result.status, score: result.best?.score ?? null, scored };
 }
 
 /** Apakah login sudah dikonfigurasi pada deployment ini. */
@@ -349,7 +350,7 @@ async function handleAsk(request, env, cors, ctx) {
         followUps: top?.followUps ?? [],
         conversationId: savedTo,
         // Semua dokumen yang dipakai jawaban, yang terbaru lebih dulu dan bertanda `newest`.
-        citations: fromPassage ? [] : sourceSet(entries, answer, `${(askedBefore ?? []).map((turn) => turn.q).join(" ")} ${searchText}`).map(publicCitation),
+        citations: fromPassage ? [] : citationsFor(entries, answer, `${(askedBefore ?? []).map((turn) => turn.q).join(" ")} ${searchText}`, askedBefore || clicked ? null : found.scored),
         citation: citation
           ? {
               documentId: citation.documentId,
@@ -382,9 +383,17 @@ async function handleAsk(request, env, cors, ctx) {
 }
 
 /** Bentuk rujukan yang dikirim ke browser untuk satu dokumen sumber. */
-function publicCitation({ citation, updatedAt, newest }) {
+/** Sumber jawaban, ditambah dokumen serupa (maks. 2) bila pencarian menemukannya. Pertanyaan lanjutan dan klik-angka tidak diberi tambahan. */
+function citationsFor(entries, answer, question, scored) {
+  const picked = sourceSet(entries, answer, question);
+  const related = scored ? relatedSources(scored, picked, question) : [];
+  return [...picked, ...related].map(publicCitation);
+}
+
+function publicCitation({ citation, updatedAt, newest, related }) {
   const { document } = citation;
   return {
+    related: Boolean(related),
     documentId: citation.documentId,
     page: citation.page,
     highlight: citation.highlight,

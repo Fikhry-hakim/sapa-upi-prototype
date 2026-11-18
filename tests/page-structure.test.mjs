@@ -277,3 +277,9 @@ test("every answer card carries a copy button", () => {
   assert.match(app, /addCopyButton\(head, copyableAnswer\(response\)\)/);
   assert.match(app, /"Salin jawaban"/);
 });
+
+test("a user's own question can be copied and edited", () => {
+  assert.match(app, /userActions\(question\)/);
+  assert.match(app, /"Ubah pertanyaan"/);
+  assert.match(app, /"Salin pertanyaan"/);
+});

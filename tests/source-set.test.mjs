@@ -81,3 +81,22 @@ test("an answer that names a document by its title instead of its number still l
   const answer = "Menurut Surat Edaran Batas Akhir Pengajuan Cuti Akademik Semester Ganjil 2026/2027, batasnya 16 November.";
   assert.ok(mentions(answer, se68));
 });
+
+import { relatedSources } from "../lib/source-set.js";
+
+test("related documents come from other documents and never from generic words", async () => {
+  const { searchKnowledgeBase } = await import("../lib/search.js");
+  const { knowledgeBase } = await import("../data/knowledge-base.js");
+  const related = (q) => {
+    const r = searchKnowledgeBase(q, knowledgeBase);
+    const ranked = [r.best, ...r.alternatives].filter(Boolean);
+    return relatedSources(ranked, sourceSet([ranked[0].entry], "", q), q).map((item) => item.entry.id);
+  };
+  // Magang: Buku Magang menjawab, surat edaran MSIB disarankan sebagai terkait.
+  assert.deepEqual(related("syarat magang"), ["msib-laporan-akhir"]);
+  // "kriteria" saja bukan pokok yang sama dengan topik penilaian artikel TTG.
+  assert.ok(!related("kriteria magang").includes("ttg-penilaian"));
+  // Sumber utama tidak pernah muncul lagi sebagai terkait.
+  assert.ok(!related("syarat magang").includes("magang-bisnis-digital"));
+  assert.ok(related("syarat magang").length <= 2);
+});

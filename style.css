@@ -5084,3 +5084,40 @@ button.ref-chip:hover {
 .bot-copy.is-copied {
   color: var(--green);
 }
+
+.refs-label-related {
+  margin-top: 14px;
+}
+
+/* Salin dan ubah di bawah pertanyaan pengguna. */
+.bubble-actions {
+  align-self: flex-end;
+  margin: -6px 2px 0;
+  display: flex;
+  gap: 2px;
+}
+.bubble-action {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bubble-action svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bubble-action:hover,
+.bubble-action:focus-visible {
+  background: var(--sidebar-bg);
+  color: var(--ink);
+}

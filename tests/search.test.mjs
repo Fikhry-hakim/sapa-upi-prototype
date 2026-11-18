@@ -312,3 +312,16 @@ test("MK and IA are understood as mata kuliah and Implementation of Agreement", 
     assert.equal(result.best.entry.id, id, query);
   }
 });
+
+test("magang questions are answered from the Buku Magang topics, not the MSIB circular", async () => {
+  const { searchKnowledgeBase } = await import("../lib/search.js");
+  const { knowledgeBase } = await import("../data/knowledge-base.js");
+  const top = (q) => searchKnowledgeBase(q, knowledgeBase).best?.entry.id;
+  assert.equal(top("kriteria magang"), "magang-bisnis-digital");
+  assert.equal(top("syarat magang"), "magang-bisnis-digital");
+  assert.equal(top("kriteria penilaian magang"), "magang-konversi-penilaian");
+  assert.equal(top("kriteria mitra magang"), "magang-bisnis-digital");
+  // Yang memang tentang MSIB tetap ke surat edaran MSIB.
+  assert.equal(top("laporan msib"), "msib-laporan-akhir");
+  assert.equal(top("kewajiban magang msib"), "msib-laporan-akhir");
+});
