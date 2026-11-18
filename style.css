@@ -5049,7 +5049,6 @@ button.ref-chip:hover {
 }
 
 /* Tombol yang disembunyikan untuk pengunjung tanpa login tetap tersembunyi walau kelasnya mengatur display. */
-#history-button[hidden],
 .menu-anchor[hidden] {
   display: none !important;
 }

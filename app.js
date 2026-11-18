@@ -82,7 +82,6 @@ const refs = {
   attachChip: $("attach-chip"),
   attachTitle: $("attach-title"),
   attachRemove: $("attach-remove"),
-  historyButton: $("history-button"),
   shareButton: $("share-button"),
   moreButton: $("more-button"),
   moreMenu: $("more-menu"),
@@ -2271,7 +2270,6 @@ function renderAccount() {
   refs.loginButton.hidden = signedIn || !state.loginEnabled;
   refs.loginNote.hidden = signedIn || !state.loginEnabled;
   refs.profile.hidden = !signedIn;
-  refs.historyButton.hidden = !signedIn; // riwayat hanya ada untuk akun yang masuk
   refs.attachButton.closest(".menu-anchor").hidden = !signedIn; // pilih dokumen khusus hanya untuk akun yang masuk
   if (!signedIn) refs.attachMenu.hidden = true;
 
@@ -2606,7 +2604,6 @@ function initialize() {
   refs.navRecent.addEventListener("click", () =>
     setRecentOpen(refs.navRecent.getAttribute("aria-expanded") !== "true"),
   );
-  refs.historyButton.addEventListener("click", () => refs.navSearch.click());
 
   refs.menuButton.addEventListener("click", openSidebar);
   refs.sidebarClose.addEventListener("click", closeSidebar);

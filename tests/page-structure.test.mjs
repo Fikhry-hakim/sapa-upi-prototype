@@ -257,7 +257,7 @@ test("the viewer offers continuous scrolling and frees far-away pages instead of
 });
 
 test("anonymous visitors do not get the history clock or the document picker", () => {
-  assert.match(app, /refs\.historyButton\.hidden = !signedIn/);
+  assert.ok(!/history-button/.test(html), "the history clock is gone for everyone");
   assert.match(app, /refs\.attachButton\.closest\("\.menu-anchor"\)\.hidden = !signedIn/);
   assert.match(app, /sapa-upi:seen-documents/);
 });
