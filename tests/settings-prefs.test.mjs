@@ -20,7 +20,7 @@ const memory = (seed = {}) => {
 test("preferences default to the design and survive a round trip", () => {
   const storage = memory();
   const prefs = loadPrefs(storage);
-  assert.equal(prefs.language, "auto");
+  assert.equal(prefs.language, "id");
   assert.equal(prefs.notifications.krs, "Push, Email");
   prefs.notifications.krs = "Email";
   prefs.dictation = false;
@@ -33,7 +33,7 @@ test("preferences default to the design and survive a round trip", () => {
 test("stored values that are not valid choices are ignored, not trusted", () => {
   const storage = memory({ "sapa-prefs": JSON.stringify({ language: "xx", notifications: { krs: "SMS" }, dictation: "yes" }) });
   const prefs = loadPrefs(storage);
-  assert.equal(prefs.language, "auto");
+  assert.equal(prefs.language, "id");
   assert.equal(prefs.notifications.krs, "Push, Email");
   assert.equal(prefs.dictation, true);
   assert.deepEqual(loadPrefs(memory({ "sapa-prefs": "{not json" })).voice, { language: "auto" });
@@ -41,7 +41,7 @@ test("stored values that are not valid choices are ignored, not trusted", () => 
 
 test("blocked storage never throws", () => {
   const blocked = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
-  assert.equal(loadPrefs(blocked).language, "auto");
+  assert.equal(loadPrefs(blocked).language, "id");
   assert.equal(savePrefs(blocked, loadPrefs(blocked)), false);
 });
 
@@ -114,4 +114,8 @@ test("every English string in settings.js that is shown has a translation", asyn
   const exempt = new Set(["Bantuan", "Program Studi", "Pihak yang menerbitkan pedoman", "Email", "Telepon", "Alamat", "Laman"]);
   const missing = [...new Set(literals)].filter((text) => !SETTINGS_ID[text] && !exempt.has(text) && /[A-Za-z]/.test(text) && !text.startsWith("Jawaban"));
   assert.deepEqual(missing, [], `no Indonesian text for: ${missing.join(" | ")}`);
+});
+
+test("a stored legacy auto language falls back to Indonesian", () => {
+  assert.equal(loadPrefs(memory({ "sapa-prefs": JSON.stringify({ language: "auto" }) })).language, "id");
 });

@@ -26,7 +26,7 @@ import {
   savePrefs,
   saveShortcuts,
 } from "./lib/settings-prefs.js";
-import { LANG_KEY, detectLanguage, onLangChange } from "./lib/i18n.js";
+import { LANG_KEY, onLangChange } from "./lib/i18n.js";
 import { SETTINGS_EN_FORMATS, SETTINGS_ID, SETTINGS_ID_FORMATS, SETTINGS_MESSAGES_ID } from "./lib/settings-id.js";
 
 const svg = (body) => `<svg viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
@@ -155,12 +155,12 @@ export function createSettings(deps) {
   const noneEl = $("settings-none");
 
   let prefs = loadPrefs(localStorage);
-  // Pilihan lama dari tombol ID/EN di bilah atas: dihormati sampai pengguna memilih "Auto detect".
+  // Pilihan lama dari tombol ID/EN di bilah atas dihormati; selain itu bahasa bawaannya Indonesia.
   try {
     const stored = localStorage.getItem(LANG_KEY);
-    if (prefs.language === "auto" && (stored === "id" || stored === "en")) prefs.language = stored;
+    if ((stored === "id" || stored === "en") && stored !== prefs.language && !localStorage.getItem("sapa-prefs")) prefs.language = stored;
   } catch {
-    // Tanpa penyimpanan: bahasa mengikuti browser.
+    // Tanpa penyimpanan: Indonesia.
   }
   let shortcuts = loadShortcuts(localStorage);
   let current = "general";
@@ -325,7 +325,7 @@ export function createSettings(deps) {
 
   /* ------------------------------------------------------------ tab */
 
-  const LANGUAGE_OPTIONS = [["auto", "Auto detect"], ["id", "Indonesia"], ["en", "English"]];
+  const LANGUAGE_OPTIONS = [["id", "Indonesia"], ["en", "English"]];
 
   function renderGeneral() {
     return [
@@ -336,17 +336,7 @@ export function createSettings(deps) {
           control: select(LANGUAGE_OPTIONS, prefs.language, (value) => {
             prefs.language = value;
             savePrefsNow();
-            if (value === "auto") {
-              // Auto detect: ikuti bahasa browser dan jangan simpan pilihan tetap.
-              try {
-                localStorage.removeItem(LANG_KEY);
-              } catch {
-                // abaikan
-              }
-              setLang(detectLanguage(), { persist: false });
-            } else {
-              setLang(value);
-            }
+            setLang(value);
           }, "Language"),
         }),
       ]),
