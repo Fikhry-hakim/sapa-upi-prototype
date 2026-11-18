@@ -115,12 +115,11 @@ const ICONS = {
   plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
   prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
   next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
-  copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
   download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
 };
 
-export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
+export function createViewer({ onError = () => {} } = {}) {
   const root = document.createElement("div");
   root.className = "viewer";
   root.hidden = true;
@@ -157,7 +156,6 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
           <button type="button" id="viewer-next" aria-label="Halaman berikutnya">${ICONS.next}</button>
         </div>
         <div class="viewer-actions">
-          <button type="button" class="viewer-action" id="viewer-copy">${ICONS.copy}<span>Salin</span></button>
           <a class="viewer-action viewer-action-icon" id="viewer-download" download aria-label="Unduh dokumen">${ICONS.download}</a>
         </div>
       </div>
@@ -190,7 +188,6 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
     next: $("viewer-next"),
     pageNow: $("viewer-page-now"),
     pageTotal: $("viewer-page-total"),
-    copy: $("viewer-copy"),
     download: $("viewer-download"),
     stage: $("viewer-stage"),
     status: $("viewer-status"),
@@ -628,18 +625,6 @@ export function createViewer({ onCopy = () => {}, onError = () => {} } = {}) {
   ui.zoomOut.addEventListener("click", () => zoom(-1));
   ui.modeScroll.addEventListener("click", () => setMode("scroll"));
   ui.modePage.addEventListener("click", () => setMode("page"));
-
-  ui.copy.addEventListener("click", async () => {
-    const quote = state.cited?.text;
-    const where = `${state.doc.title}, ${state.doc.reference}, hal. ${quote ? state.cited.page : state.page}`;
-    const text = quote ? `"${quote}"\n— ${where}` : where;
-    try {
-      await navigator.clipboard.writeText(text);
-      onCopy(quote ? "Kutipan disalin." : "Sumber disalin.");
-    } catch {
-      onCopy("Browser menolak akses papan klip.");
-    }
-  });
 
   root.addEventListener("click", (event) => {
     if (event.target.closest("[data-viewer-close]")) close();

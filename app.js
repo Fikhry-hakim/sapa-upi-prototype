@@ -132,7 +132,7 @@ const state = {
   searchTab: "all",
 };
 
-const viewer = createViewer({ onCopy: (message) => showToast(message) });
+const viewer = createViewer();
 
 /** Membuka dokumen sekaligus mencatatnya sebagai berkas yang sudah dicari. */
 function openDocument(doc, options) {
