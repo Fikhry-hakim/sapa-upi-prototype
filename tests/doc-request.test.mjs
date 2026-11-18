@@ -49,3 +49,32 @@ test("a vague request names no document instead of guessing one", () => {
   assert.deepEqual(findRequestedDocuments("ada file apa aja?"), []);
   assert.equal(isFileRequest("ada file apa aja?"), true);
 });
+
+import { catalogDocuments, catalogMessage, isCatalogQuestion } from "../lib/doc-request.js";
+
+test("questions about what the collection holds are catalog questions", () => {
+  for (const q of [
+    "dokumen apa aja yang udah ada di knowledge base",
+    "apa saja dokumen yang tersedia di SAPA",
+    "daftar dokumen",
+    "list file yang ada",
+    "SAPA punya dokumen apa saja?",
+  ]) assert.equal(isCatalogQuestion(q), true, q);
+});
+
+test("questions about a topic inside documents are not catalog questions", () => {
+  for (const q of [
+    "dokumen apa saja yang diperlukan untuk sidang",
+    "ada file kalender akademik ga",
+    "apa syarat sidang skripsi",
+    "berapa masa studi maksimal",
+  ]) assert.equal(isCatalogQuestion(q), false, q);
+});
+
+test("the catalog lists official documents and counts templates apart", () => {
+  const { official, templates } = catalogDocuments();
+  assert.ok(official.length >= 15);
+  assert.ok(official.every(({ id }) => !id.startsWith("template-")));
+  assert.ok(templates >= 15);
+  assert.match(catalogMessage(official.length, templates), /template formulir/);
+});

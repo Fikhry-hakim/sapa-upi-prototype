@@ -5052,3 +5052,35 @@ button.ref-chip:hover {
 .menu-anchor[hidden] {
   display: none !important;
 }
+
+/* Tombol salin di kepala kartu jawaban. */
+.bot-copy {
+  order: 99;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.bot-copy svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bot-copy:hover,
+.bot-copy:focus-visible {
+  background: var(--sidebar-bg);
+  color: var(--ink);
+}
+.bot-copy.is-copied {
+  color: var(--green);
+}

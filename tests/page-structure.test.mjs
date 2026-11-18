@@ -272,3 +272,8 @@ test("only admins get the document picker; readers and anonymous visitors do not
   assert.ok(!/const isStaff = signedIn/.test(app), "a local isStaff would shadow the global function");
   assert.match(app, /attach: \(\) => \(isStaff\(\)/);
 });
+
+test("every answer card carries a copy button", () => {
+  assert.match(app, /addCopyButton\(head, copyableAnswer\(response\)\)/);
+  assert.match(app, /"Salin jawaban"/);
+});

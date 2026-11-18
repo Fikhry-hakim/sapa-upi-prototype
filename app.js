@@ -4,7 +4,7 @@ import { createChatResponse } from "./lib/chat-engine.js";
 import { clarifiedSentence, clarifyQuestion, isBullet, isExplainable, shouldNumber, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
-import { fileRequestMessage, findRequestedDocuments } from "./lib/doc-request.js";
+import { catalogDocuments, catalogMessage, fileRequestMessage, findRequestedDocuments, isCatalogQuestion } from "./lib/doc-request.js";
 import { createSettings } from "./settings.js";
 import { createOwner } from "./owner.js";
 import { getLang, initLang, onLangChange, setLang } from "./lib/i18n.js";
@@ -26,6 +26,7 @@ function make(tag, className, text) {
 
 /** Ikon sebagai string SVG; dipakai di tempat yang dibangun dari JS. */
 const ICON = {
+  copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15V6.2A2.2 2.2 0 0 1 7.2 4H15"/></svg>',
   more: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="12" cy="18.5" r="1.4" /></svg>',
   chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.6A7.5 7.5 0 1 1 20 11.5z"/><path d="M9 11.5h.01M12 11.5h.01M15 11.5h.01"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
@@ -770,6 +771,34 @@ function feedbackRow(response) {
   return row;
 }
 
+/** Teks jawaban untuk disalin: isi jawabannya saja, tanpa nomor, kartu sumber, atau ajakan. */
+function copyableAnswer(response) {
+  const text = answerText(response).trim();
+  if (response.type !== "files") return text;
+  const titles = (response.files ?? []).map((id) => documents[id]?.title).filter(Boolean);
+  return [text, ...titles.map((title) => `- ${title}`)].filter(Boolean).join("\n");
+}
+
+function addCopyButton(head, text) {
+  head.querySelector(".bot-copy")?.remove();
+  if (!text) return;
+  const button = make("button", "bot-copy");
+  button.type = "button";
+  button.innerHTML = ICON.copy;
+  button.setAttribute("aria-label", "Salin jawaban");
+  button.title = "Salin jawaban";
+  button.addEventListener("click", async () => {
+    await copyText(text, "Jawaban disalin.");
+    button.innerHTML = ICON.check;
+    button.classList.add("is-copied");
+    setTimeout(() => {
+      button.innerHTML = ICON.copy;
+      button.classList.remove("is-copied");
+    }, 1600);
+  });
+  head.append(button);
+}
+
 function fillCard(card, response, { feedback = false, question = "" } = {}) {
   const head = card.querySelector(".bot-head");
   const body = card.querySelector(".bot-body");
@@ -779,6 +808,8 @@ function fillCard(card, response, { feedback = false, question = "" } = {}) {
 
   const entry = response.entry;
   let followUps = null;
+
+  addCopyButton(head, copyableAnswer(response));
 
   if (response.type === "files") {
     head.append(pill("Berkas resmi", "ok"));
@@ -984,9 +1015,16 @@ async function submitQuestion(raw, { topic = null } = {}) {
 
   let answeredLocally = false;
   if (!response) {
-    const asked = state.scopeDocumentId || clarifiedSentence(question) ? [] : findRequestedDocuments(question);
+    const skip = state.scopeDocumentId || clarifiedSentence(question);
+    const catalog = !skip && isCatalogQuestion(question);
+    const { official, templates } = catalogDocuments();
+    const asked = skip ? [] : catalog ? official : findRequestedDocuments(question);
     response = asked.length
-      ? { type: "files", message: fileRequestMessage(asked, getLang()), files: asked.map(({ id }) => id) }
+      ? {
+          type: "files",
+          message: catalog ? catalogMessage(asked.length, templates, getLang()) : fileRequestMessage(asked, getLang()),
+          files: asked.map(({ id }) => id),
+        }
       : createChatResponse(question, scopedEntries(), { topic, lang: getLang() });
     answeredLocally = true;
   }

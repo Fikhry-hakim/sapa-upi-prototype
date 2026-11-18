@@ -10,7 +10,7 @@ import { addSeen, listSeen } from "./seen-documents.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import { sourceSet } from "../../lib/source-set.js";
-import { fileRequestMessage, findRequestedDocuments } from "../../lib/doc-request.js";
+import { catalogDocuments, catalogMessage, fileRequestMessage, findRequestedDocuments, isCatalogQuestion } from "../../lib/doc-request.js";
 import { cleanHistory, contextQuery, mergeContext, needsContext, lastEntries, soundsLikeFollowUp, withAnchor } from "../../lib/followup.js";
 import {
   authenticate,
@@ -181,9 +181,13 @@ async function handleAsk(request, env, cors, ctx) {
   // Orang yang meminta berkasnya ("ada file kalender akademik ga") diberi berkasnya, dibuka dari
   // halaman pertama, bukan kutipan di dalamnya. Tidak perlu model: katalog dokumenlah yang menjawab.
   if (!clicked && typeof scope !== "string") {
-    const asked = findRequestedDocuments(searchText).filter(({ doc }) => !excluded.has(doc.file));
+    const catalog = isCatalogQuestion(searchText);
+    const { official, templates } = catalogDocuments();
+    const asked = catalog
+      ? official.filter(({ doc }) => !excluded.has(doc.file))
+      : findRequestedDocuments(searchText).filter(({ doc }) => !excluded.has(doc.file));
     if (asked.length) {
-      const answer = fileRequestMessage(asked, lang);
+      const answer = catalog ? catalogMessage(asked.length, templates, lang) : fileRequestMessage(asked, lang);
       const task = (improve ? recordEvent : async () => {})(db, {
         outcome: "berbasis_sumber",
         entryId: null,
