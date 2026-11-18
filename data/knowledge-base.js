@@ -250,7 +250,7 @@ export const knowledgeBase = [
     answer:
       "Prodi Bisnis Digital menyediakan tiga jalur penyelesaian tugas akhir: Jalur Skripsi, Jalur Artikel Ilmiah, dan Jalur Karya Teknologi Tepat Guna (TTG). Artikel ilmiah dan karya TTG dapat diakui setara dengan skripsi apabila memenuhi persyaratan yang ditetapkan. Ketiganya tetap diakhiri dengan ujian sidang.",
     escalation:
-      "Hubungi dosen Pembimbing Akademik atau Tim Pertimbangan Skripsi (TPS) untuk menentukan jalur yang paling sesuai.",
+      "Hubungi staf Program Studi Bisnis Digital atau TPTA untuk menentukan jalur yang paling sesuai.",
     ...PEDOMAN_TA,
   },
 
@@ -285,7 +285,7 @@ export const knowledgeBase = [
     answer:
       "Mahasiswa yang akan mengambil mata kuliah skripsi harus telah menyelesaikan minimal 110 SKS dengan IPK minimal 2,50, sudah lulus mata kuliah Metode Penelitian, serta mengontrak mata kuliah skripsi dengan persetujuan dosen Pembimbing Akademik. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (6 November 2026) menetapkan batas minimum UPI paling sedikit 60% beban studi dan proposal paling cepat diajukan semester 6; syarat 110 SKS dan IPK 2,50 di Buku Panduan adalah ketentuan prodi yang lebih ketat dan belum diperbarui dalam dokumen yang tersedia.",
     escalation:
-      "Hubungi dosen Pembimbing Akademik untuk memeriksa pemenuhan SKS dan IPK pada transkrip terakhir.",
+      "Hubungi staf Program Studi Bisnis Digital untuk memeriksa pemenuhan SKS dan IPK pada transkrip terakhir.",
     ...PEDOMAN_TA,
   },
 
@@ -509,7 +509,7 @@ export const knowledgeBase = [
     answer:
       "Mahasiswa jalur skripsi wajib mempublikasikan artikel ilmiah minimal pada jurnal nasional berstatus Accepted atau pada seminar nasional (prosiding) berstatus Accepted, dengan topik yang berhubungan dengan skripsinya. Mahasiswa menjadi penulis pertama dan dosen pembimbing sebagai penulis berikutnya. Referensi yang berasal dari artikel jurnal minimal 25% dari total referensi, dan wajib mengutip penelitian dosen Prodi Bisnis Digital.",
     escalation:
-      "Hubungi dosen pembimbing atau Tim Pertimbangan Skripsi untuk validasi LoA publikasi artikel.",
+      "Hubungi TPTA atau staf Program Studi Bisnis Digital untuk validasi LoA publikasi artikel.",
     ...PEDOMAN_TA,
   },
 
@@ -637,7 +637,7 @@ export const knowledgeBase = [
     answer:
       "Hasil ujian sidang dikategorikan menjadi empat: lulus tanpa perbaikan; lulus dengan perbaikan kecil atau minor dengan waktu perbaikan paling lama 2 minggu sejak tanggal ujian yang meliputi judul, abstrak, daftar pustaka, dan kebahasaan; lulus dengan perbaikan besar atau substansial dengan waktu paling lama 30 hari yang meliputi perubahan orientasi penelitian, analisis data, dan kerangka analisis; serta gagal. Yudisium merupakan prosesi peresmian kelulusan mahasiswa. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) membagi hasil sidang menjadi lulus tanpa perbaikan, lulus dengan perbaikan minor, perbaikan mayor dan ujian ulang, atau tidak lulus; ujian ulang paling banyak 1 kali, paling cepat 14 hari dan paling lambat 30 hari kalender setelah sidang sebelumnya.",
     escalation:
-      "Hubungi dosen pembimbing untuk proses revisi, atau staf prodi untuk status yudisium.",
+      "Hubungi staf Program Studi Bisnis Digital untuk proses revisi dan status yudisium.",
     ...PEDOMAN_TA,
   },
 
@@ -748,7 +748,7 @@ export const knowledgeBase = [
     answer:
       "Artikel ilmiah diakui setara skripsi apabila diterbitkan pada jurnal terakreditasi nasional SINTA 1 sampai 3 atau jurnal internasional bereputasi, dengan ruang lingkup yang sebidang atau relevan dengan body of knowledge program studi. Mahasiswa menjadi penulis pertama dan dua dosen pembimbing sebagai penulis anggota, wajib mensitasi karya dosen yang relevan, serta menggunakan afiliasi dan email upi.edu. Sebelum submit, mahasiswa harus mendapat rekomendasi dari dosen pembimbing. Artikel yang telah terbit atau LoA beserta bukti bayar diserahkan kepada Tim Penyelesaian Studi, dan Dekan atau Direktur Kampus Daerah menerbitkan Surat Keterangan tentang kedudukan artikel setara skripsi. Akreditasi jurnal dapat diperiksa melalui SINTA, DOAJ, Scopus, ISI Web of Science, dan pengindeks lain yang tercantum dalam pedoman.",
     escalation:
-      "Hubungi dosen pembimbing atau Tim Penyelesaian Studi untuk verifikasi kelayakan jurnal dan artikel.",
+      "Hubungi TPTA atau staf Program Studi Bisnis Digital untuk verifikasi kelayakan jurnal dan artikel.",
     ...PEDOMAN_TA,
   },
 
@@ -781,7 +781,7 @@ export const knowledgeBase = [
     answer:
       "Dalam jalur artikel ilmiah, mahasiswa dapat memilih salah satu dari dua jenis artikel: artikel hasil penelitian empirik (original research) dengan metode kuantitatif, kualitatif, kombinasi, atau penelitian dan pengembangan; atau artikel hasil kajian literatur (literature review).",
     escalation:
-      "Hubungi dosen pembimbing untuk menentukan jenis artikel yang sesuai dengan rencana penelitianmu.",
+      "Hubungi TPTA atau staf Program Studi Bisnis Digital untuk menentukan jenis artikel yang sesuai dengan rencana penelitianmu.",
     ...PEDOMAN_TA,
   },
 
@@ -1042,7 +1042,7 @@ export const knowledgeBase = [
     answer:
       "Penilaian karya Teknologi Tepat Guna mencakup kredibilitas karya, yaitu relevansi tema dengan keilmuan prodi, nilai invensi dan inovasi, tidak merusak lingkungan, mudah dimanfaatkan dan dipelihara masyarakat, memberi nilai tambah ekonomi dan lingkungan, serta aplikatif; penguasaan mahasiswa berupa penyajian dan penguasaan materi substantif; publikasi pada jurnal pengabdian; serta Hak atas Kekayaan Intelektual, yakni karya telah memperoleh sertifikat HKI atau sedang dalam proses pengajuan.",
     escalation:
-      "Hubungi Ketua Program Studi atau dosen pembimbing untuk penjelasan bobot penilaian.",
+      "Hubungi staf Program Studi Bisnis Digital atau TPTA untuk penjelasan bobot penilaian.",
     ...PEDOMAN_TA,
   },
 
@@ -1155,7 +1155,7 @@ export const knowledgeBase = [
     answer:
       "Karya tulis ilmiah di UPI dapat dibantu AI dengan ketentuan bahwa AI hanya menjadi alat bantu riset untuk masukan konsep, sementara akurasinya tetap harus berasal dari sumber dan referensi yang relevan. Penulis wajib menuliskan gagasannya dengan kalimat sendiri dan dilarang menyalin langsung hasil AI. AI boleh dipakai untuk merancang kerangka, memperbaiki parafrase, serta membantu tata bahasa dan struktur. Referensi yang diberikan AI wajib diverifikasi. Ide inti, argumen, analisis, dan kesimpulan harus merupakan hasil pemikiran penulis. Penulis wajib menyatakan penggunaan AI dengan melampirkan logbook berupa tangkapan layar pada semua bagian proses berbantuan AI, dan karya tulis yang berbantuan AI maksimal 20%. Catatan: Peraturan Rektor Nomor 70 Tahun 2026 (lebih baru) mewajibkan pernyataan penggunaan Generative AI yang transparan (platform, tujuan, dan bagian yang memakainya) dan verifikasi hasil AI oleh mahasiswa; peraturan itu tidak menyebut angka persentase batas penggunaan AI.",
     escalation:
-      "Hubungi dosen pembimbing untuk memastikan bentuk pelaporan logbook penggunaan AI yang diterima.",
+      "Hubungi TPTA atau staf Program Studi Bisnis Digital untuk memastikan bentuk pelaporan logbook penggunaan AI yang diterima.",
     ...PEDOMAN_KTI,
   },
 
@@ -1577,7 +1577,7 @@ export const knowledgeBase = [
     answer:
       "Berdasarkan Surat Edaran Nomor 48 Tahun 2026, pengisian IRS dan perwalian daring semester ganjil 2026/2027 berlangsung 20 Juli sampai 10 Agustus 2026 dan dibagi per angkatan: angkatan 2020/2021 dan 2021/2022 pada 20 sampai 26 Juli 2026, angkatan 2022/2023 dan 2023/2024 pada 27 Juli sampai 2 Agustus 2026, serta angkatan 2024/2025, 2025/2026, dan 2026/2027 pada 3 sampai 10 Agustus 2026. Mahasiswa mengisi IRS melalui SIAKKu di https://student.upi.edu/, sedangkan dosen Pembimbing Akademik menyetujuinya melalui https://siak.upi.edu/perwalian/ dengan akun yang sama. Mahasiswa yang tidak mengisi IRS sampai batas waktu wajib memperbaiki kontrak kuliah pada masa Perubahan Rencana Studi, 31 Agustus sampai 7 September 2026.",
     escalation:
-      "Hubungi dosen Pembimbing Akademik atau staf Program Studi Bisnis Digital kalau IRS belum disetujui.",
+      "Hubungi staf Program Studi Bisnis Digital kalau IRS belum disetujui.",
     ...EDARAN_48,
   },
 
@@ -1661,7 +1661,7 @@ export const knowledgeBase = [
     answer:
       "Menurut Pengumuman T-150 tanggal 14 Juli 2026, mata kuliah yang dikontrak pada semester ganjil 2026/2027 berbeda tiap angkatan. Angkatan 2026 mengontrak 20 SKS: Manajemen Keuangan, Kewirausahaan Digital, Landasan Pendidikan, Sistem Informasi Bisnis Digital, Pendidikan Pancasila, Olahraga dan Kebugaran, dan satu mata kuliah Pendidikan Agama. Angkatan 2025 mengontrak 23 SKS: Bahasa Inggris Bisnis, Proyek Kreatif, Merek Visual, Sistem Basis Data, Algoritma & Pemrograman, dan Pemasaran Digital. Angkatan 2024 mengontrak 23 SKS: Penambangan Data, Bahasa Inggris Bisnis, Praktek Penulisan Naskah Periklanan, Kecerdasan Buatan, Metodologi Penelitian, dan Riset Pasar dan Analisis Data. Angkatan 2023 jalur skripsi mengontrak 16 SKS (Strategi Bisnis, Market Research, Seminar Inisiasi Bisnis Digital, Analisis dan Desain Sistem Informasi, Visualisasi Data), sedangkan jalur artikel dan TTG mengontrak 22 SKS karena ditambah Skripsi 6 SKS dan Ujian Sidang. Angkatan 2020 sampai 2023 mengontrak Skripsi dan Ujian Sidang, total 6 SKS.",
     escalation:
-      "Hubungi dosen Pembimbing Akademik atau Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk memastikan daftar mata kuliah angkatan kamu.",
+      "Hubungi Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk memastikan daftar mata kuliah angkatan kamu.",
     ...PENGUMUMAN_T150,
   },
 
@@ -1774,7 +1774,7 @@ export const knowledgeBase = [
     answer:
       "Berdasarkan Surat Edaran Nomor 092 Tahun 2025 untuk mahasiswa angkatan 2022, mahasiswa melaksanakan MSIB di tempat yang sudah ditentukan dan melaporkan progres secara berkala kepada Dosen Pembimbing. Dokumen akhir diunggah ke folder Dosen Pembimbing masing-masing dengan format Nama_NIM, terdiri dari Laporan MSIB, Logbook, penilaian mentor, serta dokumen Perjanjian Kerjasama (PKS) dan Implementation of Agreement (IA). PKS dan IA dibuat rapi sesuai format, cukup satu set per perusahaan kalau ada beberapa mahasiswa, dibuat dua rangkap, ditandatangani, dicap, dan dibubuhi materai. Dokumen laporan PKS dan IA juga dibuat dua rangkap, ditandatangani, dan dicap. Mahasiswa yang mengikuti magang wajib menyiapkan PPT presentasi ujian magang dan membuat collaboration content dengan Instagram @digitalbusiness.upi.",
     escalation:
-      "Hubungi Dosen Pembimbing MSIB atau Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk tautan format dan jadwal terbaru.",
+      "Hubungi Program Studi Bisnis Digital di bisnisdigital@upi.edu untuk tautan format dan jadwal terbaru.",
     ...EDARAN_MSIB,
   },
 
@@ -2285,7 +2285,7 @@ export const knowledgeBase = [
     answer:
       "Menurut Panduan SIMKATMAWA 2026 (Edisi IV), mahasiswa sarjana wajib memiliki minimal 100 poin pengalaman belajar dan prestasi serta 1 sertifikat kompetensi kerja SKKNI untuk mengajukan sidang. Portofolio diajukan lewat student.upi.edu, diverifikasi pembina kemahasiswaan prodi dan Direktorat Kemahasiswaan, lalu bukti pemenuhan poin diunduh. Pengalaman belajar juga bisa dikonversi ke SKS, tugas mata kuliah, atau SKPI.",
     escalation:
-      "Hubungi pembina kemahasiswaan Program Studi Bisnis Digital untuk verifikasi poin.",
+      "Hubungi staf Program Studi Bisnis Digital untuk verifikasi poin.",
     ...SIMKATMAWA,
   },
 
@@ -2431,7 +2431,7 @@ export const knowledgeBase = [
     answer:
       "Menurut Peraturan Rektor Nomor 38 Tahun 2026, nilai akhir mata kuliah adalah akumulasi partisipasi, tugas, proyek, kuis, UTS, dan UAS berdasarkan Penilaian Acuan Patokan. Ujian minimal dua kali per semester (UTS dan UAS). Hasil dinyatakan dalam nilai huruf, angka, dan derajat mutu.",
     escalation:
-      "Hubungi dosen pengampu atau staf prodi kalau ada keberatan terhadap nilai.",
+      "Hubungi staf Program Studi Bisnis Digital kalau ada keberatan terhadap nilai.",
     ...PERREK_38,
   },
   {
@@ -2504,7 +2504,7 @@ export const knowledgeBase = [
     answer:
       "Panduan SIMKATMAWA 2026 mengakui pengalaman belajar dari PKM, P2MW, PPK Ormawa, kompetisi dan festival, pelatihan atau workshop, asistensi dosen dan kepeloporan akademik, penguatan organisasi kemahasiswaan, serta sertifikat kompetensi dan HKI. Kompetisi dinilai dari durasi, prestasi, level, kategori, jumlah peserta, relevansi bidang ilmu, dan kontribusi pada IKU.",
     escalation:
-      "Hubungi pembina kemahasiswaan Program Studi Bisnis Digital untuk menilai kegiatan tertentu.",
+      "Hubungi staf Program Studi Bisnis Digital untuk menilai kegiatan tertentu.",
     ...SIMKATMAWA,
   },
   {

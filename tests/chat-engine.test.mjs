@@ -46,7 +46,6 @@ test("unrelated question returns fallback with official escalation options", () 
   assert.equal(response.reason, "Informasi ini belum ada di dokumen yang tersedia.");
   assert.deepEqual(response.escalationOptions, [
     "Tenaga Administrasi Program Studi",
-    "Dosen pembimbing atau Ketua Program Studi",
     "Situs atau pengumuman resmi UPI",
   ]);
 });
@@ -73,3 +72,17 @@ test("the offline answer to a clicked sentence stays on the topic that sentence 
   assert.equal(generic.entry.id, "sidang-syarat-skripsi");
 });
 
+
+import { isNotFoundAnswer } from "../lib/chat-engine.js";
+
+test("answers that admit nothing was found are recognised, answers that give facts are not", () => {
+  assert.equal(isNotFoundAnswer("Maaf, saya belum menemukan informasi tentang kriteria magang di dokumen yang tersedia."), true);
+  assert.equal(isNotFoundAnswer("Saya tidak menemukan aturannya di dokumen."), true);
+  assert.equal(isNotFoundAnswer("Masa studi maksimal 14 semester menurut Peraturan Rektor 38/2026."), false);
+  assert.equal(isNotFoundAnswer("Persyaratan sidang meliputi draf, bukti publikasi, dan transkrip."), false);
+});
+
+test("the can't-answer options never point to a lecturer", () => {
+  const response = createChatResponse("Di mana beli tiket konser?", knowledgeBase);
+  assert.ok(response.escalationOptions.every((option) => !/dosen|kemahasiswaan|pembimbing/i.test(option)));
+});

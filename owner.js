@@ -1526,7 +1526,10 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     chosenLine.append(icon("file"));
     const chosenText = make("span", "", "Belum ada file yang dipilih");
     chosenLine.append(chosenText);
-    left.append(leftLabel, drop, chosenLine);
+    const aiNote = make("p", "upload-ai-note");
+    aiNote.setAttribute("role", "status");
+    aiNote.hidden = true;
+    left.append(leftLabel, drop, chosenLine, aiNote);
 
     /* ---- kolom kanan: isian ---- */
     const right = make("div", "upload-col");
@@ -1617,24 +1620,32 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     message.hidden = true;
     const footer = make("div", "upload-foot");
     const note = make("p", "upload-note");
-    note.append(icon("info"), "Teks dokumen dibaca otomatis supaya bisa dipakai menjawab pertanyaan setelah divalidasi.");
+    note.append(icon("info"), "Isian diisi otomatis dari isi berkas. Periksa pratinjau dulu; dokumen baru dipakai menjawab setelah kamu memvalidasinya.");
     const cancel = make("button", "btn upload-cancel", "Batal");
     cancel.type = "button";
-    cancel.addEventListener("click", close);
+    cancel.addEventListener("click", () => (stage === "preview" ? backToForm() : close()));
     const submit = make("button", "btn-primary upload-submit");
     submit.type = "submit";
-    submit.append(icon("cloud"), "Upload Dokumen");
+    const submitLabel = make("span", "", "Pratinjau");
+    submit.append(icon("doc"), submitLabel);
     footer.append(note, cancel, submit);
 
     const progress = make("ol", "steps-progress");
     progress.hidden = true;
     for (const step of STEPS) progress.append(make("li", "", step));
 
-    box.append(head, body, methodWrap, progress, message, footer);
+    const preview = make("div", "upload-preview");
+    preview.hidden = true;
+
+    box.append(head, body, methodWrap, preview, progress, message, footer);
     document.body.append(dialog);
 
     /* ---- perilaku ---- */
     let chosen = null;
+    let analysis = null; // { bytes, passages } dari berkas yang dipilih; dipakai ulang saat mengunggah
+    let analysisToken = 0;
+    let stage = "form"; // "form" lalu "preview" sebelum dokumen dikirim
+    const touched = new Set(); // isian yang sudah diubah pengelola; tidak ditimpa usulan AI
 
     function refresh() {
       const needsTarget = method !== "baru";
@@ -1662,9 +1673,75 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       chosen = file;
       chosenText.textContent = `${file.name} • ${(file.size / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
       drop.classList.add("has-file");
-      if (!titleInput.value.trim()) titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
+      if (!titleInput.value.trim() || !touched.has("title")) titleInput.value = file.name.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
       refresh();
+      analyze(file);
     };
+
+    const FIELDS = {
+      title: [titleInput, "title"],
+      category: [categoryInput, "category"],
+      owner: [ownerInput, "owner"],
+      reference: [referenceInput, "reference"],
+      effectiveDate: [dateInput, "effectiveDate"],
+      period: [periodInput, "period"],
+      description: [descInput, "description"],
+    };
+    for (const [key, [input]] of Object.entries(FIELDS)) input.addEventListener("input", () => touched.add(key));
+
+    /** Isi isian dari usulan AI, tanpa menimpa yang sudah diubah pengelola. Mengembalikan jumlah isian yang terisi. */
+    function applySuggestion(suggestion) {
+      let filled = 0;
+      for (const [key, [input]] of Object.entries(FIELDS)) {
+        const value = suggestion?.[key];
+        if (!value || touched.has(key)) continue;
+        input.value = value;
+        input.closest(".upload-field")?.classList.add("is-ai");
+        filled += 1;
+      }
+      return filled;
+    }
+
+    /** Baca isi berkas di browser, lalu minta AI mengusulkan isian formulirnya. */
+    async function analyze(file) {
+      const token = ++analysisToken;
+      analysis = null;
+      aiNote.hidden = false;
+      aiNote.className = "upload-ai-note is-working";
+      aiNote.textContent = "Membaca isi berkas…";
+      try {
+        const bytes = await file.arrayBuffer();
+        const passages = await extractPassages(bytes, (number, total) => {
+          if (token === analysisToken) aiNote.textContent = `Membaca isi berkas… (halaman ${number}/${total})`;
+        });
+        if (token !== analysisToken) return;
+        analysis = { bytes, passages };
+
+        if (!passages.some((item) => item.text.trim().length >= 20)) {
+          aiNote.className = "upload-ai-note is-warn";
+          aiNote.textContent = "Berkas ini tidak memuat teks yang bisa dibaca (mungkin hasil pindai). Isi datanya manual.";
+          return;
+        }
+
+        aiNote.textContent = "AI sedang mengisi isian dari isi berkas…";
+        const result = await api("/admin/documents/suggest", {
+          method: "POST",
+          body: JSON.stringify({ fileName: file.name, passages: passages.slice(0, 3) }),
+        });
+        if (token !== analysisToken) return;
+        const filled = applySuggestion(result.suggestion);
+        aiNote.className = filled ? "upload-ai-note is-done" : "upload-ai-note is-warn";
+        aiNote.textContent = filled
+          ? `${filled} isian diisi otomatis dari isi berkas (ditandai). Periksa dan ubah bila perlu.`
+          : "AI belum bisa mengisi dari berkas ini. Isi datanya manual.";
+        refresh();
+      } catch (error) {
+        console.warn("Analisis berkas gagal:", error);
+        if (token !== analysisToken) return;
+        aiNote.className = "upload-ai-note is-warn";
+        aiNote.textContent = "Isi berkas belum bisa dibaca otomatis. Isi datanya manual.";
+      }
+    }
 
     picker.addEventListener("change", () => accept(picker.files?.[0]));
     for (const type of ["dragenter", "dragover"]) {
@@ -1692,23 +1769,119 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
       });
     };
 
+
+    function backToForm() {
+      stage = "form";
+      preview.hidden = true;
+      body.hidden = false;
+      methodWrap.hidden = false;
+      cancel.textContent = "Batal";
+      submitLabel.textContent = "Pratinjau";
+      message.hidden = true;
+    }
+
+    /** Halaman pertama PDF sebagai gambar, supaya pengelola melihat berkas yang akan diunggah. */
+    async function renderFirstPage(bytes, canvas) {
+      const pdfjs = await loadPdfJs();
+      const pdf = await pdfjs.getDocument({ data: bytes.slice(0) }).promise;
+      const page = await pdf.getPage(1);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: Math.min(1.4, 360 / base.width) });
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      return pdf.numPages;
+    }
+
+    /** Pratinjau sebelum dokumen dikirim: berkasnya, isian yang akan tersimpan, dan cuplikan isinya. */
+    async function showPreview() {
+      if (!analysis) {
+        message.hidden = false;
+        message.textContent = "Berkas masih dibaca. Tunggu sebentar, lalu coba lagi.";
+        return;
+      }
+      stage = "preview";
+      message.hidden = true;
+      body.hidden = true;
+      methodWrap.hidden = true;
+      preview.hidden = false;
+      cancel.textContent = "Ubah isian";
+      submitLabel.textContent = "Upload & kirim ke validasi";
+
+      const target = method === "baru" ? null : existing.find((doc) => doc.id === targetSelect.value);
+      const rows = [
+        ["Nama dokumen", titleInput.value.trim()],
+        ["Kategori", categoryInput.value],
+        ["Penerbit / unit kerja", ownerInput.value.trim()],
+        ["Nomor surat / SK", referenceInput.value.trim()],
+        ["Tanggal berlaku", dateInput.value],
+        ["Periode akademik", periodInput.value.trim()],
+        ["Deskripsi", descInput.value.trim()],
+        ["Metode", `${METHODS.find((item) => item.id === method)?.title}${target ? `: ${target.title}` : ""}`],
+        ["Berkas", `${chosen.name} • ${(chosen.size / 1024 / 1024).toFixed(1).replace(".", ",")} MB`],
+      ];
+
+      const canvas = make("canvas", "upload-preview-page");
+      const pageBox = make("div", "upload-preview-pane");
+      const pageCaption = make("small", "", "Halaman 1");
+      pageBox.append(canvas, pageCaption);
+
+      const list = make("dl", "upload-preview-list");
+      for (const [label, value] of rows) {
+        const row = make("div", value ? "" : "is-empty");
+        row.append(make("dt", "", label), make("dd", "", value || "Tidak diisi"));
+        list.append(row);
+      }
+      const excerpt = (analysis.passages[0]?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 420);
+      const details = make("div", "upload-preview-details");
+      details.append(list);
+      if (excerpt) {
+        details.append(make("p", "upload-preview-excerpt-label", "Cuplikan isi halaman 1"), make("p", "upload-preview-excerpt", `${excerpt}…`));
+      }
+      details.append(
+        make(
+          "p",
+          "upload-preview-note",
+          method === "versi"
+            ? "Setelah diunggah, dokumen menunggu validasi. Versi lama berhenti dipakai begitu versi baru ini divalidasi."
+            : "Setelah diunggah, dokumen berstatus Menunggu Validasi dan belum dipakai menjawab sampai kamu memvalidasinya di Knowledge Base.",
+        ),
+      );
+
+      preview.replaceChildren(make("h3", "upload-preview-title", "Pratinjau sebelum diunggah"), make("div", "upload-preview-grid"));
+      preview.lastChild.append(pageBox, details);
+
+      try {
+        const pages = await renderFirstPage(analysis.bytes, canvas);
+        pageCaption.textContent = `Halaman 1 dari ${pages}`;
+      } catch (error) {
+        console.warn("Pratinjau halaman gagal:", error);
+        canvas.remove();
+        pageCaption.textContent = "Pratinjau halaman tidak tersedia, tetapi teks berkas terbaca.";
+      }
+    }
+
     box.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (!chosen || submit.disabled) return;
+      if (stage === "form") return showPreview();
       body.hidden = true;
       methodWrap.hidden = true;
+      preview.hidden = true;
       footer.hidden = true;
       progress.hidden = false;
       message.hidden = true;
 
       try {
         mark(0);
-        const bytes = await chosen.arrayBuffer();
+        const bytes = analysis?.bytes ?? (await chosen.arrayBuffer());
 
         mark(1);
-        const passages = await extractPassages(bytes, (number, total) => {
-          progress.children[1].textContent = `Mengekstrak teks per halaman (${number}/${total})`;
-        });
+        const passages =
+          analysis?.passages ??
+          (await extractPassages(bytes, (number, total) => {
+            progress.children[1].textContent = `Mengekstrak teks per halaman (${number}/${total})`;
+          }));
 
         mark(2);
         const created = await api("/admin/documents", {
@@ -1755,8 +1928,7 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
                 ? error.message
                 : "Unggah gagal. Periksa berkasnya, lalu coba lagi.";
         progress.hidden = true;
-        body.hidden = false;
-        methodWrap.hidden = false;
+        preview.hidden = false; // tetap di pratinjau; isian bisa diubah lewat "Ubah isian"
         footer.hidden = false;
       }
     });

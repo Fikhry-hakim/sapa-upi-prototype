@@ -1,6 +1,6 @@
 import { knowledgeBase } from "./data/knowledge-base.js";
 import { documents, citationFor, documentIdForFile } from "./data/sources.js";
-import { createChatResponse } from "./lib/chat-engine.js";
+import { createChatResponse, isNotFoundAnswer } from "./lib/chat-engine.js";
 import { clarifiedSentence, clarifyQuestion, isBullet, isExplainable, shouldNumber, splitSentences, stripBullet } from "./lib/clarify.js";
 import { API_URL } from "./config.js";
 import { createViewer } from "./viewer.js";
@@ -898,10 +898,14 @@ function fillCard(card, response, { feedback = false, question = "" } = {}) {
     }
     if (counter.n > 0) body.append(make("p", "clarify-hint", "Mau penjelasan lebih lanjut? Klik angka di ujung kalimat."));
 
-    if (entry?.table) renderTable(entry.table, body);
-    if (entry) renderReferences(entry, body, response.citation, response.citations);
+    // Jawaban "belum menemukan": topik yang tadi dicocokkan bukan dasar jawabannya, jadi kartu sumber dan
+    // kontak khusus topik itu (mis. pembina kemahasiswaan) tidak ditampilkan. Hanya kontak umum prodi.
+    const notFound = response.generated && isNotFoundAnswer(response.message);
+    if (!notFound && entry?.table) renderTable(entry.table, body);
+    if (notFound) renderContactOnly(body, null);
+    else if (entry) renderReferences(entry, body, response.citation, response.citations);
     else renderContactOnly(body, null); // Gemini menjawab tanpa satu topik kurasi yang jelas — tetap wajib ada kontak.
-    followUps = renderFollowUps(response.followUpQuestions);
+    followUps = notFound ? null : renderFollowUps(response.followUpQuestions);
     // Placeholder kotak ketik mengikuti topik yang sedang dibahas, bukan kalimat tetap.
     setSuggestedQuestion(suggestionFor(entry, question));
   } else if (response.type === "suggestions") {

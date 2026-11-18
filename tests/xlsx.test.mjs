@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { buildDashboardWorkbook, buildRecapCsv } from "../lib/report.js";
+import { buildDashboardWorkbook, buildRecapCsv, excelWib } from "../lib/report.js";
 import { bold, buildXlsx, columnName, crc32, sheetName } from "../lib/xlsx.js";
 
 test("crc32 matches the standard check value", () => {
@@ -103,6 +103,20 @@ test("the dashboard workbook carries the cards, both charts, and the data they r
   assert.ok(read("xl/charts/chart2.xml").includes('srgbClr val="B91C2C"'), "slice colours come from the web legend");
   assert.ok(read("xl/worksheets/sheet2.xml").includes("Minggu 2"), "the Data sheet feeds the charts");
   assert.ok(read("xl/charts/chart1.xml").includes("Data!$A$2:$A$3"), "chart ranges match the Data sheet");
+
+  // Waktu: angka waktu asli Excel (jam WIB), bukan teks "Hari ini 10:00", dengan filter di lembar Aktivitas.
+  const activity = read("xl/worksheets/sheet3.xml");
+  assert.match(activity, /<autoFilter ref="A1:H2"\/>/);
+  assert.match(activity, /<c r="B2" s="\d+"><v>46315\.41666667<\/v><\/c>/); // 2026-10-20 03:00 UTC = 10:00 WIB
+  assert.ok(!activity.includes("Hari ini"));
+  assert.match(read("xl/styles.xml"), /<numFmt numFmtId="164" formatCode="yyyy-mm-dd hh:mm:ss"\/>/);
+});
+
+test("excelWib turns a UTC log time into the Excel serial for the same moment in WIB", () => {
+  assert.equal(excelWib("2026-10-20 03:00:00"), 46315.41666667);
+  assert.equal(excelWib("2026-10-20 17:30:00"), 46316.02083333);
+  assert.equal(excelWib("bukan tanggal"), null);
+  assert.equal(excelWib(undefined), null);
 });
 
 test("the CSV recap is aggregate only, quotes its cells, and defuses spreadsheet formulas", () => {

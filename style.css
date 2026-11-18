@@ -5121,3 +5121,109 @@ button.ref-chip:hover {
   background: var(--sidebar-bg);
   color: var(--ink);
 }
+
+/* Isian otomatis dan pratinjau pada unggah dokumen. */
+.upload-ai-note {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--sidebar-bg);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.upload-ai-note.is-done {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.upload-ai-note.is-warn {
+  background: var(--amber-soft);
+  color: #92400e;
+}
+.upload-field.is-ai input,
+.upload-field.is-ai textarea,
+.upload-field.is-ai .combobox-input {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+.upload-preview {
+  padding: 4px 24px 8px;
+}
+.upload-preview-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.upload-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.upload-preview-pane {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+.upload-preview-page {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+}
+.upload-preview-pane small {
+  color: var(--muted);
+}
+.upload-preview-list {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.upload-preview-list div {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.upload-preview-list dt {
+  color: var(--muted);
+}
+.upload-preview-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.upload-preview-list .is-empty dd {
+  color: var(--faint);
+}
+.upload-preview-excerpt-label {
+  margin: 14px 0 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.upload-preview-excerpt {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.upload-preview-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .upload-preview {
+    padding: 4px 16px 8px;
+  }
+  .upload-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  .upload-preview-list div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

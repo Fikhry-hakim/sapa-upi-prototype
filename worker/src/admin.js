@@ -25,6 +25,8 @@ import {
   setRag,
   validateDocument,
 } from "./documents.js";
+import { suggestDocumentFields } from "./document-suggest.js";
+import { clientKey, hit } from "./rate-limit.js";
 import { feedbackSummary } from "./feedback.js";
 import { INTERACTION_PAGE_SIZE, listInteractions, outcomeTotals, summarize, windowFor } from "./events.js";
 
@@ -130,6 +132,33 @@ export async function handleAdmin(request, env, cors, path) {
 
   if (path === "/admin/audit" && method === "GET") {
     return json({ entries: await listAudit(db) }, { headers });
+  }
+
+  // Usulan isian dari isi PDF (nama, nomor, penerbit, tanggal, ringkasan). Tidak menyimpan apa pun.
+  if (path === "/admin/documents/suggest" && method === "POST") {
+    if (!can(assignment, "upload")) return json({ error: "Tidak berwenang mengunggah" }, { status: 403, headers });
+    const limited = await hit(db, `suggest:${user.id}`, { limit: 12, windowMs: 60_000 });
+    if (!limited.allowed) {
+      return json({ error: "Terlalu banyak permintaan. Coba lagi sebentar." }, { status: 429, headers: { ...headers, "Retry-After": String(limited.retryAfter) } });
+    }
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Body harus JSON" }, { status: 400, headers });
+    }
+    try {
+      const suggestion = await suggestDocumentFields({
+        fileName: body?.fileName,
+        passages: body?.passages,
+        apiKey: env.GEMINI_API_KEY,
+        model: env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
+      });
+      return json({ suggestion }, { headers });
+    } catch (error) {
+      console.warn("document-suggest:", error.message);
+      return json({ suggestion: null }, { headers });
+    }
   }
 
   if (path === "/admin/documents" && method === "POST") {

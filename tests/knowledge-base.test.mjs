@@ -100,3 +100,10 @@ test("every topic offers at least one follow-up that is not just a request for c
     assert.ok(entry.followUps.some((q) => !/hubungi/i.test(q)), `${entry.id} has no usable follow-up`);
   }
 });
+
+test("escalation contacts send readers to the study program or TPTA, never to a lecturer", () => {
+  for (const entry of knowledgeBase) {
+    if (!entry.escalation) continue;
+    assert.ok(!/\b(dosen|pembina|pengampu)\b/i.test(entry.escalation), `${entry.id}: ${entry.escalation}`);
+  }
+});
