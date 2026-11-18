@@ -545,8 +545,10 @@ export function createOwner({ api, getAccount, showToast, openViewer, authHeader
     s.series.forEach((p, i) => {
       const [px, py] = points[i];
       chart.append(svg("circle", { cx: px, cy: py, r: 3.6, class: "trend-dot" }));
-      if (s.series.length <= 8 || p === s.peak) {
-        const tag = svg("g", { class: `trend-tag${p === s.peak ? " is-peak" : ""}` });
+      // Puncak dikenali dari label periodenya: setelah JSON diurai, objeknya bukan lagi objek yang sama dengan s.peak.
+      const isPeak = Boolean(s.peak) && p.label === s.peak.label && p.total === s.peak.total;
+      if (s.series.length <= 8 || isPeak) {
+        const tag = svg("g", { class: `trend-tag${isPeak ? " is-peak" : ""}` });
         tag.append(
           svg("rect", { x: px - 22, y: py - 24, width: 44, height: 16, rx: 5 }),
           Object.assign(svg("text", { x: px, y: py - 13, "text-anchor": "middle" }), { textContent: `${p.total} req` }),

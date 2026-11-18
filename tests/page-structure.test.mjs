@@ -283,3 +283,9 @@ test("a user's own question can be copied and edited", () => {
   assert.match(app, /"Ubah pertanyaan"/);
   assert.match(app, /"Salin pertanyaan"/);
 });
+
+test("an unreachable server opens the login gate but keeps the sign-in button", () => {
+  assert.match(app, /state\.serverDown = true/);
+  assert.ok(!/state\.loginEnabled = false/.test(app), "loginEnabled also drives the sign-in button, so a failed check must not turn it off");
+  assert.match(app, /state\.loginEnabled && !state\.serverDown/);
+});

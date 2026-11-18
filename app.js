@@ -118,6 +118,7 @@ const state = {
   view: "home",
   account: null, // { id, email, name, role? }
   loginEnabled: Boolean(API_URL),
+  serverDown: false, // server tidak terjangkau: gerbang login tidak dipasang, tetapi tombol masuk tetap ada
   sessionToken: null,
   conversationId: null, // percakapan yang sedang dibuka (id dari server)
   history: [], // giliran sebelumnya di chat ini ({ q, a, entryId }), dikirim supaya pertanyaan lanjutan nyambung
@@ -2283,12 +2284,12 @@ const isShareUrl = () => /^#share=/.test(window.location.hash);
 
 function enforceLoginGate() {
   if (!LOGIN_REQUIRED) return;
-  const open = !state.account && !isShareUrl() && state.loginEnabled;
+  const open = !state.account && !isShareUrl() && state.loginEnabled && !state.serverDown;
   if (open) {
     if (refs.signinPage.hidden) showAuthScreen("login");
   } else if (!refs.signinPage.hidden && state.account) {
     hideAuthScreen();
-  } else if (!refs.signinPage.hidden && !state.loginEnabled) {
+  } else if (!refs.signinPage.hidden && (!state.loginEnabled || state.serverDown)) {
     hideAuthScreen();
   } else if (!refs.signinPage.hidden && isShareUrl()) {
     hideAuthScreen();
@@ -2459,6 +2460,7 @@ async function loadAccount() {
     if (!response.ok) throw new Error(`auth/me ${response.status}`);
     const data = await response.json();
     state.loginEnabled = Boolean(data.loginEnabled);
+    state.serverDown = false;
     state.account = data.user ?? null;
     writeAccountHint(state.account);
     if (!state.account) {
@@ -2469,7 +2471,7 @@ async function loadAccount() {
     // Pemeriksaan yang gagal tidak boleh menyembunyikan jalan masuk.
     console.warn("Tidak bisa memeriksa sesi:", error);
     state.account = null;
-    state.loginEnabled = false; // server tidak terjangkau: jangan mengunci pengunjung di layar masuk
+    state.serverDown = true; // server tidak terjangkau: jangan mengunci pengunjung di layar masuk (tombol masuk tetap tampil)
   }
   renderAccount();
   enforceLoginGate();

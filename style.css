@@ -2494,18 +2494,26 @@ button.ref-chip:hover {
   stroke-width: 2;
 }
 
+/* Label nilai pada garis: pil gelap berteks terang di mode terang; di mode gelap pil abu berbingkai dengan teks terang. */
 .trend .trend-tag rect {
-  fill: var(--ink);
+  fill: var(--tag-bg, var(--ink));
+  stroke: var(--tag-line, transparent);
+  stroke-width: 1;
 }
 
 .trend .trend-tag.is-peak rect {
   fill: var(--red);
+  stroke: transparent;
 }
 
 .trend .trend-tag text {
-  fill: var(--on-accent);
+  fill: var(--tag-text, var(--on-accent));
   font-size: 9.5px;
   font-weight: 700;
+}
+
+.trend .trend-tag.is-peak text {
+  fill: #fff;
 }
 
 .chart-foot {
@@ -4653,6 +4661,9 @@ button.ref-chip:hover {
 ============================================================ */
 
 :root[data-theme="dark"] {
+  --tag-bg: #2b2f38;
+  --tag-line: #4a505c;
+  --tag-text: #f1f3f8;
   --docx: #6ea0ff;
   --docx-soft: rgba(110, 160, 255, 0.16);
   --red: #e2485a;
