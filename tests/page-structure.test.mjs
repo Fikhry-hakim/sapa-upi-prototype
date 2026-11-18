@@ -261,3 +261,8 @@ test("anonymous visitors do not get the history clock or the document picker", (
   assert.match(app, /refs\.attachButton\.closest\("\.menu-anchor"\)\.hidden = !signedIn/);
   assert.match(app, /sapa-upi:seen-documents/);
 });
+
+test("signed-in readers keep their searched files on the server, and sign-out clears the local list", () => {
+  assert.match(app, /conversations\/seen-documents/);
+  assert.match(app, /localStorage\.removeItem\(SEEN_KEY\)/);
+});

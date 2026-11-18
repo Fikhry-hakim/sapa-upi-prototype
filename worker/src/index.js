@@ -6,6 +6,7 @@ import { askWithFallback, askWorkersAI, PRIMARY_BUDGET_MS, WORKERS_AI_MODEL } fr
 import { loadKnowledgeBase } from "./knowledge-store.js";
 import { handleAdmin, handleFile, handlePublicDocuments } from "./admin.js";
 import { classifyOutcome, recordEvent } from "./events.js";
+import { addSeen, listSeen } from "./seen-documents.js";
 import { passageEntryFor, publicEntry, searchPassages, unusableFiles } from "./documents.js";
 import { citationFor } from "../../data/sources.js";
 import { sourceSet } from "../../lib/source-set.js";
@@ -627,6 +628,21 @@ async function handleConversations(request, env, cors, path) {
       ? await searchConversations(db, user, term.slice(0, 80))
       : await listConversations(db, user);
     return json({ conversations }, { headers: cors });
+  }
+
+  // Berkas yang pernah dicari akun ini (halaman Berkas).
+  if (path === "/conversations/seen-documents") {
+    if (request.method === "GET") return json({ ids: await listSeen(db, user) }, { headers: cors });
+    if (request.method === "POST") {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "Body harus JSON" }, { status: 400, headers: cors });
+      }
+      const added = await addSeen(db, user, body?.ids);
+      return json({ ok: true, added }, { headers: cors });
+    }
   }
 
   if (path === "/conversations/export") {

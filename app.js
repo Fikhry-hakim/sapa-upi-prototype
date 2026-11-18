@@ -1593,10 +1593,12 @@ function setLayout(layout) {
   renderFiles();
 }
 
-/* Berkas yang pernah dicari atau dibuka pengguna lewat chat; hanya ini yang tampil di halaman Berkas mahasiswa dan dosen. */
+/* Berkas yang pernah dicari atau dibuka pengguna lewat chat; hanya ini yang tampil di halaman Berkas mahasiswa dan dosen.
+   Akun yang masuk menyimpannya di server (ikut berpindah perangkat); pengunjung tanpa akun menyimpannya di browser ini. */
 const SEEN_KEY = "sapa-upi:seen-documents";
+let serverSeen = null; // Set id dari server untuk akun yang masuk; null sebelum dimuat atau tanpa akun
 
-function readSeen() {
+function readLocalSeen() {
   try {
     const raw = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]");
     return new Set(Array.isArray(raw) ? raw.filter((id) => typeof id === "string" && documents[id]) : []);
@@ -1605,17 +1607,66 @@ function readSeen() {
   }
 }
 
+function writeLocalSeen(set) {
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...set]));
+  } catch {
+    /* daftar hanya berlaku selama halaman terbuka */
+  }
+}
+
+function readSeen() {
+  const ids = readLocalSeen();
+  if (state.account && serverSeen) for (const id of serverSeen) if (documents[id]) ids.add(id);
+  return ids;
+}
+
+function sendSeen(ids) {
+  if (!API_URL || !state.account || !ids.length) return;
+  const sentToken = state.sessionToken;
+  fetch(`${API_URL}/conversations/seen-documents`, {
+    method: "POST",
+    headers: { ...authHeaders(), "content-type": "application/json" },
+    body: JSON.stringify({ ids }),
+    signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS),
+  })
+    .then((response) => dropExpiredSession(response, sentToken))
+    .catch((error) => console.warn("Daftar berkas tidak tersimpan di server:", error));
+}
+
 function markSeen(...found) {
   const ids = found.map((item) => (typeof item === "string" ? item : Object.keys(documents).find((id) => documents[id] === item))).filter(Boolean);
   if (!ids.length) return;
-  const seen = readSeen();
-  const before = seen.size;
-  for (const id of ids) seen.add(id);
-  if (seen.size === before) return;
+  const local = readLocalSeen();
+  const fresh = ids.filter((id) => !local.has(id) && !serverSeen?.has(id));
+  for (const id of ids) local.add(id);
+  writeLocalSeen(local);
+  if (state.account && fresh.length) {
+    serverSeen ??= new Set();
+    for (const id of fresh) serverSeen.add(id);
+    sendSeen(fresh);
+  }
+}
+
+/** Setelah masuk: ambil daftar dari server, dan kirim yang tadinya hanya ada di browser ini (sebelum masuk). */
+async function syncSeen() {
+  if (!API_URL || !state.account) {
+    serverSeen = null;
+    return;
+  }
   try {
-    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
-  } catch {
-    /* daftar hanya berlaku selama halaman terbuka */
+    const sentToken = state.sessionToken;
+    const response = await fetch(`${API_URL}/conversations/seen-documents`, { headers: authHeaders(), signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS) });
+    if (dropExpiredSession(response, sentToken)) return;
+    if (!response.ok) throw new Error(`seen ${response.status}`);
+    const data = await response.json();
+    serverSeen = new Set((data.ids ?? []).filter((id) => typeof id === "string"));
+    const local = [...readLocalSeen()].filter((id) => !serverSeen.has(id));
+    for (let i = 0; i < local.length; i += 50) sendSeen(local.slice(i, i + 50));
+    for (const id of local) serverSeen.add(id);
+    if (state.view === "files") renderFiles();
+  } catch (error) {
+    console.warn("Daftar berkas belum bisa dimuat:", error);
   }
 }
 
@@ -2303,7 +2354,10 @@ async function loadAccount() {
     state.account = null;
   }
   renderAccount();
-  if (state.account) refreshHistory();
+  if (state.account) {
+    refreshHistory();
+    syncSeen();
+  }
 }
 
 function startLogin() {
@@ -2358,6 +2412,13 @@ function signOutLocally(message, { keepScreen = false } = {}) {
   state.conversations = [];
   state.conversationId = null;
   state.history = [];
+  // Komputer bisa dipakai bergantian: daftar berkas orang sebelumnya tidak ikut tinggal di browser ini.
+  serverSeen = null;
+  try {
+    localStorage.removeItem(SEEN_KEY);
+  } catch {
+    /* abaikan */
+  }
   if (!keepScreen) refs.chatLog.replaceChildren();
   renderAccount();
   if (!keepScreen) showView("home");
