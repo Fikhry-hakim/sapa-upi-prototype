@@ -1,25 +1,47 @@
 # SAPA UPI — AI Academic Hub
 
-Prototipe asisten informasi akademik untuk Program Studi Bisnis Digital. Mahasiswa bertanya dengan bahasa sehari-hari, sistem mengambil rujukan dari *knowledge base*, lalu Gemini menyusun jawabannya dengan tetap menyebut sumber.
+Asisten informasi akademik untuk Program Studi Bisnis Digital, UPI Kampus Tasikmalaya. Pengguna masuk dengan akun UPI, bertanya dengan bahasa sehari-hari, lalu sistem mengambil rujukan dari *knowledge base* dan Gemini menyusun jawabannya dengan tetap menyebut dokumen sumbernya.
 
-**Demo:** https://fikhry-hakim.github.io/sapa-upi-prototype/
+**Demo:** https://fikhry-hakim.github.io/sapa-upi-prototype/ (perlu akun Google `@upi.edu`)
+
+Dokumen teknis lengkap, termasuk apa yang belum ada, ada di [`TEKNOLOGI.md`](TEKNOLOGI.md).
 
 ## Arsitektur
 
 ```text
-Browser (GitHub Pages)
-   │  POST { question }
+Browser (GitHub Pages, JavaScript ES modules tanpa build)
+   │  POST { question, history, lang }
    ▼
-Cloudflare Worker  ──► knowledge base dari D1 (sapa-upi-kb)
-   │                └─► retrieval: IDF + stemming + cakupan pertanyaan
-   │                └─► Gemini menyusun jawaban, dibatasi konteks hasil retrieval
+Cloudflare Worker "sapa-upi-api"
+   ├─ permintaan berkas / daftar dokumen → dijawab dari katalog, tanpa model
+   ├─ retrieval: IDF + stemming + glosarium → knowledge base di D1 (sapa-upi-kb)
+   ├─ Gemini menyusun jawaban, dibatasi konteks hasil retrieval
+   └─ cache jawaban 12 jam di D1
    ▼
-{ answer, entry, followUps }
+{ answer, entry, citations (utama + terkait), followUps }
 ```
 
 API key Gemini hanya ada di Worker sebagai *secret*. Key tidak pernah dikirim ke browser.
 
-Kalau Worker mati, kuota habis, atau `API_URL` kosong, aplikasi otomatis jatuh ke pencocokan kata kunci lokal dan menandai jawabannya **"Mode offline"**. Demo tidak akan blank.
+Kalau Gemini gagal atau lambat, Worker membalas 502 dan browser menampilkan **jawaban cadangan dari knowledge base** (ditandai "Jawaban cadangan • AI sedang tidak tersedia"). Kalau Worker tidak terjangkau sama sekali, aplikasi memakai pencocokan lokal yang sama.
+
+## Fitur utama
+
+**Untuk mahasiswa dan dosen**
+- **Tanya jawab** dengan sumber: kartu "Sumber dokumen resmi" bisa dibuka di halaman yang dikutip dengan kalimat rujukan disorot, plus "Dokumen terkait" untuk dokumen serupa. Jawaban panjang memberi nomor yang bisa diklik untuk meminta penjelasan satu poin.
+- **Minta berkas** ("ada file kalender akademik ga", "dokumen apa saja yang ada") dijawab dengan kartu berkas yang dibuka dari halaman 1 atau diunduh langsung. Template formulir (DOCX) bisa dipratinjau dengan kop dan logonya, dan diunduh.
+- **Berkas**: hanya dokumen yang pernah dicari pengguna (disimpan per akun di server). Favorit dengan bintang.
+- **Salin dan ubah**: tombol salin di setiap jawaban, salin dan ubah di setiap pertanyaan sendiri.
+- **Riwayat** percakapan, cari, arsipkan, hapus, dan **bagikan** satu chat lewat tautan hanya-baca yang bisa dicabut.
+- **Settings**: bahasa (Indonesia bawaan, English), dikte suara, pintasan keyboard yang bisa diubah, sesi aktif, chat diarsipkan, ekspor dan hapus data, preferensi cookie dan privasi.
+- Mode terang dan gelap, tampilan responsif dari ponsel sampai layar lebar.
+
+**Untuk pengelola** (akun yang punya baris di `staff_roles`)
+- **Dashboard**: kartu KPI, grafik analitik, log interaksi dengan filter, ekspor Excel (timestamp asli, filter di lembar Aktivitas, grafik), CSV rekap, dan PDF.
+- **Metrics**: 10 KPI sesuai Lampiran A.
+- **Knowledge Base**: daftar dokumen, validasi, sakelar RAG, proses ulang teks, tandai tidak berlaku, hapus, log audit.
+- **Upload dokumen**: pilih PDF, **AI mengisi** nama, kategori, penerbit, nomor surat, tanggal, periode, dan deskripsi dari isi berkas; wajib melalui **pratinjau** (halaman 1, isian, cuplikan isi) sebelum dikirim. Dokumen baru berstatus *Menunggu Validasi* dan belum dipakai menjawab.
+- Pengelola melihat semua berkas dan bisa membatasi pertanyaan pada satu dokumen (tombol **+**).
 
 ## Menjalankan secara lokal
 
@@ -27,84 +49,83 @@ Kalau Worker mati, kuota habis, atau `API_URL` kosong, aplikasi otomatis jatuh k
 python3 -m http.server 4173
 ```
 
-Buka `http://localhost:4173`. Jangan buka `index.html` langsung — modul JavaScript butuh server HTTP.
+Buka `http://localhost:4173`. Jangan buka `index.html` langsung; modul JavaScript butuh server HTTP.
 
-Halaman ini punya Content-Security-Policy lewat `<meta>` di `index.html`. Kalau menambah sumber eksternal baru (skrip, font, atau domain API lain), tambahkan juga di sana, kalau tidak browser akan memblokirnya.
+Halaman punya Content-Security-Policy lewat `<meta>` di `index.html`. Kalau menambah sumber eksternal baru (skrip, font, domain API), tambahkan juga di sana.
 
-Menjalankan pengujian:
+Dari `localhost` aplikasi tidak bisa memanggil API produksi (CORS hanya mengizinkan origin GitHub Pages), jadi di sana gerbang login tidak dipasang dan jawaban datang dari pencocokan lokal. Untuk menguji terhadap API, tambahkan `http://localhost:4173` sementara ke `ALLOWED_ORIGINS`, deploy, dan buang lagi sesudahnya.
+
+Menjalankan pengujian (328 tes, tanpa dependensi):
 
 ```bash
 npm test
 ```
 
-Tanpa konfigurasi tambahan, aplikasi berjalan dalam mode offline (tanpa LLM).
+## Menyambungkan ke Gemini dan Google
 
-## Menyambungkan ke Gemini
+1. Ambil API key di https://aistudio.google.com/apikey.
+2. Deploy Worker:
 
-### 1. Ambil API key
+   ```bash
+   cd worker
+   npx wrangler login
+   npx wrangler secret put GEMINI_API_KEY
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   npx wrangler deploy
+   ```
 
-Buka https://aistudio.google.com/apikey → **Create API key**. Simpan baik-baik, jangan di-commit ke Git.
+3. Isi URL Worker ke `config.js`:
 
-### 2. Deploy Worker
+   ```js
+   export const API_URL = "https://sapa-upi-api.<akun>.workers.dev";
+   ```
 
-```bash
-cd worker
-npx wrangler login          # buka browser, login Cloudflare
-npx wrangler secret put GEMINI_API_KEY   # paste API key saat diminta
-npx wrangler deploy
-```
+   lalu commit dan push; GitHub Pages membangun ulang otomatis.
 
-Perintah terakhir mencetak URL Worker, misalnya `https://sapa-upi-api.<akun>.workers.dev`.
-
-### 3. Sambungkan frontend
-
-Isi URL tadi ke `config.js`:
-
-```js
-export const API_URL = "https://sapa-upi-api.<akun>.workers.dev";
-```
-
-Lalu commit dan push. GitHub Pages akan rebuild otomatis.
-
-### Konfigurasi Worker
-
-Diatur di `worker/wrangler.toml`:
+### Konfigurasi Worker (`worker/wrangler.toml`)
 
 | Variabel | Fungsi |
 | --- | --- |
-| `GEMINI_MODEL` | Model yang dipakai. Default `gemini-3.5-flash-lite`. `gemini-3.8-flash` sempat dicoba dan ditolak dengan *"project has exceeded a quota"* pada akun free tier ini, jadi jangan diganti tanpa menaikkan tier dulu. |
-| `ALLOWED_ORIGINS` | Daftar origin yang boleh memanggil API, dipisah koma. Wajib diisi origin GitHub Pages kamu. `http://localhost:4173` sengaja **tidak** ada di produksi; untuk menguji halaman lokal terhadap API ini, tambahkan sementara lalu deploy, dan buang lagi sesudahnya. |
-| `FLOOD_GATE` | Binding Rate Limiting (bukan var, lihat `[[ratelimits]]` di `wrangler.toml`): menolak klien yang membanjiri sebelum menyentuh D1. Default 600 permintaan/menit per klien; `period` hanya boleh 10 atau 60. |
-| `GEMINI_API_KEY` | **Secret**, bukan var. Diisi lewat `wrangler secret put`. |
+| `GEMINI_MODEL` | Model utama. Baku `gemini-3.5-flash-lite`. `gemini-3.8-flash` pernah ditolak karena kuota akun gratis; jangan diganti tanpa menaikkan tier. |
+| `GEMINI_FALLBACK_MODEL` | Model Gemini kedua, opsional (kosong = tidak dipakai). |
+| `AI_FALLBACK_ENABLED` | Cadangan Cloudflare Workers AI. **Mati** secara baku: model 8B-nya kadang menjawab "tidak ada informasi" padahal ada di kutipan. |
+| `ALLOWED_ORIGINS` | Origin yang boleh memanggil API, dipisah koma. Wajib berisi origin GitHub Pages. |
+| `GOOGLE_CLIENT_ID`, `OAUTH_REDIRECT_URI`, `APP_URL` | Konfigurasi masuk dengan Google. |
+| `ALLOWED_EMAIL_DOMAINS` | Domain email yang boleh masuk (baku `upi.edu`, subdomain ikut). |
+| `FLOOD_GATE` | Binding *rate limiting* awal (600 permintaan per menit per klien) sebelum menyentuh D1. |
+| `GEMINI_API_KEY`, `GOOGLE_CLIENT_SECRET` | **Secret**, bukan var. Diisi lewat `wrangler secret put`. |
 
-Daftar model terbaru: https://ai.google.dev/gemini-api/docs/models — model lama seperti `gemini-2.0-flash` sudah dimatikan, jadi cek berkala kalau Worker tiba-tiba balas error.
+Daftar model terbaru: https://ai.google.dev/gemini-api/docs/models. Kalau Worker tiba-tiba membalas galat, cek apakah modelnya masih tersedia.
+
+### Anggaran waktu jawaban
+
+Satu pertanyaan punya batas total **20 detik** di Worker (browser menunggu 24 detik). Kalau Gemini belum menjawab dalam **6 detik**, Worker mengirim permintaan kedua bersamanya dan memakai yang selesai lebih dulu. Hanya konteks yang relevan dari glosarium yang dikirim, dan jawaban untuk pertanyaan yang sama disimpan 12 jam di tabel `answer_cache`. Diagnostik koneksi: `GEMINI_API_KEY=xxxx node worker/check-gemini.mjs`.
 
 ## Sumber jawaban
 
-Isi knowledge base diambil dari empat dokumen resmi:
+Knowledge base berisi **87 topik kurasi** dari **18 dokumen resmi** (PDF di `dokumen/`) dan **15 template formulir** (`dokumen/template/`, 14 DOCX dan 1 PDF). Katalog dokumen, halaman kutipan tiap topik, dan metadata ada di `data/sources.js`.
 
-| Dokumen | Pemilik | Tanggal |
-| --- | --- | --- |
-| Buku Panduan Penyelesaian Tugas Akhir Mahasiswa | Tim Prodi Bisnis Digital, UPI Kampus Daerah Tasikmalaya | April 2023 |
-| Pedoman Penulisan Karya Ilmiah UPI Menuju WCU | Universitas Pendidikan Indonesia | Edisi 2024 |
-| Pengumuman Nomor T-207/UN40.C3.4.4/PK.03.03/2026 tentang Semhas Jalur Artikel | Ketua Prodi Bisnis Digital | 5 Oktober 2026 |
-| Surat Nomor B-5577/UN40.C3.1/TA.07.02/2025 tentang Imbauan Pelatihan Kewirausahaan | Wakil Direktur Bidang Pendidikan, Kampus UPI Tasikmalaya | 10 September 2025 |
+| Kelompok | Contoh |
+| --- | --- |
+| Peraturan | Peraturan Rektor 38/2026 (penyelenggaraan pendidikan), 70/2026 (tugas akhir, sidang, kelulusan) |
+| Pedoman dan buku | Buku Panduan Tugas Akhir, Pedoman Penulisan Karya Ilmiah 2024, Pedoman Tugas Akhir 2024, Buku Magang |
+| Surat edaran dan pengumuman | SE 48/2026 (UKT, IRS), SE 68/2026 (cuti), SE 092/2025 (MSIB), T-45, T-150, T-207 |
+| Panduan sistem | SIMKATMAWA 2026, Unggah Mandiri dan Bebas Pustaka (SIAS), MANDALA |
+| Lainnya | Kalender Akademik 2026/2027, PPT syarat kelulusan |
 
-Angka, tanggal, dan nomor dokumen disalin dari sumbernya. Kalau sebuah ketentuan tidak tertulis di keempat dokumen itu, ia tidak ada di knowledge base — dan asisten akan menolak menjawabnya, bukan menebak.
+Angka, tanggal, dan nomor dokumen disalin dari sumbernya. Kalau sebuah ketentuan tidak ada di dokumen, ia tidak ada di knowledge base, dan asisten menjawab "belum menemukan" dengan kontak umum prodi, bukan menebak. Saat tidak bisa menjawab, pembaca diarahkan ke **Tenaga Administrasi Program Studi** atau sumber resmi UPI, tidak ke dosen tertentu.
 
-Dua dokumen di atas menyebut batas uji similaritas yang berbeda: Pedoman UPI 2024 menetapkan di bawah 25%, sementara Buku Panduan Prodi menyebut maksimal 35%. Asisten menyampaikan keduanya beserta dokumen asalnya, bukan memilih salah satu.
+Kalau dua dokumen menyebut hal yang sama dengan isi berbeda (misalnya batas uji similaritas), asisten menyebut keduanya beserta dokumen asal dan tanggalnya; yang terbaru ditandai berlaku.
 
 ## Cara menjaga jawaban tetap berdasar
 
-Tiga lapis pengaman supaya model tidak mengarang:
+1. **Retrieval dulu, baru generate.** Worker memilih maksimal 3 topik paling relevan dan hanya itu yang dikirim sebagai konteks.
+2. **Instruksi sistem ketat** (`worker/src/gemini.js`): dilarang menjawab di luar konteks, dilarang mengarang angka, tanggal, atau nomor SK, dilarang menebak kepanjangan singkatan di luar glosarium, dan wajib mengakui kalau informasinya tidak ada.
+3. **Sumber dan angka dari data.** Kartu sumber, tabel, dan kontak dirender dari knowledge base, tidak ikut digenerate. Jawaban "belum menemukan" tidak menampilkan kartu sumber topik yang salah cocok.
 
-1. **Retrieval dulu, baru generate.** Worker memilih maksimal 3 entri paling relevan dari `data/knowledge-base.js`, dan hanya itu yang dikirim sebagai konteks.
-2. **System instruction ketat** (`worker/src/gemini.js`): dilarang menjawab di luar konteks, dilarang mengarang angka/tanggal/nomor SK, dan wajib mengarahkan ke tenaga administrasi kalau rujukannya tidak ada.
-3. **Angka tetap dari data, bukan dari model.** Tabel syarat sidang dan metadata sumber dirender dari knowledge base, tidak ikut digenerate.
+## Menambah dan mengubah topik
 
-## Menambah topik
-
-Knowledge base tinggal di **D1** (`sapa-upi-kb`), bukan di dalam kode, jadi menambah topik **tidak perlu deploy**:
+Knowledge base dibaca Worker dari **D1**, jadi `INSERT` langsung tidak perlu deploy (terbaca dalam paling lama satu menit):
 
 ```bash
 cd worker
@@ -113,128 +134,80 @@ npx wrangler d1 execute sapa-upi-kb --remote --command "
     source_title, source_owner, valid_period, updated_at, source_url, escalation)
   VALUES ('id-topik', 'Kategori', 'Judul', 'Jawaban ringkas.', 'Pembuka:', 'Penutup.',
     'Nama Dokumen', 'Pemilik Dokumen', 'Semester Ganjil 2026/2027', '13 Oktober 2026',
-    'https://...', 'Hubungi ... jika ...');
+    'https://...', 'Hubungi staf Program Studi Bisnis Digital ...');
 "
 ```
 
-Lalu isi daftar `questions`, `keywords`, `points`, dan `follow_up` di tabel `entry_lists`. Perubahan terbaca dalam waktu paling lama satu menit (lihat `CACHE_TTL_MS`).
+Lalu isi `questions`, `keywords`, `points`, dan `follow_up` di tabel `entry_lists`. Topik lama tidak perlu dihapus: set `active = 0` supaya berhenti dipakai tetapi riwayatnya tetap ada.
 
-Topik lama tidak perlu dihapus saat pedoman berganti — set `active = 0` supaya berhenti dipakai menjawab tetapi riwayatnya tetap ada.
-
-`data/knowledge-base.js` tetap ada sebagai dua hal: **benih** awal isi D1, dan **cadangan offline** yang dipakai browser kalau Worker tidak terjangkau. Isinya tidak ikut berubah saat kamu menambah topik di D1, jadi jawaban mode offline bisa tertinggal dari yang terbaru.
-
-### Menyiapkan ulang basis data
+`data/knowledge-base.js` adalah **benih** D1 sekaligus **cadangan offline** browser. Mengubahnya tidak otomatis mengubah D1; jalankan seed:
 
 ```bash
 cd worker
-npx wrangler d1 execute sapa-upi-kb --remote --file=schema.sql
 node seed.mjs > seed.sql
 npx wrangler d1 execute sapa-upi-kb --remote --file=seed.sql
 ```
 
-`seed.sql` dihasilkan dari `data/knowledge-base.js`, jadi jangan dijalankan kalau di D1 sudah ada topik yang ditambahkan manual — perintah itu menimpa setiap entri yang namanya sama.
+Seed **menimpa** setiap entri yang id-nya sama, jadi jangan dijalankan kalau ada topik hasil ketikan manual di D1 yang ingin dipertahankan. `seed.sql` dihasilkan, tidak di-commit.
 
-## Cara retrieval memilih entri
+### Skema dan migrasi
 
-Pencocokan kata kunci biasa gampang salah pilih. Beberapa hal yang dipakai `lib/search.js` untuk menghindarinya:
+Instalasi baru: `schema.sql`, `schema-auth.sql`, `schema-owner.sql`. Basis data yang sudah ada dimigrasi manual dengan `wrangler d1 execute sapa-upi-kb --remote --file=<berkas>`, selalu **sebelum** deploy Worker yang memakainya: `schema-password.sql`, `schema-upload-fields.sql`, `schema-hardening.sql`, `schema-feedback.sql`, `schema-idle-session.sql`, `schema-category-merge.sql`, `schema-archive.sql`, `schema-share.sql`, `schema-cache.sql`, `schema-seen.sql`.
 
-- **IDF** — kata yang muncul di banyak entri (`tugas`, `akhir`) berbobot lebih kecil daripada kata yang membedakan (`sidang`, `yudisium`).
-- **Satu hitungan per field** — entri tidak bisa naik peringkat hanya karena mengulang satu kata di beberapa contoh pertanyaan.
-- **Istilah majemuk** — "tugas akhir" dihitung satu konsep, bukan dua kata, supaya tidak mengalahkan kata lain hanya karena lebih panjang.
-- **Stemming imbuhan** — "persyaratan pendaftaran" di dokumen bertemu "syarat daftar" yang diketik mahasiswa.
-- **Cakupan pertanyaan** — entri yang menjawab seluruh pertanyaan menang atas entri yang hanya cocok di satu kata.
-
-## Batasan prototipe
-
-- Knowledge base memuat **kutipan dari empat dokumen resmi**, tetapi belum mencakup seluruh isi dokumen tersebut. Topik yang tidak ada di dalamnya akan ditolak, bukan dijawab.
-- Belum ada autentikasi, penyimpanan riwayat, maupun integrasi SIAKAD.
-- Retrieval memakai pencocokan kata kunci, belum pencarian semantik (*embedding*).
-- Jawaban belum melalui evaluasi tenaga akademik dan tidak dapat dijadikan keputusan resmi. Keputusan resmi tetap pada program studi.
-- Endpoint Worker belum dibatasi rate limit. Untuk demo publik yang ramai, aktifkan *Rate limiting rules* di dashboard Cloudflare.
-- **Kuota Gemini free tier: 15 permintaan per menit.** Lewat dari itu, Worker membalas 502 dan aplikasi jatuh ke mode offline. Untuk demo di kelas berisi puluhan mahasiswa yang bertanya bersamaan, ini batas yang akan kena duluan — bukan biaya, bukan kecepatan.
-- Worker tidak punya lokasi keluar yang tetap, sehingga sebagian permintaan ditolak Gemini dengan *"User location is not supported"*. Permintaan seperti itu dicoba ulang otomatis; yang tetap gagal jatuh ke mode offline.
-- Model gratis kadang membalas *"currently experiencing high load"* atau menggantung sampai lebih dari satu menit. Batas waktu menahan ini di 24 detik pada Worker dan 15 detik pada browser, lalu jawaban diambil dari pencocokan lokal. Artinya saat Google sedang padat, demo tetap menjawab tetapi dalam mode offline.
-
-## Tampilan
-
-Antarmuka mengikuti section **MVP** pada desain Figma (frame New Chat, Answering Question, Source, Student' Files, Profile, Settings):
-
-- **New Chat** — sapaan dengan nama akun, satu kotak tanya, tanpa kartu pintasan.
-- **Jawaban** — kartu dengan status asal jawaban, tabel bernomor, dan kotak *Rujukan Dokumen Resmi*.
-- **Panel dokumen** — klik rujukan untuk membuka PDF aslinya di halaman yang dikutip, dengan kalimat rujukan disorot (PDF.js, dimuat hanya saat dibutuhkan). Terbuka untuk siapa pun, tanpa login.
-- **Files** — daftar dokumen yang disajikan, dengan sampul halaman pertama dan penanda favorit.
-- **Tanya dokumen** — tombol **+** membatasi pertanyaan pada satu dokumen; di Worker, pembatasan hanya mempersempit rujukan, tidak pernah menambah.
-- **Search Chats** — mencari judul dan isi riwayat milik sendiri (perlu masuk).
-- **Profile / Settings / Help** — profil dari akun Google, keluar dari semua perangkat, unduh dan hapus riwayat, serta kontak program studi.
-
-### Halaman pengelola
-
-Dashboard, Metrics, Knowledge Base, dan Upload hanya muncul untuk akun yang punya baris di tabel `staff_roles` (peran `upload`, `review`, atau `admin`). Peran dibaca Worker dari D1 pada setiap permintaan, tidak pernah dari browser.
-
-- **Dashboard** — dihitung dari tabel `events`, yang hanya menyimpan hasil jawaban (tanpa teks pertanyaan dan tanpa identitas pengguna). Memuat enam kartu, enam grafik analitik (Lampiran A, Tabel A.7), filter jenis respons dan kategori, dan ekspor Excel (`.xlsx` dengan grafik), CSV rekapitulasi, serta PDF (lewat dialog cetak).
-- **Metrics** — tabel 10 KPI sesuai Lampiran A, Tabel A.6. KPI kualitas (kesesuaian jawaban, ketepatan referensi) dan waktu respons pertama tampil "belum dievaluasi/diukur", bukan angka rekaan.
-- **Knowledge Base** — daftar dokumen, filter status dan kategori, sakelar RAG, validasi, proses ulang teks, tandai tidak berlaku, hapus, dan log audit.
-- **Upload** — hanya TPTA dan TU. PDF dibaca di browser (PDF.js), teks dikirim ke `POST /admin/documents`, berkas ke `PUT /admin/documents/:id/file` (disimpan di KV). Dokumen baru berstatus *Menunggu Validasi* dan belum dipakai menjawab. Metode penyimpanan: *Dokumen Baru*, *Gabungkan Terkait*, dan *Perbarui Versi* (versi lama otomatis Tidak Berlaku saat versi baru divalidasi).
-- Skema: `worker/schema-owner.sql`, `schema-auth.sql`, dan migrasi `schema-password.sql`, `schema-upload-fields.sql`, `schema-hardening.sql` untuk basis data yang sudah ada. Memberi peran:
+Memberi peran pengelola:
 
 ```bash
 cd worker && npx wrangler d1 execute sapa-upi-kb --remote --command "INSERT INTO staff_roles (email, role, unit, assigned_by) VALUES ('<email>', 'admin', 'TPTA', '<pemberi>')"
 ```
 
-## CI dan deploy otomatis
+Peran: `upload`, `review`, `admin`. Hanya `upload` dan `admin` yang boleh mengunggah dokumen.
 
-`.github/workflows/ci.yml` berjalan di setiap push dan pull request:
+## Cara retrieval memilih topik
 
-1. **Tes** (`npm test`) selalu dijalankan.
-2. **Deploy Worker** berjalan otomatis hanya untuk push ke `main` yang lulus tes, dan hanya kalau secret Cloudflare sudah dipasang. Tanpa secret, tahap ini dilewati dengan catatan, tes tetap jalan.
-3. Kalau push **mengubah berkas skema** (`worker/schema*.sql`), deploy otomatis dilewati dan muncul peringatan: migrasi harus dijalankan lebih dulu secara manual, baru deploy (`cd worker && npx wrangler deploy`). Ini mencegah Worker baru berjalan di atas tabel yang belum ada.
+Pencocokan kata kunci biasa gampang salah pilih, jadi `lib/search.js` memakai:
 
-Frontend tidak lewat CI ini: GitHub Pages membangun ulang sendiri setiap push ke `main`.
+- **IDF**: kata yang ada di banyak topik (`tugas`, `akhir`) berbobot kecil.
+- **Satu hitungan per field** dan **istilah majemuk** ("tugas akhir" satu konsep).
+- **Stemming imbuhan** Indonesia, dan **glosarium** (`lib/glossary.js`) yang menambahkan singkatan atau kepanjangannya (TPTA, SKPI, SIMKATMAWA, dospem...).
+- **Cakupan pertanyaan**: topik yang menjawab seluruh pertanyaan menang atas yang hanya cocok di satu kata. Kalau beberapa topik sama kuat, pembaca diminta memilih.
+- **Dokumen terkait** (`lib/source-set.js`): dokumen lain dengan topik berperingkat dekat atau pokok sama (bukan sekadar kata umum seperti "kriteria") ditampilkan terpisah dari sumber utama.
+- **Dokumen unggahan**: kalau topik kurasi tidak ketemu, Worker mencari di halaman dokumen unggahan yang sudah divalidasi lewat FTS5.
 
-Memasang deploy otomatis (sekali saja):
+## Batasan
 
-1. Di Cloudflare: **My Profile → API Tokens → Create Token**, pakai templat **Edit Cloudflare Workers**. Tambahkan izin **D1: Edit** dan **Workers KV Storage: Edit**, dan batasi ke akunmu.
-2. Di GitHub: **Settings → Secrets and variables → Actions**, buat dua secret: `CLOUDFLARE_API_TOKEN` (token tadi) dan `CLOUDFLARE_ACCOUNT_ID` (ID akun, ada di sidebar dashboard Cloudflare).
-3. Push berikutnya ke `main` akan men-deploy Worker kalau tes lulus.
+- Pencarian memakai kata kunci, belum semantik (*embedding*). Cukup untuk 87 topik; tidak untuk ratusan halaman PDF.
+- Jawaban belum dievaluasi tenaga akademik dan bukan keputusan resmi. Keputusan resmi tetap pada program studi.
+- Belum ada integrasi SIAKAD, dan itu disengaja.
+- Gerbang login hanya di sisi browser; endpoint tanya di Worker masih bisa dipanggil langsung tanpa token.
+- Kuota Gemini akun gratis terbatas, dan sesekali lambat di sisi Google. Hedging, anggaran 20 detik, dan cache mengurangi gejalanya; kalau tetap gagal, jawaban cadangan dari knowledge base tampil.
+- Notifikasi email belum ada (tab Notifications di Settings disembunyikan).
+- Daftar "berkas yang sudah dicari" untuk pengunjung yang belum login tersimpan di browser; untuk akun yang login tersimpan di server.
+- Teks pertanyaan tidak disimpan di analitik (Dashboard hanya mencatat hasil). Riwayat chat pribadi terpisah dan hanya terbaca pemiliknya.
 
-## Memeriksa koneksi Gemini
+## CI dan deploy
 
-Kalau jawaban sering jatuh ke Mode offline, jalankan diagnostik ini di komputermu dengan kunci Gemini milikmu. Kunci hanya dikirim ke Google dan tidak dicetak:
-
-```bash
-GEMINI_API_KEY=xxxx node worker/check-gemini.mjs
-```
-
-Skrip memeriksa apakah kunci sah, model apa yang tersedia, berapa lama permintaan kecil dijawab (Interactions API dibanding `generateContent`), dan apakah lima permintaan beruntun terkena batas kuota. Di akhir keluarannya ada panduan membaca hasilnya.
+`.github/workflows/ci.yml`: tes (`npm test`) di setiap push dan pull request; push ke `main` yang lulus tes men-deploy Worker otomatis bila secret `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID` terpasang, **kecuali** push itu mengubah `worker/schema*.sql` (deploy dilewati dengan peringatan; jalankan migrasinya dulu, lalu `cd worker && npx wrangler deploy`). Frontend dibangun ulang GitHub Pages setiap push ke `main`.
 
 ## Struktur proyek
 
 ```text
 .
-├── index.html
-├── style.css
-├── app.js                 # logika antarmuka
-├── viewer.js              # pembaca dokumen (PDF.js)
-├── config.js              # alamat Worker
-├── dokumen/               # PDF sumber yang disajikan bersama situs
-├── assets/                # maskot dan sampul dokumen
-├── data/
-│   ├── knowledge-base.js  # benih D1 + cadangan offline
-│   └── sources.js         # katalog dokumen + halaman kutipan tiap topik
-├── lib/
-│   ├── chat-engine.js     # fallback offline
-│   └── search.js          # skoring retrieval
+├── index.html, style.css, config.js, theme-init.js
+├── app.js          # antarmuka: chat, berkas, riwayat, bagikan, login
+├── owner.js        # pengelola: Dashboard, Metrics, Knowledge Base, Upload
+├── settings.js     # halaman Settings
+├── viewer.js       # pembaca PDF dan DOCX di panel samping
+├── data/           # knowledge-base.js (benih + cadangan offline), sources.js (katalog dokumen)
+├── dokumen/        # 18 PDF resmi, dokumen/template/ (15 template formulir)
+├── assets/         # maskot, ikon, font, sampul dokumen
+├── lib/            # kode murni dipakai browser dan Worker: search, glossary, source-set,
+│                   # doc-request, clarify, chat-engine, docx-preview, i18n, settings-*,
+│                   # charts, report, xlsx, followup, suggest, ...
 ├── worker/
-│   ├── wrangler.toml
-│   ├── schema.sql         # skema knowledge base
-│   ├── schema-auth.sql    # akun, sesi, peran, riwayat
-│   ├── seed.mjs
-│   └── src/
-│       ├── index.js            # HTTP, CORS, rute
-│       ├── auth.js             # sesi dan peran
-│       ├── google-oidc.js      # masuk dengan Google
-│       ├── history.js          # riwayat percakapan
-│       ├── knowledge-store.js  # baca knowledge base dari D1
-│       └── gemini.js           # prompt & parsing respons
-└── tests/
+│   ├── wrangler.toml, schema*.sql, seed*.mjs, check-gemini.mjs
+│   └── src/        # index (rute), gemini, auth, google-oidc, admin, documents,
+│                   # document-suggest, events, history, shares, seen-documents,
+│                   # answer-cache, feedback, transcribe, rate-limit, knowledge-store
+├── tests/          # 328 pengujian (node:test)
+└── .github/workflows/ci.yml
 ```
