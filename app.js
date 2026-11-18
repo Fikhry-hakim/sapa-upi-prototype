@@ -2079,7 +2079,7 @@ const settings = createSettings({
     send: () => {},
     sendBackground: () => refs.composer.requestSubmit(),
     annotation: () => refs.composer.requestSubmit(),
-    attach: () => (state.account ? refs.attachButton.click() : null),
+    attach: () => (isStaff() ? refs.attachButton.click() : null),
     selectText: () => {
       const answers = refs.chatLog.querySelectorAll(".bot-body");
       const last = answers[answers.length - 1];
@@ -2183,13 +2183,35 @@ function storeToken(token, remember = true) {
   }
 }
 
+/**
+ * Tanpa akun, aplikasi hanya menampilkan layar masuk Google. Pengecualian: tautan bagikan
+ * (#share=...) yang hanya-baca, dan keadaan ketika masuk memang tidak tersedia (server
+ * tidak terjangkau atau login dimatikan), supaya tidak ada yang terkunci di luar.
+ */
+const LOGIN_REQUIRED = true;
+const isShareUrl = () => /^#share=/.test(window.location.hash);
+
+function enforceLoginGate() {
+  if (!LOGIN_REQUIRED) return;
+  const open = !state.account && !isShareUrl() && state.loginEnabled;
+  if (open) {
+    if (refs.signinPage.hidden) showAuthScreen("login");
+  } else if (!refs.signinPage.hidden && state.account) {
+    hideAuthScreen();
+  } else if (!refs.signinPage.hidden && !state.loginEnabled) {
+    hideAuthScreen();
+  } else if (!refs.signinPage.hidden && isShareUrl()) {
+    hideAuthScreen();
+  }
+}
+
 const AUTH_COPY = {
   login: {
     title: "Selamat Datang Kembali!",
-    sub: "Masuk dengan akun UPI kamu untuk menyimpan riwayat percakapan.",
+    sub: "Masuk dengan akun UPI kamu untuk mulai bertanya.",
     hint: "",
     google: "Continue with Google",
-    note: "Hanya akun dengan domain upi.edu yang dapat masuk. Kata sandi dipasang dari Pengaturan setelah masuk dengan Google. Tanpa masuk, kamu tetap bisa bertanya dan membuka dokumen.",
+    note: "Hanya akun dengan domain upi.edu yang dapat masuk.",
     alert: false,
   },
   domain: {
@@ -2197,13 +2219,13 @@ const AUTH_COPY = {
     sub: "SAPA UPI hanya bisa dimasuki dengan akun Google UPI (@upi.edu atau subdomainnya).",
     hint: "Akun yang kamu pilih bukan akun UPI, jadi tidak dibuatkan sesi masuk.",
     google: "Coba dengan akun upi.edu",
-    note: "Kamu tetap bisa bertanya dan membuka dokumen tanpa masuk. Masuk hanya diperlukan untuk menyimpan riwayat.",
+    note: "Hanya akun dengan domain upi.edu yang dapat masuk.",
     alert: true,
   },
   failed: {
     title: "Gagal Masuk",
     sub: "Proses masuk dengan Google tidak selesai.",
-    hint: "Coba lagi sebentar lagi. Kalau terus gagal, kamu tetap bisa memakai SAPA tanpa masuk.",
+    hint: "Coba lagi sebentar lagi.",
     google: "Coba lagi",
     note: "",
     alert: true,
@@ -2220,15 +2242,17 @@ function showAuthScreen(mode) {
   $("auth-note").textContent = copy.note;
   $("auth-icon").hidden = !copy.alert;
   const isLogin = mode === "login";
-  $("auth-form").hidden = !isLogin;
-  $("auth-divider").hidden = !isLogin;
+  // Masuk hanya lewat Google: formulir email dan kata sandi disembunyikan dulu, dan layar ini tidak bisa dilewati.
+  $("auth-form").hidden = LOGIN_REQUIRED || !isLogin;
+  $("auth-divider").hidden = LOGIN_REQUIRED || !isLogin;
+  $("auth-skip").hidden = LOGIN_REQUIRED;
   $("auth-error").hidden = true;
   $("auth-password").value = "";
   refs.signinPage.dataset.mode = mode;
   if (refs.signinPage.hidden) authOpener = document.activeElement;
   refs.signinPage.hidden = false;
   document.body.classList.add("auth-open");
-  (isLogin ? $("auth-email") : $("auth-google")).focus();
+  (isLogin && !LOGIN_REQUIRED ? $("auth-email") : $("auth-google")).focus();
 }
 
 function authError(message) {
@@ -2316,13 +2340,16 @@ function captureTokenFromUrl() {
 function renderAccount() {
   const signedIn = Boolean(state.account);
 
-  const isStaff = signedIn && Boolean(state.account.role);
-  for (const item of document.querySelectorAll("[data-owner]")) item.hidden = !isStaff;
+  const staff = isStaff();
+  for (const item of document.querySelectorAll("[data-owner]")) item.hidden = !staff;
   refs.loginButton.hidden = signedIn || !state.loginEnabled;
   refs.loginNote.hidden = signedIn || !state.loginEnabled;
   refs.profile.hidden = !signedIn;
-  refs.attachButton.closest(".menu-anchor").hidden = !signedIn; // pilih dokumen khusus hanya untuk akun yang masuk
-  if (!signedIn) refs.attachMenu.hidden = true;
+  refs.attachButton.closest(".menu-anchor").hidden = !staff; // pilih dokumen khusus hanya untuk admin
+  if (!staff) {
+    refs.attachMenu.hidden = true;
+    if (state.scopeDocumentId) setScope(null);
+  }
 
   if (signedIn) {
     refs.profileName.textContent = state.account.name || state.account.email;
@@ -2352,8 +2379,10 @@ async function loadAccount() {
     // Pemeriksaan yang gagal tidak boleh menyembunyikan jalan masuk.
     console.warn("Tidak bisa memeriksa sesi:", error);
     state.account = null;
+    state.loginEnabled = false; // server tidak terjangkau: jangan mengunci pengunjung di layar masuk
   }
   renderAccount();
+  enforceLoginGate();
   if (state.account) {
     refreshHistory();
     syncSeen();
@@ -2422,6 +2451,7 @@ function signOutLocally(message, { keepScreen = false } = {}) {
   if (!keepScreen) refs.chatLog.replaceChildren();
   renderAccount();
   if (!keepScreen) showView("home");
+  enforceLoginGate();
   showToast(message);
 }
 
@@ -2736,7 +2766,7 @@ function initialize() {
   });
   $("auth-skip").addEventListener("click", hideAuthScreen);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !refs.signinPage.hidden) hideAuthScreen();
+    if (event.key === "Escape" && !refs.signinPage.hidden && !LOGIN_REQUIRED) hideAuthScreen();
     trapAuthFocus(event);
   });
   refs.settingsBack.addEventListener("click", () => showView("home"));
@@ -2761,10 +2791,13 @@ function initialize() {
   setRecentOpen(false);
   renderAccount();
   showView("home");
+  // Tanpa tanda akun tersimpan, layar masuk langsung tampil (tanpa kilasan beranda).
+  if (LOGIN_REQUIRED && !state.account && state.loginEnabled && !isShareUrl() && refs.signinPage.hidden) showAuthScreen("login");
   // Tautan bagikan (#share=...) membuka chat itu, hanya-baca, alih-alih beranda.
   openSharedFromUrl();
   window.addEventListener("hashchange", () => {
     if (!openSharedFromUrl() && state.view === "shared") showView("home");
+    enforceLoginGate();
   });
   $("shared-start").addEventListener("click", () => {
     history.replaceState(null, "", window.location.pathname + window.location.search);

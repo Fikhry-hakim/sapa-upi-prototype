@@ -258,11 +258,17 @@ test("the viewer offers continuous scrolling and frees far-away pages instead of
 
 test("anonymous visitors do not get the history clock or the document picker", () => {
   assert.ok(!/history-button/.test(html), "the history clock is gone for everyone");
-  assert.match(app, /refs\.attachButton\.closest\("\.menu-anchor"\)\.hidden = !signedIn/);
+  
   assert.match(app, /sapa-upi:seen-documents/);
 });
 
 test("signed-in readers keep their searched files on the server, and sign-out clears the local list", () => {
   assert.match(app, /conversations\/seen-documents/);
   assert.match(app, /localStorage\.removeItem\(SEEN_KEY\)/);
+});
+
+test("only admins get the document picker; readers and anonymous visitors do not", () => {
+  assert.match(app, /refs\.attachButton\.closest\("\.menu-anchor"\)\.hidden = !staff/);
+  assert.ok(!/const isStaff = signedIn/.test(app), "a local isStaff would shadow the global function");
+  assert.match(app, /attach: \(\) => \(isStaff\(\)/);
 });
