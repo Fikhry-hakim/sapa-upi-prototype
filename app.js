@@ -133,6 +133,12 @@ const state = {
 
 const viewer = createViewer({ onCopy: (message) => showToast(message) });
 
+/** Membuka dokumen sekaligus mencatatnya sebagai berkas yang sudah dicari. */
+function openDocument(doc, options) {
+  markSeen(doc);
+  return viewer.open(doc, options);
+}
+
 /* ============================================================
    TOAST + MENU
 ============================================================ */
@@ -404,7 +410,7 @@ function appendRichText(parent, text) {
       link.addEventListener("click", (event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         event.preventDefault();
-        viewer.open(templateDoc, { page: 1 });
+        openDocument(templateDoc, { page: 1 });
       });
     }
     parent.append(link);
@@ -574,6 +580,7 @@ function renderTable(table, parent) {
 
 /** Berkas yang diminta: dibuka dari halaman pertama tanpa sorotan, atau diunduh langsung. */
 function fileResults(ids) {
+  markSeen(...ids);
   const list = make("div", "file-results");
   for (const id of ids) {
     const doc = documents[id];
@@ -591,7 +598,7 @@ function fileResults(ids) {
       make("small", "", [doc.kind, doc.pages > 1 ? `${doc.pages} halaman` : null, doc.sizeLabel, doc.dateLabel].filter(Boolean).join(" • ")),
     );
     open.append(icon, text);
-    open.addEventListener("click", () => viewer.open(doc, { page: 1 }));
+    open.addEventListener("click", () => openDocument(doc, { page: 1 }));
 
     const download = make("a", "file-result-download");
     download.href = doc.download ?? doc.file;
@@ -610,6 +617,7 @@ function renderReferences(entry, parent, served = null, many = []) {
   if (many?.length > 1) return renderManyReferences(entry, parent, many);
   // Jawaban dari dokumen unggahan membawa rujukannya sendiri dari Worker.
   const citation = served ?? citationFor(entry);
+  if (citation?.document) markSeen(citation.document);
   const box = make("div", "refs");
   box.append(make("p", "refs-label", "SUMBER DOKUMEN RESMI"));
   const list = make("div", "refs-list");
@@ -641,13 +649,14 @@ function sourceChip(citation) {
   // Template satu halaman: "hal. 1" tidak berarti apa-apa.
   chip.append(make("span", "ref-chip-text", citation.document.pages > 1 ? `${citation.document.title}, hal. ${citation.page}` : citation.document.title));
   chip.addEventListener("click", () =>
-    viewer.open(citation.document, { page: citation.page, highlight: citation.highlight }),
+    openDocument(citation.document, { page: citation.page, highlight: citation.highlight }),
   );
   return chip;
 }
 
 /** Dua dokumen atau lebih: yang terbaru ditonjolkan sebagai yang berlaku. */
 function renderManyReferences(entry, parent, citations) {
+  markSeen(...citations.map((item) => item.document).filter(Boolean));
   const box = make("div", "refs refs-many");
   box.append(make("p", "refs-label", "SUMBER DOKUMEN RESMI"));
   const list = make("div", "refs-stack");
@@ -1485,7 +1494,9 @@ async function runSearch() {
   refs.searchEsc.hidden = !term;
   const tab = state.searchTab;
   const wantChats = tab !== "documents";
-  const wantDocs = tab !== "chats";
+  // Tanpa login tidak ada yang dicari: tidak ada riwayat, dan daftar dokumen juga tidak dipajang.
+  const wantDocs = tab !== "chats" && Boolean(state.account);
+  refs.searchTabs.hidden = !state.account;
 
   let chats = [];
   if (wantChats && state.account) {
@@ -1505,9 +1516,10 @@ async function runSearch() {
   }
 
   const needle = term.toLowerCase();
+  const seen = isStaff() ? null : readSeen(); // pengguna biasa hanya mencari di berkas yang sudah pernah ia cari
   const docs = wantDocs
     ? Object.entries(documents).filter(
-        ([, doc]) => !needle || `${doc.title} ${doc.owner} ${doc.reference}`.toLowerCase().includes(needle),
+        ([id, doc]) => (!seen || seen.has(id)) && (!needle || `${doc.title} ${doc.owner} ${doc.reference}`.toLowerCase().includes(needle)),
       )
     : [];
 
@@ -1532,7 +1544,7 @@ async function runSearch() {
         snippet: `${doc.reference} • ${doc.pages} halaman`,
         term,
         date: doc.dateLabel ?? "",
-        onOpen: () => viewer.open(doc, { page: 1 }),
+        onOpen: () => openDocument(doc, { page: 1 }),
       }),
     );
   }
@@ -1582,6 +1594,35 @@ function setLayout(layout) {
   renderFiles();
 }
 
+/* Berkas yang pernah dicari atau dibuka pengguna lewat chat; hanya ini yang tampil di halaman Berkas mahasiswa dan dosen. */
+const SEEN_KEY = "sapa-upi:seen-documents";
+
+function readSeen() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]");
+    return new Set(Array.isArray(raw) ? raw.filter((id) => typeof id === "string" && documents[id]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function markSeen(...found) {
+  const ids = found.map((item) => (typeof item === "string" ? item : Object.keys(documents).find((id) => documents[id] === item))).filter(Boolean);
+  if (!ids.length) return;
+  const seen = readSeen();
+  const before = seen.size;
+  for (const id of ids) seen.add(id);
+  if (seen.size === before) return;
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+  } catch {
+    /* daftar hanya berlaku selama halaman terbuka */
+  }
+}
+
+/** Pengelola melihat semua berkas; pengguna biasa hanya yang sudah mereka cari. */
+const isStaff = () => Boolean(state.account?.role);
+
 const FAV_KEY = "sapa-upi:favorite-documents";
 
 function readFavorites() {
@@ -1601,15 +1642,21 @@ function writeFavorites(set) {
   }
 }
 
-const FILE_TABS = [
+const STAFF_TABS = [
   ["suggested", "Disarankan"],
   ["favorites", "Favorit"],
   ["all", "Semua"],
 ];
+const USER_TABS = [
+  ["all", "Sudah dicari"],
+  ["favorites", "Favorit"],
+];
 
 function renderFilesTabs() {
   refs.filesTabs.replaceChildren();
-  for (const [id, label] of FILE_TABS) {
+  const tabs = isStaff() ? STAFF_TABS : USER_TABS;
+  if (!tabs.some(([id]) => id === state.filesTab)) state.filesTab = tabs[0][0];
+  for (const [id, label] of tabs) {
     const tab = make("button", "tab", label);
     tab.type = "button";
     tab.setAttribute("role", "tab");
@@ -1636,7 +1683,7 @@ function openFileMenu(anchor, id, doc) {
   menu.dataset.for = id;
 
   const entries = [
-    ["Buka dokumen", () => viewer.open(doc, { page: 1 })],
+    ["Buka dokumen", () => openDocument(doc, { page: 1 })],
     [
       "Salin tautan",
       async () => {
@@ -1670,6 +1717,10 @@ function renderFiles() {
   const favorites = readFavorites();
 
   let list = Object.entries(documents);
+  if (!isStaff()) {
+    const seen = readSeen();
+    list = list.filter(([id]) => seen.has(id));
+  }
   if (state.filesTab === "favorites") list = list.filter(([id]) => favorites.has(id));
   if (term) {
     list = list.filter(([, doc]) =>
@@ -1685,7 +1736,9 @@ function renderFiles() {
   refs.filesEmpty.textContent =
     state.filesTab === "favorites" && !term
       ? "Belum ada favorit. Tandai dokumen dengan bintang."
-      : "Tidak ada dokumen yang cocok.";
+      : !isStaff() && !term
+        ? "Belum ada berkas. Berkas yang kamu cari lewat chat akan muncul di sini."
+        : "Tidak ada dokumen yang cocok.";
 
   for (const [id, doc] of list) {
     const card = make("div", "file-card");
@@ -1712,7 +1765,7 @@ function renderFiles() {
       make("span", "file-meta", `${doc.kind} • ${doc.sizeLabel} • ${doc.pages} halaman • ${doc.dateLabel}`),
     );
     open.append(thumb, info);
-    open.addEventListener("click", () => viewer.open(doc, { page: 1 }));
+    open.addEventListener("click", () => openDocument(doc, { page: 1 }));
 
     const star = make("button", "file-star");
     star.type = "button";
@@ -1946,7 +1999,7 @@ const owner = createOwner({
   api,
   getAccount: () => state.account,
   showToast,
-  openViewer: (doc, options) => viewer.open(doc, options),
+  openViewer: (doc, options) => openDocument(doc, options),
   authHeaders: () => authHeaders(),
 });
 owner.setApiBase(API_URL);
@@ -1976,7 +2029,7 @@ const settings = createSettings({
     send: () => {},
     sendBackground: () => refs.composer.requestSubmit(),
     annotation: () => refs.composer.requestSubmit(),
-    attach: () => refs.attachButton.click(),
+    attach: () => (state.account ? refs.attachButton.click() : null),
     selectText: () => {
       const answers = refs.chatLog.querySelectorAll(".bot-body");
       const last = answers[answers.length - 1];
@@ -2218,6 +2271,9 @@ function renderAccount() {
   refs.loginButton.hidden = signedIn || !state.loginEnabled;
   refs.loginNote.hidden = signedIn || !state.loginEnabled;
   refs.profile.hidden = !signedIn;
+  refs.historyButton.hidden = !signedIn; // riwayat hanya ada untuk akun yang masuk
+  refs.attachButton.closest(".menu-anchor").hidden = !signedIn; // pilih dokumen khusus hanya untuk akun yang masuk
+  if (!signedIn) refs.attachMenu.hidden = true;
 
   if (signedIn) {
     refs.profileName.textContent = state.account.name || state.account.email;
@@ -2227,6 +2283,7 @@ function renderAccount() {
   }
   renderGreeting();
   renderRecent();
+  if (state.view === "files") renderFiles();
 }
 
 async function loadAccount() {

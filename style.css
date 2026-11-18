@@ -5047,3 +5047,9 @@ button.ref-chip:hover {
   .owner-table td > * { max-width: 100%; }
   .owner-table td small { text-align: inherit; }
 }
+
+/* Tombol yang disembunyikan untuk pengunjung tanpa login tetap tersembunyi walau kelasnya mengatur display. */
+#history-button[hidden],
+.menu-anchor[hidden] {
+  display: none !important;
+}

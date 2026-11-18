@@ -186,14 +186,14 @@ test("answers are built with text nodes, never with untrusted HTML", () => {
 /* ---------- documents ---------- */
 
 test("the source chip opens the document, for anyone", () => {
-  assert.match(app, /viewer\.open\(citation\.document/);
+  assert.match(app, /openDocument\(citation\.document/);
   assert.match(app, /SUMBER DOKUMEN RESMI/);
-  assert.ok(!/state\.account\s*&&[^\n]*viewer\.open/.test(app), "opening a document must not need an account");
+  assert.ok(!/state\.account\s*&&[^\n]*openDocument/.test(app), "opening a document must not need an account");
   assert.match(viewerSource, /SUMBER RESMI/);
   assert.match(viewerSource, /Sumber Resmi Jawaban SAPA/);
 });
 
-test("the Files page lists the published documents without an account", () => {
+test("the Files page lists the documents a reader has searched, and staff see all, without needing an account", () => {
   assert.match(app, /Object\.entries\(documents\)/);
   assert.match(html, /id="file-grid"/);
   assert.ok(!/renderFiles[\s\S]{0,200}state\.account/.test(app), "Files must not require signing in");
@@ -254,4 +254,10 @@ test("the viewer offers continuous scrolling and frees far-away pages instead of
   assert.match(viewerSource, /sapa-upi:viewer-mode/);
   // PDF.js perlu skala halaman pada lapisan teks, kalau tidak ia mengeluh di konsol tiap halaman.
   assert.match(viewerSource, /--scale-factor/);
+});
+
+test("anonymous visitors do not get the history clock or the document picker", () => {
+  assert.match(app, /refs\.historyButton\.hidden = !signedIn/);
+  assert.match(app, /refs\.attachButton\.closest\("\.menu-anchor"\)\.hidden = !signedIn/);
+  assert.match(app, /sapa-upi:seen-documents/);
 });
